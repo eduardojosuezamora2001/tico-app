@@ -1,0 +1,12 @@
+# Normalizar finales de linea en texto y proteger binarios de la conversion CRLF
+* text=auto eol=lf
+
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
