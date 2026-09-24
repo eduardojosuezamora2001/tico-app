@@ -1,9 +1,8 @@
-import { Hono } from 'hono'
-import { serve } from '@hono/node-server'
-const app = new Hono().basePath('/api')
+import { serve } from "@hono/node-server"
 
-app.get('/', (c) => c.text('¡Hola desde Hono y Turborepo!'))
-serve(app, (info) => {
-    console.log(`Listening on http://localhost:${info.port}`) // Listening on http://localhost:3000
-  })
-export { app }
+import { app } from "./app.js"
+import { env } from "./config/env.js"
+
+serve({ fetch: app.fetch, port: env.PORT }, (info) => {
+  console.log(`API escuchando en http://localhost:${info.port}/api`)
+})

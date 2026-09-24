@@ -1,19 +1,32 @@
 {
   "name": "api",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.1",
+  "description": "Plaza de Comercios Digital - API (Hono + Node.js)",
+  "type": "module",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --watch src/index.ts",
-    "start": "node src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "format": "prettier --write \"src/**/*.ts\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.33.4",
   "dependencies": {
     "@hono/node-server": "^2.1.1",
-    "hono": "^4.13.9"
+    "@hono/zod-validator": "^0.9.1",
+    "@supabase/supabase-js": "^2.117.1",
+    "@workspace/shared": "workspace:*",
+    "dotenv": "^18.0.3",
+    "hono": "^4.13.9",
+    "redis": "^6.2.1",
+    "socket.io": "^4.8.3",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "tsx": "^4.23.15",
+    "typescript": "~6",
+    "vitest": "^4"
   }
 }
