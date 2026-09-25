@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, useParams } from "react-router"
 import type { Business, BusinessEvent, GalleryImage, MenuItem, Product, Service } from "@workspace/shared"
+import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
 import { colones, OrderBoard, type Offer } from "@/components/business-cart"
+import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
 import { api } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth-store"
@@ -109,7 +111,7 @@ export function BusinessPage() {
                   <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-background bg-card text-2xl font-semibold shadow-[0_12px_30px_-16px_oklch(0.2_0.04_275)]">
                     {business.logoUrl ? <img src={business.logoUrl} alt="" className="size-full object-cover" /> : business.name.slice(0, 1)}
                   </div>
-                  <div className="pb-1">
+                  <div className="min-w-0 pb-1">
                     <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{business.name}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {business.category}
@@ -142,17 +144,11 @@ export function BusinessPage() {
                 </div>
               </div>
 
-              <Tabs defaultValue="productos" className="mt-2">
-                <div className="overflow-x-auto border-b border-border">
+              <Tabs defaultValue="oferta" className="mt-2">
+                <ScrollArea className="border-b border-border" viewportClassName="h-auto">
                   <TabsList variant="line" className="h-11 w-max bg-transparent">
-                    <TabsTrigger value="productos" className="data-active:text-primary after:bg-primary">
-                      Productos {products.length}
-                    </TabsTrigger>
-                    <TabsTrigger value="servicios" className="data-active:text-primary after:bg-primary">
-                      Servicios {services.length}
-                    </TabsTrigger>
-                    <TabsTrigger value="menu" className="data-active:text-primary after:bg-primary">
-                      Menú {menu.length}
+                    <TabsTrigger value="oferta" className="data-active:text-primary after:bg-primary">
+                      Oferta {products.length + services.length + menu.length}
                     </TabsTrigger>
                     <TabsTrigger value="fotos" className="data-active:text-primary after:bg-primary">
                       Fotos {gallery.length}
@@ -164,10 +160,10 @@ export function BusinessPage() {
                       Información
                     </TabsTrigger>
                   </TabsList>
-                </div>
+                </ScrollArea>
 
                 <div className="grid items-start gap-6 py-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-                  <aside className="space-y-4 lg:sticky lg:top-20">
+                  <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
                     <InfoCard title="Datos del comercio" detail={business.id}>
                       <InfoRow label="Ubicación">
                         {business.address ? <p>{business.address}</p> : <p className="text-muted-foreground">Sin dirección publicada.</p>}
@@ -214,14 +210,43 @@ export function BusinessPage() {
                   </aside>
 
                   <div className="min-w-0">
-                    <TabsContent value="productos">
-                      <OrderBoard business={business} offers={productOffers} empty="Este local todavía no publicó productos." heading="Productos" />
-                    </TabsContent>
-                    <TabsContent value="servicios">
-                      <ServiceList services={services} />
-                    </TabsContent>
-                    <TabsContent value="menu">
-                      <OrderBoard business={business} offers={menuOffers} empty="Este local todavía no publicó menú." heading="Menú del local" />
+                    <TabsContent value="oferta">
+                      <ListFilter
+                        placeholder="Buscar producto, servicio o plato"
+                        lists={[
+                          {
+                            id: "productos",
+                            label: "Productos",
+                            empty: "Este local todavía no publicó productos.",
+                            items: productOffers,
+                            text: (item) => `${item.name} ${item.description ?? ""}`,
+                            group: (item) => item.category,
+                            render: (items) => (
+                              <OrderBoard business={business} offers={items} empty="" heading="Productos" hideChrome />
+                            ),
+                          },
+                          {
+                            id: "servicios",
+                            label: "Servicios",
+                            empty: "Este local todavía no publicó servicios.",
+                            items: services,
+                            text: (item) => `${item.name} ${item.description ?? ""} ${item.category ?? ""}`,
+                            group: (item) => item.category,
+                            render: (items) => <ServiceList services={items} />,
+                          },
+                          {
+                            id: "menu",
+                            label: "Menú",
+                            empty: "Este local todavía no publicó menú.",
+                            items: menuOffers,
+                            text: (item) => `${item.name} ${item.description ?? ""}`,
+                            group: (item) => item.category,
+                            render: (items) => (
+                              <OrderBoard business={business} offers={items} empty="" heading="Menú" hideChrome />
+                            ),
+                          },
+                        ]}
+                      />
                     </TabsContent>
                     <TabsContent value="fotos">
                       <PhotoGrid gallery={gallery} />
@@ -257,7 +282,7 @@ function InfoCard({ title, detail, children }: { title: string; detail: string; 
           ID {detail}
         </p>
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className="flex flex-col gap-4">{children}</div>
     </section>
   )
 }
@@ -272,9 +297,8 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function ServiceList({ services }: { services: Service[] }) {
-  if (services.length === 0) return <p className="mt-4 text-sm text-muted-foreground">Este local todavía no publicó servicios.</p>
   return (
-    <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+    <ul className="grid gap-3 sm:grid-cols-2">
       {services.map((item) => (
         <li key={item.id} className="rounded-2xl border border-border bg-card p-4">
           {item.category ? <p className="text-xs text-muted-foreground">{item.category}</p> : null}
@@ -306,7 +330,7 @@ function PhotoGrid({ gallery }: { gallery: GalleryImage[] }) {
 function EventList({ events }: { events: BusinessEvent[] }) {
   if (events.length === 0) return <p className="mt-4 text-sm text-muted-foreground">Este local todavía no publicó eventos.</p>
   return (
-    <ul className="mt-4 space-y-3">
+    <ul className="mt-4 flex flex-col gap-3">
       {events.map((item) => (
         <li key={item.id} className="rounded-2xl border border-border bg-card p-4">
           <h3 className="font-medium">{item.title}</h3>

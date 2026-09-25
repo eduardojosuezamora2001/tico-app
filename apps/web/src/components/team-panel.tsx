@@ -3,6 +3,7 @@ import { PERMISSION_DEFINITIONS, type PermissionName, type TeamMember } from "@w
 
 import { api } from "@/lib/api"
 import { Button } from "@workspace/ui/components/button"
+import { ScrollArea } from "@workspace/ui/components/scroll-area"
 
 const roleLabel = { owner: "Dueño", manager: "Encargado", employee: "Empleado" } as const
 
@@ -97,7 +98,7 @@ export function TeamPanel({ businessId }: { businessId: string }) {
           </li>
         ))}
       </ul>
-      <form className="mt-4 space-y-3" onSubmit={(event) => void add(event)}>
+      <form className="mt-4 flex flex-col gap-3" onSubmit={(event) => void add(event)}>
         <input
           required
           type="email"
@@ -114,7 +115,7 @@ export function TeamPanel({ businessId }: { businessId: string }) {
           <option value="employee">Empleado</option>
           <option value="manager">Encargado</option>
         </select>
-        <div className="overflow-x-auto rounded-2xl border border-border">
+        <ScrollArea className="rounded-2xl border border-border">
           <table className="w-full min-w-[40rem] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left">
@@ -147,8 +148,8 @@ export function TeamPanel({ businessId }: { businessId: string }) {
               ))}
             </tbody>
           </table>
-        </div>
-        <div className="overflow-x-auto rounded-2xl border border-border">
+        </ScrollArea>
+        <div className="rounded-2xl border border-border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left">

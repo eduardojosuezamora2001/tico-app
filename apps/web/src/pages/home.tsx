@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react"
-import { parseAsString, useQueryState } from "nuqs"
+import { useEffect, useRef, useState } from "react"
+import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs"
 import { Link } from "react-router"
 
+import { FilterCombobox, ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
 import { api } from "@/lib/api"
 import { Button } from "@workspace/ui/components/button"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 
 const categories = [
   { id: "sodas", label: "Sodas", hint: "Casados y frescos", tint: "bg-orange-500/15 text-orange-700 dark:text-orange-200" },
@@ -16,6 +18,11 @@ const categories = [
 ] as const
 
 const provinces = ["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"] as const
+
+const provinceOptions = [
+  { id: "todos", label: "Todas las provincias" },
+  ...provinces.map((item) => ({ id: item, label: item })),
+]
 
 const provinceHints: Record<string, string[]> = {
   "San José": ["san jose", "san josé", "escazu", "escazú", "desamparados", "curridabat"],
@@ -40,44 +47,69 @@ type BusinessCard = {
 
 export function HomePage() {
   const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""))
-  const [category, setCategory] = useQueryState("category", parseAsString)
+  const [category, setCategory] = useQueryState("category", parseAsArrayOf(parseAsString).withDefault([]))
   const [draft, setDraft] = useState(query)
-  const [province, setProvince] = useState("Todas")
+  const [selectedProvinces, setSelectedProvinces] = useState<string[]>([])
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [items, setItems] = useState<BusinessCard[]>([])
+  const [page, setPage] = useState(0)
+  const [hasNext, setHasNext] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const cursors = useRef<(string | null)[]>([null])
 
   useEffect(() => {
     setDraft(query)
   }, [query])
 
   useEffect(() => {
+    if (draft.trim() === query) return
+    const handle = window.setTimeout(() => {
+      void setQuery(draft.trim() || null)
+    }, 250)
+    return () => window.clearTimeout(handle)
+  }, [draft, query, setQuery])
+
+  const searchParams = {
+    q: query || undefined,
+    category: category.length > 0 ? category.join(",") : undefined,
+    province: selectedProvinces.length > 0 ? selectedProvinces.join(",") : undefined,
+    latitude: coords?.latitude,
+    longitude: coords?.longitude,
+    radiusKm: coords ? 50 : undefined,
+    limit: 6,
+  }
+
+  const filterKey = `${query}|${category.join(",")}|${selectedProvinces.join(",")}|${coords?.latitude ?? ""}|${coords?.longitude ?? ""}`
+  const [seenFilter, setSeenFilter] = useState(filterKey)
+  if (seenFilter !== filterKey) {
+    cursors.current = [null]
+    setSeenFilter(filterKey)
+    setPage(0)
+  }
+
+  useEffect(() => {
+    const cursor = page === 0 ? undefined : cursors.current[page]
+    if (page > 0 && !cursor) return
     const handle = window.setTimeout(() => {
       setLoading(true)
       void api
-        .get<{ data: BusinessCard[] }>("/businesses", {
-          params: {
-            q: query || undefined,
-            category: category ?? undefined,
-            latitude: coords?.latitude,
-            longitude: coords?.longitude,
-            radiusKm: coords ? 50 : undefined,
-          },
+        .get<{ data: BusinessCard[]; nextCursor: string | null }>("/businesses", {
+          params: { ...searchParams, cursor: cursor ?? undefined },
         })
         .then((response) => {
           setItems(response.data.data)
+          setHasNext(Boolean(response.data.nextCursor))
+          if (response.data.nextCursor) cursors.current[page + 1] = response.data.nextCursor
           setError(null)
         })
         .catch(() => setError("No se pudo cargar el directorio."))
         .finally(() => setLoading(false))
     }, 250)
     return () => window.clearTimeout(handle)
-  }, [query, category, coords])
-
-  const visible = items.filter((item) => inProvince(item.address, province))
+  }, [filterKey, page])
 
   function locate() {
     if (!navigator.geolocation) {
@@ -107,7 +139,7 @@ export function HomePage() {
           <p className="mx-auto inline-flex rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             Directorio de comercios locales en Costa Rica
           </p>
-          <h1 className="mx-auto mt-4 max-w-[18ch] text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+          <h1 className="mx-auto mt-4 max-w-[18ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl md:text-5xl">
             Encuentra y apoya <span className="text-primary">negocios locales</span> cerca de ti
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
@@ -122,31 +154,24 @@ export function HomePage() {
             }}
           >
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_14rem]">
-              <label className="relative block">
-                <span className="sr-only">Qué buscás</span>
-                <SearchIcon />
-                <input
+              <InputGroup className="h-11 rounded-xl bg-background">
+                <InputGroupAddon>
+                  <SearchIcon />
+                  <span className="sr-only">Qué buscás</span>
+                </InputGroupAddon>
+                <InputGroupInput
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="¿Qué buscás? (ej. casados, farmacia, ferretería, panadería...)"
-                  className="h-11 w-full rounded-xl border border-border bg-background pr-3 pl-10 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
                 />
-              </label>
-              <label className="block">
-                <span className="sr-only">Provincia</span>
-                <select
-                  value={province}
-                  onChange={(event) => setProvince(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  <option value="Todas">Todas las provincias</option>
-                  {provinces.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              </InputGroup>
+              <FilterCombobox
+                label="Provincia"
+                items={provinceOptions}
+                value={selectedProvinces}
+                emptyLabel="Todas"
+                onChange={setSelectedProvinces}
+              />
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <button type="button" className="text-sm text-primary" onClick={locate}>
@@ -169,13 +194,16 @@ export function HomePage() {
           </div>
           <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {categories.map((item) => {
-              const selected = category === item.label
+              const selected = category.includes(item.label)
               return (
                 <li key={item.id}>
                   <button
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => void setCategory(selected ? null : item.label)}
+                    onClick={() => {
+                      const next = selected ? category.filter((label) => label !== item.label) : [...category, item.label]
+                      void setCategory(next.length > 0 ? next : null)
+                    }}
                     className={`flex w-full flex-col items-center gap-2 rounded-2xl border px-2 py-4 ${
                       selected ? "border-primary bg-accent" : "border-border bg-card"
                     }`}
@@ -183,7 +211,7 @@ export function HomePage() {
                     <span className={`grid size-12 place-items-center rounded-full ${item.tint}`}>
                       <CategoryMark label={item.label} />
                     </span>
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-center text-xs font-medium sm:text-sm">{item.label}</span>
                   </button>
                 </li>
               )
@@ -197,68 +225,56 @@ export function HomePage() {
               <h2 className="text-2xl font-semibold">Negocios cerca de ti</h2>
               <p className="mt-1 text-sm text-muted-foreground">Cada local muestra solo su propia oferta.</p>
             </div>
-            <div className="flex gap-2 overflow-x-auto">
-              <FilterChip active={category === null} onClick={() => void setCategory(null)}>
-                Todos
-              </FilterChip>
-              {categories.slice(0, 4).map((item) => (
-                <FilterChip key={item.id} active={category === item.label} onClick={() => void setCategory(category === item.label ? null : item.label)}>
-                  {item.label}
-                </FilterChip>
-              ))}
-            </div>
           </div>
 
-          {loading ? <p className="mt-6 text-sm text-muted-foreground">Cargando comercios…</p> : null}
           {error ? <p className="mt-6 text-sm text-destructive">{error}</p> : null}
-          {!loading && !error && visible.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              Todavía no hay comercios publicados con ese criterio.
-            </p>
-          ) : (
-            <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {visible.map((item) => {
-                const tint = categories.find((entry) => entry.label === item.category)?.tint
-                const whatsapp = item.whatsappNumber?.replace(/\D/g, "")
-                return (
-                  <li key={item.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_16px_40px_-28px_oklch(0.2_0.04_275)]">
-                    <Link to={`/n/${item.id}`} className="block">
-                      <div className={`relative h-36 ${tint ?? "bg-muted"}`}>
-                        {item.bannerUrl ? <img src={item.bannerUrl} alt="" className="size-full object-cover" /> : null}
-                        <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium">
-                          {item.category}
-                        </span>
-                      </div>
-                      <div className="space-y-1 p-4">
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {item.address ?? "Costa Rica"}
-                          {item.distanceKm !== null ? ` · ${item.distanceKm} km` : ""}
-                        </p>
-                        {item.description ? <p className="line-clamp-2 text-sm">{item.description}</p> : null}
-                      </div>
-                    </Link>
-                    <div className="px-4 pb-4">
-                      {whatsapp ? (
-                        <a
-                          className="inline-flex h-9 items-center rounded-full bg-[#128C7E] px-4 text-sm font-medium text-white hover:bg-[#0f7a6e]"
-                          href={`https://wa.me/${whatsapp}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {actionLabel(item.category)}
-                        </a>
-                      ) : (
-                        <Link className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground" to={`/n/${item.id}`}>
-                          Ver el local
-                        </Link>
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+          <ListFilter
+            placeholder="Buscar por nombre o categoría"
+            listLabel="Categoría"
+            groupLabel="Provincia"
+            activeIds={category.flatMap((label) => {
+              const match = categories.find((item) => item.label === label)
+              return match ? [match.id] : []
+            })}
+            query={draft}
+            group={selectedProvinces}
+            groups={[...provinces]}
+            showCount={false}
+            loading={loading}
+            onActiveChange={(ids) => {
+              const labels = ids.flatMap((id) => {
+                const match = categories.find((item) => item.id === id)
+                return match ? [match.label] : []
+              })
+              void setCategory(labels.length > 0 ? labels : null)
+            }}
+            onQueryChange={setDraft}
+            onGroupChange={setSelectedProvinces}
+            page={page}
+            hasPrevious={page > 0}
+            hasNext={hasNext}
+            onPageChange={setPage}
+            lists={[
+              {
+                id: "todas",
+                label: "Todos",
+                empty: "Todavía no hay comercios publicados con ese criterio.",
+                items,
+                text: () => "",
+                group: () => null,
+                render: (rows) => <BusinessGrid items={rows} />,
+              },
+              ...categories.map((item) => ({
+                id: item.id,
+                label: item.label,
+                empty: "Todavía no hay comercios publicados con ese criterio.",
+                items,
+                text: () => "",
+                group: () => null,
+                render: (rows: BusinessCard[]) => <BusinessGrid items={rows} />,
+              })),
+            ]}
+          />
         </section>
 
         <section className="mt-14">
@@ -267,13 +283,17 @@ export function HomePage() {
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {provinces.map((item) => {
               const count = items.filter((business) => inProvince(business.address, item)).length
-              const selected = province === item
+              const selected = selectedProvinces.includes(item)
               return (
                 <li key={item}>
                   <button
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => setProvince(selected ? "Todas" : item)}
+                    onClick={() =>
+                      setSelectedProvinces(
+                        selected ? selectedProvinces.filter((name) => name !== item) : [...selectedProvinces, item],
+                      )
+                    }
                     className={`w-full rounded-2xl border px-3 py-4 text-left ${selected ? "border-primary bg-accent" : "border-border bg-card"}`}
                   >
                     <span className="block text-sm font-medium">{item}</span>
@@ -324,24 +344,54 @@ function actionLabel(category: string) {
   return "Contactar por WhatsApp"
 }
 
-function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
+function BusinessGrid({ items }: { items: BusinessCard[] }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${
-        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
-      }`}
-    >
-      {children}
-    </button>
+    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((item) => {
+        const tint = categories.find((entry) => entry.label === item.category)?.tint
+        const whatsapp = item.whatsappNumber?.replace(/\D/g, "")
+        return (
+          <li key={item.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_16px_40px_-28px_oklch(0.2_0.04_275)]">
+            <Link to={`/n/${item.id}`} className="block">
+              <div className={`relative h-36 ${tint ?? "bg-muted"}`}>
+                {item.bannerUrl ? <img src={item.bannerUrl} alt="" className="size-full object-cover" /> : null}
+                <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium">{item.category}</span>
+              </div>
+              <div className="space-y-1 p-4">
+                <h3 className="text-lg font-semibold">{item.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {item.address ?? "Costa Rica"}
+                  {item.distanceKm !== null ? ` · ${item.distanceKm} km` : ""}
+                </p>
+                {item.description ? <p className="line-clamp-2 text-sm">{item.description}</p> : null}
+              </div>
+            </Link>
+            <div className="px-4 pb-4">
+              {whatsapp ? (
+                <a
+                  className="inline-flex h-9 items-center rounded-full bg-[#128C7E] px-4 text-sm font-medium text-white hover:bg-[#0f7a6e]"
+                  href={`https://wa.me/${whatsapp}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {actionLabel(item.category)}
+                </a>
+              ) : (
+                <Link className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground" to={`/n/${item.id}`}>
+                  Ver el local
+                </Link>
+              )}
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none text-muted-foreground">
       <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
       <path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
     </svg>

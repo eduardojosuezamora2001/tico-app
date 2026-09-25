@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type { Business, Product } from "@workspace/shared"
+import type { Business, MenuItem, Product, Service } from "@workspace/shared"
 
+import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
 import { TeamPanel } from "@/components/team-panel"
@@ -103,7 +104,7 @@ function CatalogForm({
 
   return (
     <form
-      className="flex gap-2"
+      className="flex flex-col gap-2 sm:flex-row sm:items-center"
       onSubmit={(event) => {
         event.preventDefault()
         void onSubmit(name, price).then(() => {
@@ -134,16 +135,34 @@ function CatalogForm({
   )
 }
 
+function CatalogRows({ rows }: { rows: { id: string; name: string; price: number | null }[] }) {
+  return (
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
+      {rows.map((item) => (
+        <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
+          <span className="min-w-0 truncate">{item.name}</span>
+          <span className="shrink-0 text-sm text-muted-foreground">{item.price === null ? "Sin precio" : `₡${item.price}`}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function MerchantBusinessPage() {
   const { id = "" } = useParams()
   const [business, setBusiness] = useState<Business | null>(null)
   const [products, setProducts] = useState<Product[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [menu, setMenu] = useState<MenuItem[]>([])
+  const [listIds, setListIds] = useState<string[]>(["productos"])
   const [error, setError] = useState<string | null>(null)
 
   function load() {
     void api.get<{ data: Product[] }>(`/businesses/${id}/products`, { params: { includeUnavailable: true } }).then((response) => {
       setProducts(response.data.data)
     })
+    void api.get<{ data: Service[] }>(`/businesses/${id}/services`).then((response) => setServices(response.data.data)).catch(() => setServices([]))
+    void api.get<{ data: MenuItem[] }>(`/businesses/${id}/menu`).then((response) => setMenu(response.data.data)).catch(() => setMenu([]))
   }
 
   useEffect(() => {
@@ -185,54 +204,88 @@ export function MerchantBusinessPage() {
               Activar menú
             </Button>
           </div>
-          <div className="mt-4 space-y-3">
-            <CatalogForm
-              placeholder="Producto"
-              submitLabel="Agregar producto"
-              onSubmit={async (name, price) => {
-                try {
-                  await api.post(`/businesses/${id}/products`, { name, price: Number(price) })
-                  setError(null)
-                  load()
-                } catch {
-                  setError("Activa el módulo de productos antes de publicar, o revisa el precio.")
-                }
-              }}
-            />
-            <CatalogForm
-              placeholder="Servicio"
-              submitLabel="Agregar servicio"
-              onSubmit={async (name, price) => {
-                try {
-                  await api.post(`/businesses/${id}/services`, { name, price: Number(price) })
-                  setError(null)
-                } catch {
-                  setError("Activa el módulo de servicios antes de publicar.")
-                }
-              }}
-            />
-            <CatalogForm
-              placeholder="Plato del menú"
-              submitLabel="Agregar al menú"
-              onSubmit={async (name, price) => {
-                try {
-                  await api.post(`/businesses/${id}/menu`, { name, price: Number(price) })
-                  setError(null)
-                } catch {
-                  setError("Activa el módulo de menú antes de publicar.")
-                }
-              }}
-            />
+          <div className="mt-4">
+            {listIds.length === 0 || listIds.includes("productos") ? (
+              <CatalogForm
+                placeholder="Producto"
+                submitLabel="Agregar producto"
+                onSubmit={async (name, price) => {
+                  try {
+                    await api.post(`/businesses/${id}/products`, { name, price: Number(price) })
+                    setError(null)
+                    load()
+                  } catch {
+                    setError("Activa el módulo de productos antes de publicar, o revisa el precio.")
+                  }
+                }}
+              />
+            ) : null}
+            {listIds.length === 0 || listIds.includes("servicios") ? (
+              <CatalogForm
+                placeholder="Servicio"
+                submitLabel="Agregar servicio"
+                onSubmit={async (name, price) => {
+                  try {
+                    await api.post(`/businesses/${id}/services`, { name, price: Number(price) })
+                    setError(null)
+                    load()
+                  } catch {
+                    setError("Activa el módulo de servicios antes de publicar.")
+                  }
+                }}
+              />
+            ) : null}
+            {listIds.length === 0 || listIds.includes("menu") ? (
+              <CatalogForm
+                placeholder="Plato del menú"
+                submitLabel="Agregar al menú"
+                onSubmit={async (name, price) => {
+                  try {
+                    await api.post(`/businesses/${id}/menu`, { name, price: Number(price) })
+                    setError(null)
+                    load()
+                  } catch {
+                    setError("Activa el módulo de menú antes de publicar.")
+                  }
+                }}
+              />
+            ) : null}
           </div>
           {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-          <ul className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
-            {products.map((item) => (
-              <li key={item.id} className="flex items-center justify-between px-4 py-3">
-                <span>{item.name}</span>
-                <span className="text-sm text-muted-foreground">₡{item.price}</span>
-              </li>
-            ))}
-          </ul>
+          <ListFilter
+            activeIds={listIds}
+            onActiveChange={setListIds}
+            placeholder="Buscar en el catálogo"
+            lists={[
+              {
+                id: "productos",
+                label: "Productos",
+                empty: "Todavía no hay productos.",
+                items: products,
+                text: (item) => item.name,
+                group: (item) => item.category,
+                render: (items) => <CatalogRows rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))} />,
+              },
+              {
+                id: "servicios",
+                label: "Servicios",
+                empty: "Todavía no hay servicios.",
+                items: services,
+                text: (item) => item.name,
+                group: (item) => item.category,
+                render: (items) => <CatalogRows rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))} />,
+              },
+              {
+                id: "menu",
+                label: "Menú",
+                empty: "Todavía no hay platos.",
+                items: menu,
+                text: (item) => item.name,
+                group: (item) => item.section,
+                render: (items) => <CatalogRows rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))} />,
+              },
+            ]}
+          />
         </section>
 
         {id ? <TeamPanel businessId={id} /> : null}

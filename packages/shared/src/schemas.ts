@@ -130,12 +130,13 @@ export const UpdateBusinessSchema = CreateBusinessSchema.partial().extend({
 
 export const SearchBusinessesSchema = z.object({
   q: z.string().trim().max(120).optional(),
-  category: z.string().trim().max(60).optional(),
+  categories: z.array(z.string().trim().min(1).max(60)).max(12).optional(),
   latitude: latitudeSchema.optional(),
   longitude: longitudeSchema.optional(),
   radiusKm: z.number().positive().max(MAX_SEARCH_RADIUS_KM).default(10),
   limit: z.number().int().min(1).max(50).default(20),
-  cursor: z.string().optional(),
+  cursor: z.string().max(400).optional(),
+  provinces: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
 })
 
 export const BusinessModuleSchema = z.object({

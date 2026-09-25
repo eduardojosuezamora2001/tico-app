@@ -15,6 +15,26 @@ import { supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
 import type { AppEnv } from "../types.js"
 
+const cursorSeparator = "\u001f"
+
+function csv(value: string | undefined, itemMax: number, countMax: number) {
+  if (!value) return undefined
+  const items = [...new Set(value.split(",").map((part) => part.trim()).filter(Boolean))]
+    .slice(0, countMax)
+    .map((part) => part.slice(0, itemMax))
+  return items.length > 0 ? items : undefined
+}
+
+function decodeCursor(cursor: string | undefined) {
+  if (!cursor) return { distance: null, name: null, id: null }
+  const [distanceRaw, name, id] = cursor.split(cursorSeparator)
+  if (!name || !z.uuid().safeParse(id).success) return null
+  if (distanceRaw === "") return { distance: null, name, id: id ?? null }
+  const distance = Number(distanceRaw)
+  if (!Number.isFinite(distance)) return null
+  return { distance, name, id: id ?? null }
+}
+
 const uploadSchema = z.object({
   kind: z.enum(["logo", "banner", "product", "service", "menu", "gallery"]),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
@@ -25,28 +45,44 @@ export const businessRoutes = new Hono<AppEnv>()
 businessRoutes.get("/", async (c) => {
   const parsed = SearchBusinessesSchema.safeParse({
     q: c.req.query("q") || undefined,
-    category: c.req.query("category") || undefined,
+    categories: csv(c.req.query("category"), 60, 12),
     latitude: c.req.query("latitude") ? Number(c.req.query("latitude")) : undefined,
     longitude: c.req.query("longitude") ? Number(c.req.query("longitude")) : undefined,
     radiusKm: c.req.query("radiusKm") ? Number(c.req.query("radiusKm")) : undefined,
     limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
     cursor: c.req.query("cursor") || undefined,
+    provinces: csv(c.req.query("province"), 40, 8),
   })
   if (!parsed.success) return validationError(c, parsed.error)
 
+  const cursor = decodeCursor(parsed.data.cursor)
+  if (cursor === null) return fail(c, 400, "VALIDATION", "Cursor inválido")
+
   const { data, error } = await supabaseAdmin.rpc("search_businesses", {
     q: parsed.data.q ?? null,
-    category: parsed.data.category ?? null,
+    categories: parsed.data.categories ?? null,
     lat: parsed.data.latitude ?? null,
     lng: parsed.data.longitude ?? null,
     radius_km: parsed.data.radiusKm,
-    lim: parsed.data.limit,
-    cursor: null,
+    lim: parsed.data.limit + 1,
+    cursor_distance: cursor.distance,
+    cursor_name: cursor.name,
+    cursor_id: cursor.id,
+    provinces: parsed.data.provinces ?? null,
   })
   if (error) return dbFail(c, error)
 
+  const rows = data ?? []
+  const page = rows.slice(0, parsed.data.limit)
+  const last = page.at(-1)
+  const nextCursor =
+    rows.length > parsed.data.limit && last
+      ? [last.distance_m ?? "", last.name, last.id].join("\u001f")
+      : null
+
   return c.json({
-    data: (data ?? []).map((row) => ({
+    nextCursor,
+    data: page.map((row) => ({
       id: row.id,
       slug: row.slug,
       name: row.name,
