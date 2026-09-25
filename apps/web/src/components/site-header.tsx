@@ -1,9 +1,22 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router"
 
+import { Menu01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+
 import { useTheme } from "@/components/theme-provider"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@workspace/ui/components/button"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@workspace/ui/components/sheet"
 
 const links = [
   { to: "/", label: "Inicio", icon: HomeIcon, match: (path: string) => path === "/" },
@@ -47,16 +60,17 @@ export function SiteHeader() {
         </Link>
 
         <form onSubmit={search} className="min-w-0 flex-1 sm:max-w-md">
-          <label className="relative block">
-            <span className="sr-only">Buscar comercios</span>
-            <SearchIcon />
-            <input
+          <InputGroup className="h-10 rounded-full">
+            <InputGroupAddon>
+              <SearchIcon />
+              <span className="sr-only">Buscar comercios</span>
+            </InputGroupAddon>
+            <InputGroupInput
               value={term}
               onChange={(event) => setTerm(event.target.value)}
               placeholder="Buscar sodas, comida típica, comercios..."
-              className="h-10 w-full rounded-full border border-border bg-card pr-4 pl-10 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             />
-          </label>
+          </InputGroup>
         </form>
 
         <nav className="hidden items-center gap-1 lg:flex">
@@ -79,7 +93,50 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Sheet>
+          <SheetTrigger
+            className="ml-auto md:ml-0 md:hidden"
+            render={<Button variant="ghost" size="icon" aria-label="Abrir menú" />}
+          >
+            <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
+          </SheetTrigger>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>TicoApp</SheetTitle>
+              <SheetDescription>Directorio de comercios locales</SheetDescription>
+            </SheetHeader>
+            <nav className="flex flex-col gap-1 px-4">
+              {links.map((item) => {
+                const href = item.to === "/mensajes" && !signedIn ? "/login" : item.to
+                return (
+                  <Button key={item.to} variant="ghost" className="justify-start" render={<Link to={href} />}>
+                    <item.icon />
+                    {item.label}
+                  </Button>
+                )
+              })}
+            </nav>
+            <SheetFooter>
+              <Button variant="outline" onClick={() => setTheme(isDark ? "light" : "dark")}>
+                {isDark ? "Usar tema claro" : "Usar tema oscuro"}
+              </Button>
+              {signedIn ? (
+                <>
+                  <Button variant="ghost" render={<Link to="/cuenta" />}>
+                    Mi cuenta
+                  </Button>
+                  <Button variant="ghost" onClick={() => void signOut()}>
+                    Salir
+                  </Button>
+                </>
+              ) : (
+                <Button render={<Link to="/login" />}>Entrar</Button>
+              )}
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
           <Link
             to={signedIn ? "/mensajes" : "/login"}
             aria-label="Mensajes"
@@ -140,11 +197,11 @@ export function SiteHeader() {
             </>
           )}
 
-          <Button className="rounded-full px-4" render={<Link to={signedIn ? "/mi-negocio/nuevo" : "/registro"} />}>
-            <span className="sm:hidden">Publicar</span>
-            <span className="hidden sm:inline">Publicar negocio</span>
-          </Button>
         </div>
+        <Button className="shrink-0 rounded-full px-3 sm:px-4" render={<Link to={signedIn ? "/mi-negocio/nuevo" : "/registro"} />}>
+          <span className="sm:hidden">Publicar</span>
+          <span className="hidden sm:inline">Publicar negocio</span>
+        </Button>
       </div>
     </header>
   )
@@ -158,7 +215,7 @@ function initials(name: string | null, email: string | undefined) {
 
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none text-muted-foreground">
       <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
       <path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
     </svg>

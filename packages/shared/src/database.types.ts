@@ -847,12 +847,15 @@ export type Database = {
       search_businesses: {
         Args: {
           q?: string | null
-          category?: string | null
+          categories?: string[] | null
           lat?: number | null
           lng?: number | null
           radius_km?: number | null
           lim?: number | null
-          cursor?: string | null
+          cursor_distance?: number | null
+          cursor_name?: string | null
+          cursor_id?: string | null
+          provinces?: string[] | null
         }
         Returns: {
           id: string

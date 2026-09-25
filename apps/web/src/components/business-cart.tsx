@@ -2,6 +2,10 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router"
 import type { Business } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
+import { Empty, EmptyDescription, EmptyHeader } from "@workspace/ui/components/empty"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
+
+import { FilterCombobox } from "@/components/list-filter"
 
 import { api } from "@/lib/api"
 import { cartMessage, cartTotal, useCartStore, type CartLine } from "@/stores/cart-store"
@@ -32,11 +36,13 @@ export function OrderBoard({
   offers,
   empty,
   heading,
+  hideChrome = false,
 }: {
   business: Business
   offers: Offer[]
   empty: string
   heading: string
+  hideChrome?: boolean
 }) {
   const userId = useAuthStore((s) => s.session?.user.id)
   const canOrder = business.ownerId !== userId
@@ -44,63 +50,71 @@ export function OrderBoard({
   const add = useCartStore((s) => s.add)
   const setQuantity = useCartStore((s) => s.setQuantity)
   const [query, setQuery] = useState("")
-  const [category, setCategory] = useState<string | null>(null)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   const categories = useMemo(
     () => [...new Set(offers.map((item) => item.category).filter((item): item is string => Boolean(item)))],
     [offers],
   )
 
-  const visible = offers.filter((item) => {
-    const haystack = `${item.name} ${item.description ?? ""}`.toLocaleLowerCase("es")
-    const matchesQuery = haystack.includes(query.trim().toLocaleLowerCase("es"))
-    const matchesCategory = category === null || item.category === category
-    return matchesQuery && matchesCategory
-  })
+  const visible = hideChrome
+    ? offers
+    : offers.filter((item) => {
+        const haystack = `${item.name} ${item.description ?? ""}`.toLocaleLowerCase("es")
+        const matchesQuery = haystack.includes(query.trim().toLocaleLowerCase("es"))
+        const matchesCategory =
+          selectedCategories.length === 0 || (item.category !== null && selectedCategories.includes(item.category))
+        return matchesQuery && matchesCategory
+      })
 
   if (offers.length === 0) {
     return <p className="mt-4 text-sm text-muted-foreground">{empty}</p>
   }
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="relative min-w-0 flex-1">
-          <span className="sr-only">Buscar en {heading}</span>
-          <SearchIcon />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Busca platillo, fresco, casado o producto"
-            className="h-11 w-full rounded-full border border-border bg-card pr-4 pl-10 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
-        </label>
-      </div>
-
-      {categories.length > 0 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          <FilterChip active={category === null} onClick={() => setCategory(null)}>
-            Todos
-          </FilterChip>
-          {categories.map((item) => (
-            <FilterChip key={item} active={category === item} onClick={() => setCategory(item)}>
-              {item}
-            </FilterChip>
-          ))}
+    <div className="mt-4 flex flex-col gap-4">
+      {hideChrome ? null : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <InputGroup className="h-11 min-w-0 flex-1 rounded-full">
+            <InputGroupAddon>
+              <SearchIcon />
+              <span className="sr-only">Buscar en {heading}</span>
+            </InputGroupAddon>
+            <InputGroupInput
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Busca platillo, fresco, casado o producto"
+            />
+          </InputGroup>
+          {categories.length > 0 ? (
+            <div className="min-w-0 sm:w-72 sm:shrink-0">
+              <FilterCombobox
+                label="Categoría"
+                items={[{ id: "todas", label: "Todos" }, ...categories.map((item) => ({ id: item, label: item }))]}
+                value={selectedCategories}
+                clearId="todas"
+                onChange={setSelectedCategories}
+              />
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      )}
 
       {canOrder ? <OrderBar business={business} lines={lines} /> : null}
 
+      {hideChrome ? null : (
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-lg font-semibold">{heading}</h2>
         <p className="text-xs text-muted-foreground">Precios de este local</p>
       </div>
+      )}
 
       {visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          Nada coincide con esa búsqueda.
-        </p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyDescription>Nada coincide con esa búsqueda.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {visible.map((offer) => {
@@ -235,24 +249,9 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
   )
 }
 
-function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${
-        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
-
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none text-muted-foreground">
       <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
       <path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
     </svg>

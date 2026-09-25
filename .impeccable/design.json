@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-25T16:40:00-06:00",
+  "title": "Design System: TicoApp",
+  "extensions": {
+    "colorMeta": {
+      "violet-night": {
+        "role": "primary",
+        "displayName": "Violeta de noche",
+        "canonical": "oklch(0.55 0.22 285)",
+        "tonalRamp": [
+          "oklch(0.22 0.08 285)",
+          "oklch(0.32 0.12 285)",
+          "oklch(0.42 0.16 285)",
+          "oklch(0.55 0.22 285)",
+          "oklch(0.62 0.2 285)",
+          "oklch(0.74 0.12 285)",
+          "oklch(0.86 0.06 285)",
+          "oklch(0.95 0.03 285)"
+        ]
+      },
+      "whatsapp": {
+        "role": "secondary",
+        "displayName": "Verde de WhatsApp",
+        "canonical": "#128C7E",
+        "tonalRamp": [
+          "oklch(0.28 0.05 175)",
+          "oklch(0.36 0.07 175)",
+          "oklch(0.44 0.08 175)",
+          "oklch(0.52 0.09 175)",
+          "oklch(0.6 0.09 175)",
+          "oklch(0.72 0.07 175)",
+          "oklch(0.84 0.04 175)",
+          "oklch(0.94 0.02 175)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Papel",
+        "canonical": "oklch(0.985 0.006 280)",
+        "tonalRamp": [
+          "oklch(0.18 0.03 275)",
+          "oklch(0.23 0.035 275)",
+          "oklch(0.32 0.03 275)",
+          "oklch(0.48 0.03 285)",
+          "oklch(0.75 0.02 280)",
+          "oklch(0.91 0.015 285)",
+          "oklch(0.96 0.01 285)",
+          "oklch(0.985 0.006 280)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Título de la plaza." },
+      "body": { "displayName": "Body", "purpose": "Descripciones de un local." }
+    },
+    "shadows": [
+      {
+        "name": "puesto",
+        "value": "0 16px 40px -28px oklch(0.2 0.04 275)",
+        "purpose": "Asienta fichas y el buscador."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Entradas cortas de un solo momento."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de la plaza.",
+      "html": "<button class=\"ds-btn-primary\">Explorar ofertas</button>",
+      "css": ".ds-btn-primary { background: oklch(0.55 0.22 285); color: oklch(0.99 0.005 280); height: 2.25rem; padding: 0 1rem; border: none; border-radius: 999px; font: 500 0.875rem/1 Inter, sans-serif; } .ds-btn-primary:hover { background: oklch(0.5 0.22 285); } .ds-btn-primary:focus-visible { outline: 3px solid oklch(0.55 0.22 285 / 0.45); outline-offset: 2px; }"
+    },
+    {
+      "name": "WhatsApp Button",
+      "kind": "button",
+      "refersTo": "button-whatsapp",
+      "description": "Escribirle a ese negocio.",
+      "html": "<button class=\"ds-btn-wa\">Pedir por WhatsApp</button>",
+      "css": ".ds-btn-wa { background: #128C7E; color: #fff; height: 2.5rem; padding: 0 1rem; border: none; border-radius: 999px; font: 500 0.875rem/1 Inter, sans-serif; } .ds-btn-wa:hover { background: #0f7a6e; } .ds-btn-wa:focus-visible { outline: 3px solid #128C7E99; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Búsqueda de comercios.",
+      "html": "<label class=\"ds-search\"><input class=\"ds-input\" placeholder=\"Buscar sodas, comida típica, comercios...\" /></label>",
+      "css": ".ds-input { width: 16rem; height: 2.5rem; padding: 0 1rem; border: 1px solid oklch(0.91 0.015 285); border-radius: 999px; background: #fff; color: oklch(0.28 0.04 285); font: 400 0.875rem/1 Inter, sans-serif; } .ds-input:focus-visible { outline: 3px solid oklch(0.55 0.22 285 / 0.45); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Filtro activo de categoría.",
+      "html": "<button class=\"ds-chip\">Farmacia</button>",
+      "css": ".ds-chip { background: oklch(0.55 0.22 285); color: oklch(0.99 0.005 280); border: 1px solid transparent; border-radius: 999px; padding: 0.375rem 0.75rem; font: 500 0.875rem/1 Inter, sans-serif; } .ds-chip:focus-visible { outline: 3px solid oklch(0.55 0.22 285 / 0.45); }"
+    },
+    {
+      "name": "Stall card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Ficha de un comercio.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-kicker\">Farmacia</p><h3 class=\"ds-title\">Farmacia Central</h3><p class=\"ds-meta\">Calle 2, San José</p></article>",
+      "css": ".ds-card { background: #fff; color: oklch(0.28 0.04 285); border: 1px solid oklch(0.91 0.015 285); border-radius: 1rem; padding: 1rem; box-shadow: 0 16px 40px -28px oklch(0.2 0.04 275); font-family: Inter, sans-serif; } .ds-kicker { margin: 0; font-size: 0.75rem; color: oklch(0.48 0.03 285); } .ds-title { margin: 0.25rem 0 0; font-size: 1.125rem; } .ds-meta { margin: 0.25rem 0 0; font-size: 0.875rem; color: oklch(0.48 0.03 285); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La plaza del barrio",
+    "overview": "TicoApp es una plaza, no un almacén y no un marketplace inflado. Cada comercio tiene su puesto. El visitante recorre, entra a un local y ve solo la oferta de ese local. La voz es de feria: invita, nombra el oficio y empuja a escribir o a pedir, en español de Costa Rica.",
+    "keyCharacteristics": [
+      "Un local, un puesto. Nunca la oferta de otro al lado.",
+      "Violeta de noche solo en la acción principal, el filtro activo y el enlace.",
+      "Verde de WhatsApp solo para escribirle a ese negocio.",
+      "Capas tonales más que sombras duras.",
+      "Píldoras en botones, filtros y búsqueda.",
+      "Claro y oscuro comparten la misma estructura."
+    ],
+    "rules": [
+      { "name": "The One Stall Rule", "body": "La violeta marca una acción o un puesto activo. No tiñe fondos enteros ni se degrada en el texto.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "No se introduce otra familia para verse más local. El español y los nombres de los oficios hacen ese trabajo.", "section": "typography" },
+      { "name": "The Layer Rule", "body": "Si el borde ya separa la ficha, no se le suma otra sombra más oscura. La sombra solo asienta.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do tratar cada comercio como un puesto: su nombre, su dirección, su WhatsApp, su catálogo.",
+      "Do usar la violeta de noche para la acción principal y el filtro activo.",
+      "Do mantener claro y oscuro con la misma estructura.",
+      "Do escribir en español de Costa Rica, con invitación de feria y sin inflar la oferta."
+    ],
+    "donts": [
+      "Don't usar estética de bodega, almacén o industrial.",
+      "Don't mostrar estrellas, seguidores, abierto ahora o conteos que el negocio no publicó.",
+      "Don't comparar precios entre locales.",
+      "Don't degradar el título ni inventar una segunda familia tipográfica.",
+      "Don't usar el verde de WhatsApp como color de marca."
+    ]
+  }
+}
