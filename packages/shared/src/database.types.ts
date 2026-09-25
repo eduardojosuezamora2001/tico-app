@@ -247,6 +247,38 @@ export type Database = {
           },
         ]
       }
+      business_gallery: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          image_url: string
+          sort_order: number
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          sort_order?: number
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_gallery_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_users: {
         Row: {
           business_id: string
@@ -310,6 +342,7 @@ export type Database = {
           name: string
           owner_id: string
           phone: string | null
+          slug: string
           updated_at: string
           website: string | null
           whatsapp_number: string | null
@@ -331,6 +364,7 @@ export type Database = {
           name: string
           owner_id: string
           phone?: string | null
+          slug?: string
           updated_at?: string
           website?: string | null
           whatsapp_number?: string | null
@@ -352,6 +386,7 @@ export type Database = {
           name?: string
           owner_id?: string
           phone?: string | null
+          slug?: string
           updated_at?: string
           website?: string | null
           whatsapp_number?: string | null
@@ -809,7 +844,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_businesses: {
+        Args: {
+          q?: string | null
+          category?: string | null
+          lat?: number | null
+          lng?: number | null
+          radius_km?: number | null
+          lim?: number | null
+          cursor?: string | null
+        }
+        Returns: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          category: string
+          address: string | null
+          whatsapp_number: string | null
+          logo_url: string | null
+          banner_url: string | null
+          latitude: number | null
+          longitude: number | null
+          distance_m: number | null
+        }[]
+      }
+      list_my_conversations: {
+        Args: Record<string, never>
+        Returns: {
+          business_id: string
+          business_name: string
+          business_slug: string
+          peer_id: string
+          peer_name: string | null
+          last_text: string
+          last_at: string
+          unread_count: number
+        }[]
+      }
+      purge_expired_messages: {
+        Args: Record<string, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

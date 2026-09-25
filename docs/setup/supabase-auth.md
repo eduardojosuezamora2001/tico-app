@@ -56,29 +56,34 @@ Dashboard > Authentication > URL Configuration:
 
 `supabase/config.toml` ya tiene estos valores para el stack local.
 
-## 3. Google OAuth (accion manual, requiere credenciales)
+## 3. Sign in with Google
 
-1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials) crea un
-   **OAuth 2.0 Client ID** de tipo *Web application*.
-2. Authorized JavaScript origins: `http://localhost:5173` y el dominio de produccion.
-3. Authorized redirect URIs:
+Sigue [Sign in with Google](https://supabase.com/docs/guides/auth/social-login/auth-google).
+El cliente es una SPA con PKCE (`flowType: "pkce"` en `apps/web/src/lib/supabase.ts`).
+
+En Google Auth Platform:
+
+1. Scopes: `openid` (manual), `.../auth/userinfo.email` y `.../auth/userinfo.profile`.
+2. Cliente OAuth de tipo **Web application**.
+3. Authorized JavaScript origins: `http://localhost:5173` (y el dominio de produccion).
+4. Authorized redirect URI:
    `https://ceafdnvkfziidtgxflyw.supabase.co/auth/v1/callback`
-4. Dashboard de Supabase > Authentication > Providers > Google: pega **Client ID** y
-   **Client Secret**, activa el provider.
-5. Para el stack local, exporta `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` y
-   `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` y pon `enabled = true` en
-   `[auth.external.google]` de `supabase/config.toml`.
+   (local: `http://127.0.0.1:54321/auth/v1/callback`).
 
-Desde el frontend:
+En Supabase Dashboard > Authentication > Providers > Google: Client ID, Client Secret y el provider activo.
+Esa misma URL de callback debe estar en la lista de redirect del proyecto, y `http://localhost:5173/auth/callback` en Additional Redirect URLs.
 
-```ts
-await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: { redirectTo: `${window.location.origin}/` },
-})
+Para el stack local, en `supabase/config.toml`:
+
+```toml
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
+skip_nonce_check = false
 ```
 
-El trigger `handle_new_user` toma `name` y `picture` del perfil de Google.
+El boton llama `signInWithOAuth` con `redirectTo` en `/auth/callback`. Esa pagina cambia el `code` por la sesion con `exchangeCodeForSession`. El trigger `handle_new_user` copia `name` y `picture` de Google. El Client ID y el secret no van en el frontend.
 
 ## 4. Verificacion
 

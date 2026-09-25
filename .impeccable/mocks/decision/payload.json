@@ -1,0 +1,120 @@
+{
+  "title": "Elige el mundo visual de TicoApp",
+  "question": "La tirada asigno la guia de barrio. Quedate con ella, toma una alternativa, o vuelve a tirar.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Guia de barrio",
+      "kicker": "THE ROLL",
+      "lineage": "guia impresa del barrio, paginas con nombre y telefono",
+      "thesis": "Recorres una lista densa de comercios y, al entrar, la pagina es de un solo negocio.",
+      "palette": ["#e7e1d1", "#1a1a1a", "#c23b22", "#8a8478"],
+      "materials": ["papel de periodico", "tinta", "numero marcado en rojo"],
+      "viewport": "Una columna de nombres, categoria y distancia. Sin filtro previo. El numero de WhatsApp es la unica marca de color.",
+      "risk": "Puede leerse como un directorio viejo si la lista no se siente caminable.",
+      "raised": [
+        { "from": "blue-note", "raise": "Al abrir un negocio, un solo campo plano y una sola imagen: ningun precio de otro local en el mismo marco." },
+        { "from": "nixie", "raise": "Cada fila trae puestos fijos: nombre, categoria, distancia. Nada mas." },
+        { "from": "ikebana", "raise": "La pagina del negocio deja vacio cargado; no se rellena con otros comercios." },
+        { "from": "shader", "raise": "El primer vistazo es quieto y legible. El movimiento no es requisito para ver un negocio." },
+        { "from": "screenprint", "raise": "Un negocio es una pasada de tinta. Nunca se sobreimprime con la oferta de otro." }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.png"
+    },
+    {
+      "id": "model-pick",
+      "label": "Feria de toldos",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "feria del agricultor, una fila de toldos",
+      "thesis": "Caminas una fila de puestos y te metes bajo un toldo. Ahi solo existe ese comercio.",
+      "palette": ["#1f6b4a", "#f4e7c5", "#d64532", "#f7f3ea"],
+      "materials": ["lona", "madera", "pizarron"],
+      "viewport": "Una fila horizontal de toldos con el nombre pintado. Entrar ocupa toda la pantalla con ese puesto.",
+      "risk": "Es la direccion en la que cae casi cualquier app de comercios locales.",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-stockroom",
+      "label": "Bodega con etiquetas",
+      "verdict": "competitive",
+      "lineage": "ropa industrial, palabras entre comillas y rayas de peligro",
+      "thesis": "Cada zona dice en voz alta lo que es, y WhatsApp queda etiquetado como la accion.",
+      "palette": ["#f4f4f4", "#111111", "#ff5a00"],
+      "materials": ["algodon", "nylon", "cincho naranja"],
+      "viewport": "Placas con el nombre del comercio entre comillas. La raya diagonal cruza lo que no esta activo.",
+      "case": "La accion de WhatsApp queda imposible de perder. El publico que recorre el barrio no se reconoce en una bodega de moda.",
+      "risk": "Se siente como ropa si las comillas y la raya no organizan la tarea.",
+      "comp": ".impeccable/mocks/decision/challenger-stockroom.png",
+      "hero": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-industrial-quote-grammar-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-industrial-quote-grammar.webp"
+    },
+    {
+      "id": "challenger-sleeve",
+      "label": "Portada de sesion",
+      "verdict": "declined",
+      "lineage": "portada de jazz, foto cortada y un campo de color plano",
+      "palette": ["#e4572e", "#141414", "#f2efe9"],
+      "materials": ["fotografia duotono", "color plano"],
+      "case": "Quien busca una soda no se reconoce en una portada de jazz. La claridad de recorrer varios comercios se pierde.",
+      "kept": "Un negocio abierto ocupa el marco entero.",
+      "hero": "https://impeccable.style/worlds/cards/posters-covers-sleeves-blue-note-session-sleeve-hero.webp"
+    },
+    {
+      "id": "challenger-print",
+      "label": "Procesion serigrafiada",
+      "verdict": "declined",
+      "lineage": "serigrafia sobre papel de morera, tintas que se montan",
+      "palette": ["#f4efe6", "#e24b3b", "#f0a202", "#1c7c8c"],
+      "materials": ["papel translucido", "tinta"],
+      "case": "Superponer comercios contradice la regla de no comparar. El publico no lee TicoApp como un festival impreso.",
+      "kept": "Una pasada de tinta es un solo negocio.",
+      "hero": "https://impeccable.style/worlds/cards/ink-pigment-printmaking-screenprint-transparent-overlap-hero.webp"
+    },
+    {
+      "id": "challenger-shader",
+      "label": "Portal shader",
+      "verdict": "declined",
+      "lineage": "escena WebGL a pantalla completa",
+      "palette": ["#0c1220", "#f2c14e"],
+      "materials": ["shader", "grano"],
+      "case": "Esconde la oferta detras de un efecto y pesa en el celular.",
+      "kept": "El primer vistazo tiene que funcionar quieto.",
+      "hero": "https://impeccable.style/worlds/cards/webgl-shader-portal-hero.webp"
+    },
+    {
+      "id": "challenger-nixie",
+      "label": "Contador de laboratorio",
+      "verdict": "declined",
+      "lineage": "tubos nixie, digitos que cuentan",
+      "palette": ["#1a120c", "#ff6a00", "#c8c2b8"],
+      "materials": ["vidrio", "plasma"],
+      "case": "Convierte el producto en metricas. El panel no debe ser un dashboard.",
+      "kept": "Cada dato tiene un puesto fijo y no hay chrome de mas.",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-nixie-laboratory-counter-hero.webp"
+    },
+    {
+      "id": "challenger-ikebana",
+      "label": "Alcoba con vacio",
+      "verdict": "declined",
+      "lineage": "tokonoma, un arreglo y el vacio activo",
+      "palette": ["#efeae2", "#6e6256", "#2f5d8c", "#3d342c"],
+      "materials": ["yeso", "bronce"],
+      "case": "Un directorio que es casi vacio no deja ver que hay en la zona.",
+      "kept": "En la pagina del negocio el vacio trabaja; no se rellena.",
+      "hero": "https://impeccable.style/worlds/cards/growth-metamorphosis-branching-ikebana-ma-arrangement-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "comp", "toggle": true },
+  "canon": true,
+  "canonCard": {
+    "label": "El estandar de la categoria",
+    "thesis": "Grilla de tarjetas, buscador arriba y filtro de categoria, hecha con oficio.",
+    "palette": ["#ffffff", "#111827", "#2563eb"],
+    "materials": ["grilla limpia", "foto de producto"],
+    "viewport": "Buscador, chips de categoria y tarjetas de comercios en dos columnas.",
+    "risk": "Indistinguible de cualquier marketplace, a proposito.",
+    "comp": ".impeccable/mocks/decision/canon.png"
+  },
+  "steer": true
+}

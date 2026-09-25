@@ -84,6 +84,7 @@ export const SignInSchema = z.object({
 export const BusinessSchema = z.object({
   id: uuidSchema,
   ownerId: uuidSchema,
+  slug: z.string().min(1),
   name: z.string().min(1),
   description: z.string().nullable(),
   category: z.string().min(1),
@@ -284,6 +285,11 @@ export const UpdateAppointmentSchema = z.object({
   scheduledAt: isoDateSchema.optional(),
   employeeId: uuidSchema.nullable().optional(),
   notes: z.string().trim().max(1000).optional(),
+})
+
+export const CreateGalleryImageSchema = z.object({
+  imageUrl: urlSchema,
+  sortOrder: z.number().int().min(0).optional(),
 })
 
 // --------------------------------------------------------------------------

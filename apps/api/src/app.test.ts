@@ -17,6 +17,33 @@ describe("API skeleton", () => {
     expect(new Date(body.timestamp).toString()).not.toBe("Invalid Date")
   })
 
+  it("rejects /api/me without a session", async () => {
+    const res = await app.request("/api/me")
+    expect(res.status).toBe(401)
+    const body = (await res.json()) as { error: { code: string } }
+    expect(body.error.code).toBe("UNAUTHORIZED")
+  })
+
+  it("rejects team listing without a session", async () => {
+    const res = await app.request(
+      "/api/businesses/00000000-0000-4000-8000-000000000001/team",
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it("rejects gallery writes without a session", async () => {
+    const res = await app.request(
+      "/api/businesses/00000000-0000-4000-8000-000000000001/gallery",
+      { method: "POST", body: JSON.stringify({ imageUrl: "https://example.com/a.jpg" }) },
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it("rejects /api/messages/conversations without a session", async () => {
+    const res = await app.request("/api/messages/conversations")
+    expect(res.status).toBe(401)
+  })
+
   it("returns a structured 404 for unknown routes", async () => {
     const res = await app.request("/api/nope")
     expect(res.status).toBe(404)

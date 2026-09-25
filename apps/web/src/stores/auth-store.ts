@@ -47,10 +47,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ status: "authenticated", session, profile })
     }
 
-    void supabase.auth.getSession().then(({ data }) => applySession(data.session))
+    let sawAuthEvent = false
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      void applySession(session)
+      sawAuthEvent = true
+      // Fuera del callback: una consulta aqui dentro bloquea el candado de Auth
+      // y el canje del code de Google no llega a guardar la sesion.
+      window.setTimeout(() => void applySession(session), 0)
+    })
+
+    void supabase.auth.getSession().then(({ data: sessionData }) => {
+      if (!sawAuthEvent) void applySession(sessionData.session)
     })
 
     return () => data.subscription.unsubscribe()

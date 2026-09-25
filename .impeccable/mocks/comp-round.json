@@ -1,0 +1,39 @@
+{
+  "title": "Elige la composicion del directorio",
+  "question": "Las tres usan el mismo mundo. Cual directorio se construye?",
+  "options": [
+    {
+      "id": "directory-01",
+      "label": "La referencia de la bodega",
+      "kicker": "THE ROLL",
+      "thesis": "La imagen que ya aprobaste. El sistema es este; los rollos de tela y los bultos no se copian.",
+      "palette": ["#f4f4f4", "#111111", "#ff5a00"],
+      "materials": ["placa metalica", "raya de peligro", "cincho naranja"],
+      "viewport": "Cabecera negra, dos placas grandes y una franja de WhatsApp abajo.",
+      "risk": "Si se literaliza, TicoApp parece un inventario de telas y no un directorio.",
+      "comp": ".impeccable/mocks/directory-01.png"
+    },
+    {
+      "id": "directory-02",
+      "label": "Lista de placas",
+      "thesis": "Recorres varias placas. La activa trae el cincho de WhatsApp. Las demas llevan la raya.",
+      "palette": ["#f4f4f4", "#111111", "#ff5a00"],
+      "materials": ["placa metalica", "raya de peligro", "cincho naranja"],
+      "viewport": "Cuatro placas en columna. Soda La Luz arriba, sin filtro de categoria.",
+      "risk": "La raya en todas las inactivas puede hacer que el directorio se sienta cerrado.",
+      "comp": ".impeccable/mocks/directory-02.png"
+    },
+    {
+      "id": "directory-03",
+      "label": "Una placa y el resto quieto",
+      "thesis": "Un comercio ocupa la mitad de la pantalla, con WhatsApp dentro. Los otros tres esperan abajo.",
+      "palette": ["#ffffff", "#111111", "#ff5a00"],
+      "materials": ["placa", "cincho naranja", "raya de peligro"],
+      "viewport": "Soda La Luz grande, con distancia y el boton WhatsApp. Tres placas menores debajo.",
+      "risk": "Parece la pagina de un negocio antes de que el cliente haya elegido.",
+      "comp": ".impeccable/mocks/directory-03.png"
+    }
+  ],
+  "buildPath": { "value": "comp", "toggle": true },
+  "steer": true
+}

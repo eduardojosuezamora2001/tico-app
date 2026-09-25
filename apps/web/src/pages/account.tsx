@@ -1,26 +1,41 @@
+import { useState } from "react"
+import { Link } from "react-router"
+
+import { SiteHeader } from "@/components/site-header"
+import { api } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@workspace/ui/components/button"
 
-import { useAuthStore } from "@/stores/auth-store"
-
-/** Ruta protegida de ejemplo: muestra el perfil y permite cerrar sesion. */
 export function AccountPage() {
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
+  const refreshProfile = useAuthStore((s) => s.refreshProfile)
+  const [fullName, setFullName] = useState(profile?.fullName ?? "")
+  const [saved, setSaved] = useState(false)
+
+  async function onSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    await api.patch("/me", { fullName })
+    await refreshProfile()
+    setSaved(true)
+  }
 
   return (
-    <main className="flex min-h-svh flex-col gap-4 p-6 text-sm leading-loose">
-      <h1 className="font-medium">Mi cuenta</h1>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4">
-        <dt className="text-muted-foreground">Email</dt>
-        <dd>{profile?.email}</dd>
-        <dt className="text-muted-foreground">Nombre</dt>
-        <dd>{profile?.fullName ?? "—"}</dd>
-        <dt className="text-muted-foreground">Rol</dt>
-        <dd>{profile?.role}</dd>
-      </dl>
-      <Button className="w-fit" onClick={() => void signOut()}>
-        Cerrar sesion
-      </Button>
-    </main>
+    <div className="min-h-svh bg-background">
+      <SiteHeader />
+      <main className="mx-auto max-w-md px-4 py-10">
+        <h1 className="text-2xl font-semibold">Mi cuenta</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{profile?.email}</p>
+        <form className="mt-6 space-y-3" onSubmit={(event) => void onSubmit(event)}>
+          <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nombre" className="w-full rounded-xl border border-border bg-card px-3 py-2" />
+          <Button type="submit">Guardar</Button>
+          {saved ? <p className="text-sm text-muted-foreground">Nombre actualizado.</p> : null}
+        </form>
+        <div className="mt-6 flex gap-3">
+          <Button variant="outline" render={<Link to="/mi-negocio" />}>Mis negocios</Button>
+          <Button variant="ghost" onClick={() => void signOut()}>Cerrar sesión</Button>
+        </div>
+      </main>
+    </div>
   )
 }

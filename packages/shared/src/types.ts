@@ -58,6 +58,7 @@ export interface User {
 export interface Business {
   id: string
   ownerId: string
+  slug: string
   name: string
   description: string | null
   category: string
@@ -92,6 +93,11 @@ export interface BusinessUser {
   permissions: PermissionName[]
   createdAt: ISODateString
   updatedAt: ISODateString
+}
+
+export interface TeamMember extends BusinessUser {
+  fullName: string | null
+  email: string
 }
 
 export interface BusinessHours {
@@ -230,6 +236,14 @@ export interface Review {
   updatedAt: ISODateString
 }
 
+export interface GalleryImage {
+  id: string
+  businessId: string
+  imageUrl: string
+  sortOrder: number
+  createdAt: ISODateString
+}
+
 export interface BusinessEvent {
   id: string
   businessId: string
@@ -259,6 +273,17 @@ export interface Message {
   isRead: boolean
   createdAt: ISODateString
   updatedAt: ISODateString
+}
+
+export interface Conversation {
+  businessId: string
+  businessName: string
+  businessSlug: string
+  peerId: string
+  peerName: string | null
+  lastText: string
+  lastAt: ISODateString
+  unreadCount: number
 }
 
 export interface AuditLog {
