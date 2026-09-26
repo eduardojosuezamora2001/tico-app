@@ -136,7 +136,7 @@ export function BusinessPage() {
                   {business.ownerId !== userId ? (
                     <Link
                       className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-sm"
-                      to={signedIn ? `/mensajes/${business.id}/${business.ownerId}` : "/login"}
+                      to={signedIn ? `/mensajes/local/${business.id}` : "/login"}
                     >
                       Mensaje
                     </Link>

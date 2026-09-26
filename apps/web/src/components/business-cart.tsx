@@ -208,7 +208,6 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
     try {
       await api.post("/messages", {
         businessId: business.id,
-        receiverId: business.ownerId,
         text: cartMessage(business.name, lines),
       })
       clear(business.id)

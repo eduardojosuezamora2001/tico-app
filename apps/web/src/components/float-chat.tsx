@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useLocation } from "react-router"
 import type { Conversation, Message } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
@@ -16,6 +16,20 @@ import {
 
 import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
 import { api } from "@/lib/api"
+import {
+  canClaim,
+  canCompose,
+  canOpen,
+  canTake,
+  conversationTitle,
+  errorMessage,
+  foldConversation,
+  foldMessage,
+  senderName,
+  statusLine,
+  type IncomingMessage,
+} from "@/lib/chat-events"
+import { OnlineDot, useOnlineUsers } from "@/lib/presence"
 import { chatSocket } from "@/lib/socket"
 import { useAuthStore } from "@/stores/auth-store"
 
@@ -25,6 +39,7 @@ export function FloatChat() {
   const userId = useAuthStore((s) => s.session?.user.id)
   const profile = useAuthStore((s) => s.profile)
   const accessToken = useAuthStore((s) => s.session?.access_token)
+  const online = useOnlineUsers()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Conversation[]>([])
   const [active, setActive] = useState<Conversation | null>(null)
@@ -35,10 +50,8 @@ export function FloatChat() {
   const [notice, setNotice] = useState<{ id: string; title: string; body: string } | null>(null)
   const openRef = useRef(open)
   const activeRef = useRef(active)
-  const itemsRef = useRef(items)
   openRef.current = open
   activeRef.current = active
-  itemsRef.current = items
 
   function loadConversations() {
     return api
@@ -76,46 +89,46 @@ export function FloatChat() {
     let detach = () => {}
     void chatSocket().then((socket) => {
       if (!socket || !live) return
-      const onMessage = (message: Message) => {
-        if (message.receiverId !== userId) return
+      const onMessage = (event: IncomingMessage) => {
         const viewing =
           openRef.current &&
-          activeRef.current?.businessId === message.businessId &&
-          activeRef.current.peerId === message.senderId
+          activeRef.current?.id === event.conversation.id &&
+          event.conversation.viewerRole !== "member"
+        setItems((current) => foldMessage(current, event, userId, viewing ? event.conversation.id : null))
+        setActive((current) =>
+          current?.id === event.conversation.id ? { ...event.conversation, unreadCount: viewing ? 0 : current.unreadCount } : current,
+        )
         if (viewing) {
-          void api.get(`/messages/conversations/${message.businessId}/${message.senderId}`)
+          setMessages((current) =>
+            current.some((item) => item.id === event.message.id) ? current : [...current, event.message],
+          )
+          const counts = event.conversation.viewerRole === "customer" || event.conversation.viewerRole === "assignee"
+          if (counts && event.message.senderId !== userId) void api.get(`/messages/conversations/${event.conversation.id}`)
           return
         }
-
-        const known = itemsRef.current.find(
-          (item) => item.businessId === message.businessId && item.peerId === message.senderId,
-        )
-        if (known) {
-          setItems((current) =>
-            current.map((item) =>
-              item.businessId === message.businessId && item.peerId === message.senderId
-                ? { ...item, unreadCount: item.unreadCount + 1, lastText: message.text, lastAt: message.createdAt }
-                : item,
-            ),
-          )
-        } else {
-          void loadConversations()
-        }
-
-        const title = known
-          ? `${known.peerName ?? "Contacto"} · ${known.businessName}`
-          : "Nuevo mensaje"
-        setNotice({ id: message.id, title, body: message.text })
-        if (
-          document.hidden &&
-          typeof Notification !== "undefined" &&
-          Notification.permission === "granted"
-        ) {
-          new Notification(title, { body: message.text })
+        if (event.message.senderId === userId) return
+        const title =
+          event.conversation.viewerRole === "customer"
+            ? event.conversation.businessName
+            : `${event.conversation.customerName ?? "Cliente"} · ${event.conversation.businessName}`
+        setNotice({ id: event.message.id, title, body: event.message.text })
+        if (document.hidden && typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification(title, { body: event.message.text })
         }
       }
+      const onConversation = (conversation: Conversation) => {
+        setItems((current) => foldConversation(current, conversation))
+        if (activeRef.current?.id === conversation.id && conversation.viewerRole === "member") setMessages([])
+        setActive((current) =>
+          current?.id === conversation.id ? { ...conversation, unreadCount: current.unreadCount } : current,
+        )
+      }
       socket.on("message:new", onMessage)
-      detach = () => socket.off("message:new", onMessage)
+      socket.on("conversation:updated", onConversation)
+      detach = () => {
+        socket.off("message:new", onMessage)
+        socket.off("conversation:updated", onConversation)
+      }
     })
     return () => {
       live = false
@@ -124,65 +137,74 @@ export function FloatChat() {
   }, [status, userId, accessToken])
 
   useEffect(() => {
-    if (!active) return
+    if (!active || active.viewerRole === "member") {
+      setMessages([])
+      setThreadReady(Boolean(active))
+      return
+    }
     let cancelled = false
     setThreadReady(false)
     void api
-      .get<{ data: Message[] }>(`/messages/conversations/${active.businessId}/${active.peerId}`)
+      .get<{ data: { conversation: Conversation; messages: Message[] } }>(`/messages/conversations/${active.id}`)
       .then((response) => {
         if (cancelled) return
-        setMessages(response.data.data)
+        setMessages(response.data.data.messages)
         setItems((current) =>
-          current.map((item) =>
-            item.businessId === active.businessId && item.peerId === active.peerId
-              ? { ...item, unreadCount: 0 }
-              : item,
+          foldConversation(current, response.data.data.conversation).map((item) =>
+            item.id === active.id ? { ...item, unreadCount: 0 } : item,
           ),
         )
+        setActive((current) => (current?.id === active.id ? { ...response.data.data.conversation, unreadCount: 0 } : current))
         setNotice(null)
       })
-      .catch(() => {
-        if (!cancelled) setError("No se pudo abrir la conversación.")
+      .catch((caught) => {
+        if (!cancelled) setError(errorMessage(caught, "No se pudo abrir la conversación."))
       })
       .finally(() => {
         if (!cancelled) setThreadReady(true)
       })
-
-    let live = true
-    let detach = () => {}
-    void chatSocket().then((socket) => {
-      if (!socket || !live) return
-      const onMessage = (message: Message) => {
-        if (message.businessId !== active.businessId) return
-        if (message.senderId !== active.peerId && message.receiverId !== active.peerId) return
-        setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
-      }
-      socket.on("message:new", onMessage)
-      detach = () => socket.off("message:new", onMessage)
-    })
     return () => {
       cancelled = true
-      live = false
-      detach()
     }
-  }, [active])
+  }, [active?.id, active?.viewerRole])
 
-  async function send(event: React.FormEvent) {
+  async function claim(id: string) {
+    setError(null)
+    try {
+      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/claim`)
+      setItems((current) => foldConversation(current, response.data.data))
+      setActive(response.data.data)
+    } catch (caught) {
+      setError(errorMessage(caught, "No se pudo atender."))
+    }
+  }
+
+  async function take(id: string) {
+    setError(null)
+    try {
+      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/take`)
+      setItems((current) => foldConversation(current, response.data.data))
+      setActive(response.data.data)
+    } catch (caught) {
+      setError(errorMessage(caught, "No se pudo tomar el chat."))
+    }
+  }
+
+  async function send(event: FormEvent) {
     event.preventDefault()
-    if (!active) return
+    if (!active || !canCompose(active)) return
     const body = text.trim()
     if (!body) return
     setText("")
     try {
-      const response = await api.post<{ data: Message }>("/messages", {
-        businessId: active.businessId,
-        receiverId: active.peerId,
-        text: body,
-      })
-      const message = response.data.data
+      const path = active.viewerRole === "customer" ? "/messages" : `/messages/conversations/${active.id}/reply`
+      const payload = active.viewerRole === "customer" ? { businessId: active.businessId, text: body } : { text: body }
+      const response = await api.post<{ data: { message: Message; conversation: Conversation } }>(path, payload)
+      const message = response.data.data.message
       setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
-    } catch {
-      setError("No se pudo enviar.")
+      setItems((current) => foldConversation(current, response.data.data.conversation))
+    } catch (caught) {
+      setError(errorMessage(caught, "No se pudo enviar."))
       setText(body)
     }
   }
@@ -191,130 +213,212 @@ export function FloatChat() {
 
   if (status !== "authenticated") {
     return (
-      <Button
-        className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg"
-        render={<Link to="/login" />}
-      >
+      <Button className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg" render={<Link to="/login" />}>
         Chat
       </Button>
     )
   }
 
-  const groups = new Map<string, Conversation[]>()
-  for (const item of items) {
-    groups.set(item.businessId, [...(groups.get(item.businessId) ?? []), item])
-  }
   const unread = items.reduce((sum, item) => sum + item.unreadCount, 0)
+  const staffView = items.some((item) => item.viewerRole !== "customer")
+  const queue = items.filter((item) => item.status === "waiting" && item.viewerRole !== "customer")
+  const ongoing = items.filter((item) => !queue.includes(item))
 
   return (
     <>
-    {notice ? (
-      <p
-        role="status"
-        className="fixed right-4 bottom-20 z-40 max-w-xs rounded-2xl border border-border bg-card px-4 py-3 text-sm shadow-lg"
+      {notice ? (
+        <p role="status" className="fixed right-4 bottom-20 z-40 max-w-xs rounded-2xl border border-border bg-card px-4 py-3 text-sm shadow-lg">
+          <span className="block font-medium">{notice.title}</span>
+          <span className="mt-1 block text-muted-foreground">{notice.body}</span>
+        </p>
+      ) : null}
+      <Sheet
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) setActive(null)
+        }}
       >
-        <span className="block font-medium">{notice.title}</span>
-        <span className="mt-1 block text-muted-foreground">{notice.body}</span>
-      </p>
-    ) : null}
-    <Sheet
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) setActive(null)
-      }}
-    >
-      <SheetTrigger
-        render={
-          <Button
-            aria-label={unread > 0 ? `Chat, ${unread} sin revisar` : "Chat"}
-            className={`fixed right-4 bottom-4 z-40 rounded-full shadow-lg ${unread > 0 ? "animate-[chat-buzz_1.5s_ease-in-out_infinite] motion-reduce:animate-none" : ""}`}
-          />
-        }
-      >
-        Chat
-        {unread > 0 ? (
-          <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-white">
-            {unread > 99 ? "99+" : unread}
-          </span>
-        ) : null}
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{active ? (active.peerName ?? "Contacto") : "Mensajes"}</SheetTitle>
-          <SheetDescription>
-            {active ? active.businessName : "Conversaciones agrupadas por local."}
-          </SheetDescription>
-        </SheetHeader>
-        {error ? <p className="px-4 text-sm text-destructive">{error}</p> : null}
-        {active ? (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <Button type="button" variant="ghost" className="mx-4 self-start" onClick={() => setActive(null)}>
-              Todos los locales
-            </Button>
-            {threadReady ? (
-              <MessageThread
-                threadKey={`${active.businessId}:${active.peerId}`}
-                messages={messages}
-                userId={userId}
-                peerName={active.peerName}
-                selfName={profile?.fullName ?? null}
-                selfAvatar={profile?.avatarUrl}
-              />
-            ) : (
-              <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-                <Skeleton className="h-12 w-2/3 rounded-xl" />
-                <Skeleton className="ms-auto h-12 w-1/2 rounded-xl" />
+        <SheetTrigger
+          render={
+            <Button
+              aria-label={unread > 0 ? `Chat, ${unread} sin revisar` : "Chat"}
+              className={`fixed right-4 bottom-4 z-40 rounded-full shadow-lg ${unread > 0 ? "animate-[chat-buzz_1.5s_ease-in-out_infinite] motion-reduce:animate-none" : ""}`}
+            />
+          }
+        >
+          Chat
+          {unread > 0 ? (
+            <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-white">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          ) : null}
+        </SheetTrigger>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>{active ? conversationTitle(active) : "Mensajes"}</SheetTitle>
+            <SheetDescription>
+              {active ? statusLine(active) : staffView ? "Por atender y en curso." : "Conversaciones con los locales."}
+            </SheetDescription>
+          </SheetHeader>
+          {error ? <p className="px-4 text-sm text-destructive">{error}</p> : null}
+          {active ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex items-center gap-2 px-4">
+                <Button type="button" variant="ghost" onClick={() => setActive(null)}>
+                  Chats
+                </Button>
+                {canClaim(active) ? (
+                  <Button type="button" size="sm" onClick={() => void claim(active.id)}>
+                    Atender
+                  </Button>
+                ) : null}
+                {canTake(active) ? (
+                  <Button type="button" size="sm" variant="outline" onClick={() => void take(active.id)}>
+                    Tomar
+                  </Button>
+                ) : null}
               </div>
-            )}
-            <MessageComposer value={text} onChange={setText} onSubmit={(event) => void send(event)} />
-          </div>
-        ) : (
-          <ScrollArea className="min-h-0 flex-1" viewportClassName="h-full">
-            <div className="flex flex-col gap-4 px-4 pb-4">
-              {[...groups.entries()].map(([businessId, threads]) => (
-                <section key={businessId} className="flex flex-col gap-2">
-                  <h3 className="text-sm font-medium">{threads[0]?.businessName}</h3>
-                  <ul className="divide-y divide-border rounded-xl border border-border">
-                    {threads.map((item) => (
-                      <li key={`${item.businessId}:${item.peerId}`}>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted/50"
-                          onClick={() => {
-                            setError(null)
-                            setActive(item)
-                          }}
-                        >
-                          <PersonAvatar name={item.peerName} size="sm" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block font-medium">{item.peerName ?? "Contacto"}</span>
-                            <span className="block truncate text-sm text-muted-foreground">{item.lastText}</span>
-                          </span>
-                          {item.unreadCount > 0 ? (
-                            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
-                              {item.unreadCount > 9 ? "9+" : item.unreadCount}
-                            </span>
-                          ) : null}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-              {items.length === 0 && !error ? (
-                <Empty className="border-0 px-0">
+              {active.viewerRole === "owner" && active.assigneeName ? (
+                <p className="mx-4 rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">
+                  Supervisión · lo atiende {active.assigneeName}
+                </p>
+              ) : null}
+              {active.viewerRole === "member" ? (
+                <Empty className="min-h-0 flex-1 border-0">
                   <EmptyHeader>
-                    <EmptyTitle>Sin conversaciones</EmptyTitle>
-                    <EmptyDescription>Todavía no tienes conversaciones.</EmptyDescription>
+                    <EmptyTitle>Lo atiende {active.assigneeName ?? "otra persona"}</EmptyTitle>
+                    <EmptyDescription>Cuando lo tomes podrás leer y responder.</EmptyDescription>
                   </EmptyHeader>
                 </Empty>
+              ) : threadReady ? (
+                <MessageThread
+                  threadKey={active.id}
+                  messages={messages}
+                  userId={userId}
+                  peerName={conversationTitle(active)}
+                  selfName={profile?.fullName ?? null}
+                  selfAvatar={profile?.avatarUrl}
+                  nameFor={(message) => senderName(active, message.senderId)}
+                />
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+                  <Skeleton className="h-12 w-2/3 rounded-xl" />
+                  <Skeleton className="ms-auto h-12 w-1/2 rounded-xl" />
+                </div>
+              )}
+              {canCompose(active) ? (
+                <MessageComposer value={text} onChange={setText} onSubmit={(event) => void send(event)} />
               ) : null}
             </div>
-          </ScrollArea>
-        )}
-      </SheetContent>
-    </Sheet>
+          ) : (
+            <ScrollArea className="min-h-0 flex-1" viewportClassName="h-full">
+              <div className="flex flex-col gap-4 px-4 pb-4">
+                <FloatSection
+                  title={staffView ? "Por atender" : undefined}
+                  items={staffView ? queue : items}
+                  online={online}
+                  onOpen={setActive}
+                  onClaim={(id) => void claim(id)}
+                  onTake={(id) => void take(id)}
+                />
+                {staffView ? (
+                  <FloatSection
+                    title="En curso"
+                    items={ongoing}
+                    online={online}
+                    onOpen={setActive}
+                    onClaim={(id) => void claim(id)}
+                    onTake={(id) => void take(id)}
+                  />
+                ) : null}
+                {items.length === 0 && !error ? (
+                  <Empty className="border-0 px-0">
+                    <EmptyHeader>
+                      <EmptyTitle>Sin conversaciones</EmptyTitle>
+                      <EmptyDescription>Todavía no tienes conversaciones.</EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                ) : null}
+              </div>
+            </ScrollArea>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
+  )
+}
+
+function FloatSection({
+  title,
+  items,
+  online,
+  onOpen,
+  onClaim,
+  onTake,
+}: {
+  title?: string
+  items: Conversation[]
+  online: ReadonlySet<string>
+  onOpen: (item: Conversation) => void
+  onClaim: (id: string) => void
+  onTake: (id: string) => void
+}) {
+  if (items.length === 0) return null
+  return (
+    <section className="flex flex-col gap-2">
+      {title ? <h3 className="text-sm font-medium">{title}</h3> : null}
+      <ul className="divide-y divide-border rounded-xl border border-border">
+        {items.map((item) => (
+          <li key={item.id} className="flex items-center gap-2 pe-2">
+            {canOpen(item) ? (
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left hover:bg-muted/50"
+                onClick={() => onOpen(item)}
+              >
+                <RowBody item={item} online={online.has(item.assigneeId ?? "")} />
+              </button>
+            ) : (
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2">
+                <RowBody item={item} online={online.has(item.assigneeId ?? "")} />
+              </div>
+            )}
+            {canClaim(item) ? (
+              <Button type="button" size="sm" onClick={() => onClaim(item.id)}>
+                Atender
+              </Button>
+            ) : null}
+            {canTake(item) ? (
+              <Button type="button" size="sm" variant="outline" onClick={() => onTake(item.id)}>
+                Tomar
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function RowBody({ item, online }: { item: Conversation; online: boolean }) {
+  return (
+    <>
+      <PersonAvatar name={conversationTitle(item)} size="sm" />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 font-medium">
+          <OnlineDot on={online && item.viewerRole !== "customer" && item.viewerRole !== "assignee"} />
+          <span className="truncate">{conversationTitle(item)}</span>
+        </span>
+        <span className="block truncate text-sm text-muted-foreground">
+          {item.viewerRole === "customer" ? item.lastText : `${statusLine(item)} · ${item.lastText}`}
+        </span>
+      </span>
+      {item.unreadCount > 0 ? (
+        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+          {item.unreadCount > 9 ? "9+" : item.unreadCount}
+        </span>
+      ) : null}
     </>
   )
 }

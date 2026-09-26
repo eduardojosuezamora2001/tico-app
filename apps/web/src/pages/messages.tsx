@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router"
+import { useEffect, useState, type FormEvent } from "react"
+import { Link, useNavigate, useParams } from "react-router"
 import type { Conversation, Message } from "@workspace/shared"
 import { Search01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -12,10 +12,25 @@ import { Skeleton } from "@workspace/ui/components/skeleton"
 import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
 import { SiteHeader } from "@/components/site-header"
 import { api } from "@/lib/api"
+import {
+  canClaim,
+  canCompose,
+  canOpen,
+  canTake,
+  conversationTitle,
+  errorMessage,
+  foldConversation,
+  foldMessage,
+  senderName,
+  statusLine,
+  type IncomingMessage,
+} from "@/lib/chat-events"
+import { OnlineDot, useOnlineUsers } from "@/lib/presence"
 import { chatSocket } from "@/lib/socket"
 import { useAuthStore } from "@/stores/auth-store"
 
 type Filter = "all" | "unread"
+type ThreadPayload = { conversation: Conversation; messages: Message[] }
 
 function when(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -39,20 +54,29 @@ export function MessageThreadPage() {
   return <Inbox />
 }
 
+export function LocalChatPage() {
+  return <Inbox />
+}
+
 function Inbox() {
-  const { businessId = "", peerId = "" } = useParams()
+  const { conversationId = "", businessId: draftBusinessId = "" } = useParams()
+  const navigate = useNavigate()
   const userId = useAuthStore((s) => s.session?.user.id)
   const profile = useAuthStore((s) => s.profile)
+  const online = useOnlineUsers()
   const [items, setItems] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [listReady, setListReady] = useState(false)
   const [threadReady, setThreadReady] = useState(false)
+  const [draftReady, setDraftReady] = useState(false)
+  const [draftName, setDraftName] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<Filter>("all")
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const open = Boolean(businessId && peerId)
-  const active = items.find((item) => item.businessId === businessId && item.peerId === peerId)
+  const open = Boolean(conversationId || draftBusinessId)
+  const listed = items.find((item) => item.id === conversationId)
+  const role = listed?.viewerRole
 
   useEffect(() => {
     void api
@@ -63,26 +87,63 @@ function Inbox() {
   }, [])
 
   useEffect(() => {
-    if (!open) {
+    if (!draftBusinessId) return
+    let live = true
+    setDraftReady(false)
+    void api
+      .get<{ data: { id: string } | null }>(`/messages/business/${draftBusinessId}`)
+      .then((response) => {
+        if (!live) return
+        const id = response.data.data?.id
+        if (id) navigate(`/mensajes/${id}`, { replace: true })
+        else setDraftReady(true)
+      })
+      .catch(() => {
+        if (live) setError("No se pudo abrir el chat del local.")
+      })
+    void api
+      .get<{ data: { business: { name: string } } }>(`/businesses/${draftBusinessId}`)
+      .then((response) => {
+        if (live) setDraftName(response.data.data.business.name)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [draftBusinessId, navigate])
+
+  useEffect(() => {
+    if (!conversationId) {
       setMessages([])
       setThreadReady(false)
+      return
+    }
+    if (!listReady) return
+    if (role === "member") {
+      setMessages([])
+      setThreadReady(true)
       return
     }
     let live = true
     setThreadReady(false)
     void api
-      .get<{ data: Message[] }>(`/messages/conversations/${businessId}/${peerId}`)
+      .get<{ data: ThreadPayload }>(`/messages/conversations/${conversationId}`)
       .then((response) => {
         if (!live) return
-        setMessages(response.data.data)
+        const payload = response.data.data
+        setMessages(payload.messages)
         setItems((current) =>
-          current.map((item) =>
-            item.businessId === businessId && item.peerId === peerId ? { ...item, unreadCount: 0 } : item,
+          foldConversation(current, payload.conversation).map((item) =>
+            item.id === payload.conversation.id ? { ...item, unreadCount: 0 } : item,
           ),
         )
       })
-      .catch(() => {
-        if (live) setError("No se pudo abrir la conversación.")
+      .catch((caught) => {
+        if (!live) return
+        setMessages([])
+        if (!errorMessage(caught, "").includes("atiende")) {
+          setError(errorMessage(caught, "No se pudo abrir la conversación."))
+        }
       })
       .finally(() => {
         if (live) setThreadReady(true)
@@ -90,7 +151,7 @@ function Inbox() {
     return () => {
       live = false
     }
-  }, [open, businessId, peerId])
+  }, [conversationId, listReady, role])
 
   useEffect(() => {
     if (!userId) return
@@ -98,53 +159,80 @@ function Inbox() {
     let detach = () => {}
     void chatSocket().then((socket) => {
       if (!socket || !live) return
-      const onMessage = (message: Message) => {
-        const peer = message.senderId === userId ? message.receiverId : message.senderId
-        const mine = message.senderId === userId
-        setItems((current) => {
-          const index = current.findIndex((item) => item.businessId === message.businessId && item.peerId === peer)
-          if (index === -1) return current
-          const next = [...current]
-          const item = next[index]
-          if (!item) return current
-          const viewing = message.businessId === businessId && peer === peerId
-          next.splice(index, 1)
-          next.unshift({
-            ...item,
-            lastText: message.text,
-            lastAt: message.createdAt,
-            unreadCount: mine || viewing ? item.unreadCount : item.unreadCount + 1,
-          })
-          return next
-        })
-        if (message.businessId !== businessId) return
-        if (message.senderId !== peerId && message.receiverId !== peerId) return
-        setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
+      const onMessage = (event: IncomingMessage) => {
+        const viewing = event.conversation.id === conversationId && event.conversation.viewerRole !== "member"
+        setItems((current) => foldMessage(current, event, userId, viewing ? conversationId : null))
+        if (!viewing) return
+        setMessages((current) =>
+          current.some((item) => item.id === event.message.id) ? current : [...current, event.message],
+        )
+        const counts = event.conversation.viewerRole === "customer" || event.conversation.viewerRole === "assignee"
+        if (counts && event.message.senderId !== userId) {
+          void api.get(`/messages/conversations/${conversationId}`)
+        }
+      }
+      const onConversation = (conversation: Conversation) => {
+        setItems((current) => foldConversation(current, conversation))
+        if (conversation.id === conversationId && conversation.viewerRole === "member") setMessages([])
       }
       socket.on("message:new", onMessage)
-      detach = () => socket.off("message:new", onMessage)
+      socket.on("conversation:updated", onConversation)
+      detach = () => {
+        socket.off("message:new", onMessage)
+        socket.off("conversation:updated", onConversation)
+      }
     })
     return () => {
       live = false
       detach()
     }
-  }, [userId, businessId, peerId])
+  }, [userId, conversationId])
 
-  async function send(event: React.FormEvent) {
+  async function claim(id: string) {
+    setError(null)
+    try {
+      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/claim`)
+      setItems((current) => foldConversation(current, response.data.data))
+      navigate(`/mensajes/${id}`)
+    } catch (caught) {
+      setError(errorMessage(caught, "No se pudo atender."))
+    }
+  }
+
+  async function take(id: string) {
+    setError(null)
+    try {
+      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/take`)
+      setItems((current) => foldConversation(current, response.data.data))
+      navigate(`/mensajes/${id}`)
+    } catch (caught) {
+      setError(errorMessage(caught, "No se pudo tomar el chat."))
+    }
+  }
+
+  async function send(event: FormEvent) {
     event.preventDefault()
     const body = text.trim()
-    if (!body || !open) return
+    if (!body) return
     setText("")
     try {
-      const response = await api.post<{ data: Message }>("/messages", {
-        businessId,
-        receiverId: peerId,
-        text: body,
-      })
-      const message = response.data.data
+      if (draftBusinessId) {
+        const response = await api.post<{ data: { conversation: Conversation } }>("/messages", {
+          businessId: draftBusinessId,
+          text: body,
+        })
+        navigate(`/mensajes/${response.data.data.conversation.id}`, { replace: true })
+        return
+      }
+      if (!listed || !canCompose(listed)) return
+      const path = listed.viewerRole === "customer" ? "/messages" : `/messages/conversations/${listed.id}/reply`
+      const payload = listed.viewerRole === "customer" ? { businessId: listed.businessId, text: body } : { text: body }
+      const response = await api.post<{ data: { message: Message; conversation: Conversation } }>(path, payload)
+      const message = response.data.data.message
       setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
-    } catch {
-      setError("No se pudo enviar. Solo puedes escribir si tú o la otra persona pertenecen al negocio.")
+      setItems((current) => foldConversation(current, response.data.data.conversation))
+    } catch (caught) {
+      setError(errorMessage(caught, "No se pudo enviar."))
       setText(body)
     }
   }
@@ -153,8 +241,15 @@ function Inbox() {
   const visible = items.filter((item) => {
     if (filter === "unread" && item.unreadCount === 0) return false
     if (!needle) return true
-    return `${item.peerName ?? ""} ${item.businessName} ${item.lastText}`.toLowerCase().includes(needle)
+    return `${item.customerName ?? ""} ${item.assigneeName ?? ""} ${item.businessName} ${item.lastText}`
+      .toLowerCase()
+      .includes(needle)
   })
+  const staffView = items.some((item) => item.viewerRole !== "customer")
+  const queue = visible.filter((item) => item.status === "waiting" && item.viewerRole !== "customer")
+  const ongoing = visible.filter((item) => !queue.includes(item))
+  const blocked = role === "member"
+  const active = listed
 
   return (
     <div className="flex h-svh flex-col bg-background text-foreground">
@@ -213,70 +308,128 @@ function Inbox() {
                 </EmptyHeader>
               </Empty>
             ) : (
-              <ul>
-                {visible.map((item) => {
-                  const selected = item.businessId === businessId && item.peerId === peerId
-                  const unread = item.unreadCount > 0
-                  return (
-                    <li key={`${item.businessId}:${item.peerId}`}>
-                      <Link
-                        to={`/mensajes/${item.businessId}/${item.peerId}`}
-                        aria-current={selected ? "page" : undefined}
-                        className={`flex items-center gap-3 px-3 py-2.5 ${selected ? "bg-accent" : "hover:bg-muted"}`}
-                      >
-                        <PersonAvatar name={item.peerName} />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-baseline justify-between gap-2">
-                            <span className={`truncate ${unread ? "font-semibold" : "font-medium"}`}>
-                              {item.peerName ?? "Contacto"}
-                            </span>
-                            <span className="shrink-0 text-xs text-muted-foreground">{when(item.lastAt)}</span>
-                          </span>
-                          <span className="mt-0.5 flex items-center justify-between gap-2">
-                            <span className={`truncate text-sm ${unread ? "text-foreground" : "text-muted-foreground"}`}>
-                              {item.businessName} · {item.lastText}
-                            </span>
-                            {unread ? (
-                              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
-                                {item.unreadCount > 9 ? "9+" : item.unreadCount}
-                              </span>
-                            ) : null}
-                          </span>
-                        </span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
+              <div className="flex flex-col pb-4">
+                {staffView && queue.length > 0 ? (
+                  <ConversationGroup
+                    title="Por atender"
+                    items={queue}
+                    selectedId={conversationId}
+                    online={online}
+                    onClaim={(id) => void claim(id)}
+                    onTake={(id) => void take(id)}
+                  />
+                ) : null}
+                {staffView && ongoing.length > 0 ? (
+                  <ConversationGroup
+                    title="En curso"
+                    items={ongoing}
+                    selectedId={conversationId}
+                    online={online}
+                    onClaim={(id) => void claim(id)}
+                    onTake={(id) => void take(id)}
+                  />
+                ) : null}
+                {!staffView ? (
+                  <ConversationGroup
+                    items={visible}
+                    selectedId={conversationId}
+                    online={online}
+                    onClaim={(id) => void claim(id)}
+                    onTake={(id) => void take(id)}
+                  />
+                ) : null}
+              </div>
             )}
           </ScrollArea>
         </aside>
 
         <section className={`${open ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col bg-background`}>
-          {open ? (
+          {draftBusinessId ? (
+            draftReady ? (
+              <>
+                <header className="flex items-center gap-3 border-b border-border px-4 py-3">
+                  <Link className="text-sm text-primary md:hidden" to="/mensajes">
+                    Chats
+                  </Link>
+                  <PersonAvatar name={draftName} />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{draftName ?? "Local"}</p>
+                    <p className="truncate text-sm text-muted-foreground">Escribe al local</p>
+                  </div>
+                </header>
+                <MessageThread
+                  threadKey={draftBusinessId}
+                  messages={[]}
+                  userId={userId}
+                  peerName={draftName}
+                  selfName={profile?.fullName ?? null}
+                  selfAvatar={profile?.avatarUrl}
+                />
+                {error ? <p className="px-4 text-sm text-destructive">{error}</p> : null}
+                <MessageComposer value={text} onChange={setText} onSubmit={(event) => void send(event)} placeholder="Aa" />
+              </>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+                <Skeleton className="h-12 w-2/3 rounded-xl" />
+                <Skeleton className="ms-auto h-12 w-1/2 rounded-xl" />
+              </div>
+            )
+          ) : conversationId ? (
             <>
               <header className="flex items-center gap-3 border-b border-border px-4 py-3">
                 <Link className="text-sm text-primary md:hidden" to="/mensajes">
                   Chats
                 </Link>
-                <PersonAvatar name={active?.peerName ?? null} />
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{active?.peerName ?? "Contacto"}</p>
+                <PersonAvatar name={active ? conversationTitle(active) : null} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">
+                    {active?.viewerRole === "customer" ? (
+                      <Link className="hover:underline" to={`/n/${active.businessId}`}>
+                        {conversationTitle(active)}
+                      </Link>
+                    ) : (
+                      (active ? conversationTitle(active) : "Conversación")
+                    )}
+                  </p>
                   {active ? (
-                    <Link className="block truncate text-sm text-muted-foreground hover:text-foreground" to={`/n/${active.businessId}`}>
-                      {active.businessName}
-                    </Link>
+                    <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+                      <OnlineDot on={Boolean(active.assigneeId && online.has(active.assigneeId) && active.viewerRole !== "assignee")} />
+                      <span className="truncate">{statusLine(active)}</span>
+                    </p>
                   ) : null}
                 </div>
+                {active && canClaim(active) ? (
+                  <Button type="button" size="sm" onClick={() => void claim(active.id)}>
+                    Atender
+                  </Button>
+                ) : null}
+                {active && canTake(active) ? (
+                  <Button type="button" size="sm" variant="outline" onClick={() => void take(active.id)}>
+                    Tomar
+                  </Button>
+                ) : null}
               </header>
-              {threadReady ? (
+              {active?.viewerRole === "owner" && active.assigneeName ? (
+                <p className="border-b border-border bg-muted px-4 py-2 text-sm text-muted-foreground">
+                  Supervisión · lo atiende {active.assigneeName}
+                </p>
+              ) : null}
+              {blocked ? (
+                <Empty className="min-h-0 flex-1 border-0">
+                  <EmptyHeader>
+                    <EmptyTitle>Lo atiende {active?.assigneeName ?? "otra persona"}</EmptyTitle>
+                    <EmptyDescription>Cuando lo tomes podrás leer y responder.</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : threadReady ? (
                 <MessageThread
-                  threadKey={`${businessId}:${peerId}`}
+                  threadKey={conversationId}
                   messages={messages}
                   userId={userId}
-                  peerName={active?.peerName ?? null}
+                  peerName={active ? conversationTitle(active) : null}
                   selfName={profile?.fullName ?? null}
                   selfAvatar={profile?.avatarUrl}
+                  nameFor={active ? (message) => senderName(active, message.senderId) : undefined}
                 />
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
@@ -286,7 +439,9 @@ function Inbox() {
                 </div>
               )}
               {error ? <p className="px-4 text-sm text-destructive">{error}</p> : null}
-              <MessageComposer value={text} onChange={setText} onSubmit={(event) => void send(event)} placeholder="Aa" />
+              {active && canCompose(active) ? (
+                <MessageComposer value={text} onChange={setText} onSubmit={(event) => void send(event)} placeholder="Aa" />
+              ) : null}
             </>
           ) : (
             <Empty className="min-h-0 flex-1 border-0">
@@ -299,5 +454,102 @@ function Inbox() {
         </section>
       </div>
     </div>
+  )
+}
+
+function ConversationGroup({
+  title,
+  items,
+  selectedId,
+  online,
+  onClaim,
+  onTake,
+}: {
+  title?: string
+  items: Conversation[]
+  selectedId: string
+  online: ReadonlySet<string>
+  onClaim: (id: string) => void
+  onTake: (id: string) => void
+}) {
+  return (
+    <section>
+      {title ? <h2 className="px-4 pt-4 pb-1 text-xs font-medium text-muted-foreground">{title}</h2> : null}
+      <ul>
+        {items.map((item) => (
+          <ConversationRow
+            key={item.id}
+            item={item}
+            selected={item.id === selectedId}
+            online={online.has(item.assigneeId ?? "")}
+            onClaim={onClaim}
+            onTake={onTake}
+          />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function ConversationRow({
+  item,
+  selected,
+  online,
+  onClaim,
+  onTake,
+}: {
+  item: Conversation
+  selected: boolean
+  online: boolean
+  onClaim: (id: string) => void
+  onTake: (id: string) => void
+}) {
+  const unread = item.unreadCount > 0
+  const body = (
+    <>
+      <PersonAvatar name={conversationTitle(item)} />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <span className={`truncate ${unread ? "font-semibold" : "font-medium"}`}>{conversationTitle(item)}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{when(item.lastAt)}</span>
+        </span>
+        <span className="mt-0.5 flex items-center justify-between gap-2">
+          <span className={`flex min-w-0 items-center gap-1.5 text-sm ${unread ? "text-foreground" : "text-muted-foreground"}`}>
+            <OnlineDot on={online && item.viewerRole !== "customer" && item.viewerRole !== "assignee"} />
+            <span className="truncate">
+              {item.viewerRole === "customer" ? item.lastText : `${statusLine(item)} · ${item.lastText}`}
+            </span>
+          </span>
+          {unread ? (
+            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+              {item.unreadCount > 9 ? "9+" : item.unreadCount}
+            </span>
+          ) : null}
+        </span>
+      </span>
+    </>
+  )
+  const className = `flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 ${selected ? "bg-accent" : "hover:bg-muted"}`
+
+  return (
+    <li className="flex items-center gap-2 pe-3">
+      {canOpen(item) ? (
+        <Link to={`/mensajes/${item.id}`} aria-current={selected ? "page" : undefined} className={className}>
+          {body}
+        </Link>
+      ) : (
+        <div className={className}>{body}</div>
+      )}
+      {canClaim(item) ? (
+        <Button type="button" size="sm" className="shrink-0" onClick={() => onClaim(item.id)}>
+          Atender
+        </Button>
+      ) : null}
+      {canTake(item) ? (
+        <Button type="button" size="sm" variant="outline" className="shrink-0" onClick={() => onTake(item.id)}>
+          Tomar
+        </Button>
+      ) : null}
+    </li>
   )
 }

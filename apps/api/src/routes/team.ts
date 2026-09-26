@@ -72,9 +72,26 @@ teamRoutes.patch("/:memberId", async (c) => {
   const parsed = UpdateBusinessUserSchema.safeParse(await c.req.json().catch(() => null))
   if (!parsed.success) return validationError(c, parsed.error)
 
-  const patch: { role?: "manager" | "employee"; permissions?: string[] } = {}
+  const patch: { role?: "manager" | "employee"; permissions?: string[]; is_active?: boolean } = {}
   if (parsed.data.role) patch.role = parsed.data.role
   if (parsed.data.permissions) patch.permissions = parsed.data.permissions
+  if (parsed.data.isActive !== undefined) patch.is_active = parsed.data.isActive
+  if (Object.keys(patch).length === 0) {
+    return fail(c, 400, "VALIDATION_ERROR", "Nada que actualizar")
+  }
+  if (patch.is_active === false) {
+    const { data: current, error: currentError } = await c
+      .get("db")
+      .from("business_users")
+      .select("role")
+      .eq("id", memberId)
+      .eq("business_id", businessId(c))
+      .maybeSingle()
+    if (currentError) return dbFail(c, currentError)
+    if (current?.role === "owner") {
+      return fail(c, 400, "VALIDATION_ERROR", "El dueño no se puede desactivar")
+    }
+  }
 
   const { data, error } = await c
     .get("db")

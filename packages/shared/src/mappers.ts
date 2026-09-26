@@ -120,6 +120,7 @@ export function toTeamMember(
     userId: row.user_id,
     role: row.role as BusinessRole,
     permissions: row.permissions as PermissionName[],
+    isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     fullName: profile.full_name,
@@ -133,6 +134,7 @@ export function toMessage(row: Tables<"messages">): Message {
     senderId: row.sender_id,
     receiverId: row.receiver_id,
     businessId: row.business_id,
+    conversationId: row.conversation_id,
     text: row.text,
     isRead: row.is_read,
     createdAt: row.created_at,
@@ -141,24 +143,37 @@ export function toMessage(row: Tables<"messages">): Message {
 }
 
 export function toConversation(row: {
+  id: string
   business_id: string
   business_name: string
   business_slug: string
-  peer_id: string
-  peer_name: string | null
+  customer_id: string
+  customer_name: string | null
+  assignee_id: string | null
+  assignee_name: string | null
+  status: string
   last_text: string
   last_at: string
   unread_count: number
+  viewer_role: string
 }): Conversation {
   return {
+    id: row.id,
     businessId: row.business_id,
     businessName: row.business_name,
     businessSlug: row.business_slug,
-    peerId: row.peer_id,
-    peerName: row.peer_name,
+    customerId: row.customer_id,
+    customerName: row.customer_name,
+    assigneeId: row.assignee_id,
+    assigneeName: row.assignee_name,
+    status: row.status === "open" ? "open" : "waiting",
     lastText: row.last_text,
     lastAt: row.last_at,
     unreadCount: row.unread_count,
+    viewerRole:
+      row.viewer_role === "customer" || row.viewer_role === "assignee" || row.viewer_role === "owner"
+        ? row.viewer_role
+        : "member",
   }
 }
 

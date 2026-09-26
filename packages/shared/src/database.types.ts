@@ -284,6 +284,7 @@ export type Database = {
           business_id: string
           created_at: string
           id: string
+          is_active: boolean
           permissions: string[]
           role: string
           updated_at: string
@@ -293,6 +294,7 @@ export type Database = {
           business_id: string
           created_at?: string
           id?: string
+          is_active?: boolean
           permissions?: string[]
           role: string
           updated_at?: string
@@ -302,6 +304,7 @@ export type Database = {
           business_id?: string
           created_at?: string
           id?: string
+          is_active?: boolean
           permissions?: string[]
           role?: string
           updated_at?: string
@@ -395,6 +398,64 @@ export type Database = {
           {
             foreignKeyName: "businesses_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          assignee_id: string | null
+          business_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          last_at: string
+          last_text: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          business_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          last_at?: string
+          last_text?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          last_at?: string
+          last_text?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_customer_id_fkey"
+            columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -527,30 +588,33 @@ export type Database = {
       messages: {
         Row: {
           business_id: string
+          conversation_id: string
           created_at: string
           id: string
           is_read: boolean
-          receiver_id: string
+          receiver_id: string | null
           sender_id: string
           text: string
           updated_at: string
         }
         Insert: {
           business_id: string
+          conversation_id: string
           created_at?: string
           id?: string
           is_read?: boolean
-          receiver_id: string
+          receiver_id?: string | null
           sender_id: string
           text: string
           updated_at?: string
         }
         Update: {
           business_id?: string
+          conversation_id?: string
           created_at?: string
           id?: string
           is_read?: boolean
-          receiver_id?: string
+          receiver_id?: string | null
           sender_id?: string
           text?: string
           updated_at?: string
@@ -561,6 +625,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
           {
@@ -875,14 +946,19 @@ export type Database = {
       list_my_conversations: {
         Args: Record<string, never>
         Returns: {
+          id: string
           business_id: string
           business_name: string
           business_slug: string
-          peer_id: string
-          peer_name: string | null
+          customer_id: string
+          customer_name: string | null
+          assignee_id: string | null
+          assignee_name: string | null
+          status: string
           last_text: string
           last_at: string
           unread_count: number
+          viewer_role: string
         }[]
       }
       purge_expired_messages: {
