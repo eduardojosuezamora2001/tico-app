@@ -18,19 +18,33 @@ meRoutes.get("/", async (c) => {
 
   const { data: memberships, error: membershipError } = await db
     .from("business_users")
-    .select("business_id, role, permissions, businesses(id, name, slug)")
+    .select("business_id, role, permissions, businesses(id, name, slug, category, address, is_active, logo_url)")
     .eq("user_id", userId)
   if (membershipError) return dbFail(c, membershipError)
 
   return c.json({
     data: {
       profile: toUser(data),
-      memberships: (memberships ?? []).map((row) => ({
-        businessId: row.business_id,
-        role: row.role,
-        permissions: row.permissions,
-        business: row.businesses,
-      })),
+      memberships: (memberships ?? []).map((row) => {
+        const joined = Array.isArray(row.businesses) ? row.businesses[0] : row.businesses
+        return {
+          businessId: row.business_id,
+          role: row.role,
+          permissions: row.permissions,
+          isActive: true,
+          business: joined
+            ? {
+                id: joined.id,
+                name: joined.name,
+                slug: joined.slug,
+                category: joined.category,
+                address: joined.address,
+                isActive: joined.is_active,
+                logoUrl: joined.logo_url,
+              }
+            : null,
+        }
+      }),
     },
   })
 })

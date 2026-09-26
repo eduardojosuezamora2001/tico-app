@@ -176,7 +176,6 @@ describe("CreateReviewSchema / CreateEventSchema / SendMessageSchema", () => {
     expect(
       SendMessageSchema.safeParse({
         businessId: "6f1c2b1e-4a0d-4c3e-9e7a-1b2c3d4e5f60",
-        receiverId: "6f1c2b1e-4a0d-4c3e-9e7a-1b2c3d4e5f61",
         text: "   ",
       }).success
     ).toBe(false)

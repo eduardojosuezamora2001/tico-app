@@ -9,7 +9,7 @@ import { AuthCallbackPage } from "@/pages/auth-callback"
 import { AccountPage } from "@/pages/account"
 import { BusinessPage } from "@/pages/business"
 import { MerchantBusinessPage, MerchantHomePage, NewBusinessPage } from "@/pages/merchant"
-import { MessageThreadPage, MessagesPage } from "@/pages/messages"
+import { LocalChatPage, MessageThreadPage, MessagesPage } from "@/pages/messages"
 import { NotFoundPage } from "@/pages/not-found"
 
 /**
@@ -31,7 +31,8 @@ export const router = createBrowserRouter([
         children: [
           { path: "cuenta", element: <AccountPage /> },
           { path: "mensajes", element: <MessagesPage /> },
-          { path: "mensajes/:businessId/:peerId", element: <MessageThreadPage /> },
+          { path: "mensajes/local/:businessId", element: <LocalChatPage /> },
+          { path: "mensajes/:conversationId", element: <MessageThreadPage /> },
           { path: "mi-negocio", element: <MerchantHomePage /> },
           { path: "mi-negocio/nuevo", element: <NewBusinessPage /> },
           { path: "mi-negocio/:id", element: <MerchantBusinessPage /> },

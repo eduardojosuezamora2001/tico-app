@@ -97,6 +97,7 @@ export function MessageThread({
   peerName,
   selfName,
   selfAvatar,
+  nameFor,
 }: {
   threadKey: string
   messages: ChatMessage[]
@@ -104,6 +105,7 @@ export function MessageThread({
   peerName: string | null
   selfName: string | null
   selfAvatar?: string | null
+  nameFor?: (message: ChatMessage) => string | null
 }) {
   if (messages.length === 0) {
     return (
@@ -134,7 +136,7 @@ export function MessageThread({
                   message={entry.message}
                   showAvatar={entry.showAvatar}
                   mine={entry.message.senderId === userId}
-                  peerName={peerName}
+                  peerName={nameFor?.(entry.message) ?? peerName}
                   selfName={selfName}
                   selfAvatar={selfAvatar}
                 />

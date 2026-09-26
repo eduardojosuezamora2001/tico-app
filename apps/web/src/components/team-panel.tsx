@@ -65,6 +65,16 @@ export function TeamPanel({ businessId }: { businessId: string }) {
     }
   }
 
+  async function setActive(member: TeamMember, isActive: boolean) {
+    setError(null)
+    try {
+      await api.patch(`/businesses/${businessId}/team/${member.id}`, { isActive })
+      load()
+    } catch {
+      setError(isActive ? "No se pudo activar a esa persona." : "No se pudo desactivar a esa persona.")
+    }
+  }
+
   async function remove(member: TeamMember) {
     setError(null)
     try {
@@ -90,10 +100,22 @@ export function TeamPanel({ businessId }: { businessId: string }) {
                 {roleLabel[member.role]} · {member.email}
               </span>
             </span>
-            {member.role === "owner" ? null : (
-              <Button type="button" variant="outline" onClick={() => void remove(member)}>
-                Quitar
-              </Button>
+            {member.role === "owner" ? (
+              <span className="text-sm text-muted-foreground">Activo</span>
+            ) : (
+              <span className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant={member.isActive ? "secondary" : "outline"}
+                  aria-pressed={member.isActive}
+                  onClick={() => void setActive(member, !member.isActive)}
+                >
+                  {member.isActive ? "Activo" : "Inactivo"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => void remove(member)}>
+                  Quitar
+                </Button>
+              </span>
             )}
           </li>
         ))}

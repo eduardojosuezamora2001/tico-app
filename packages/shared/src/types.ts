@@ -91,6 +91,7 @@ export interface BusinessUser {
   userId: string
   role: BusinessRole
   permissions: PermissionName[]
+  isActive: boolean
   createdAt: ISODateString
   updatedAt: ISODateString
 }
@@ -264,11 +265,15 @@ export interface BusinessEvent {
 // Chat, bitacora, notificaciones
 // --------------------------------------------------------------------------
 
+export type ConversationRole = "customer" | "assignee" | "owner" | "member"
+export type ConversationStatus = "waiting" | "open"
+
 export interface Message {
   id: string
   senderId: string
-  receiverId: string
+  receiverId: string | null
   businessId: string
+  conversationId: string
   text: string
   isRead: boolean
   createdAt: ISODateString
@@ -276,14 +281,19 @@ export interface Message {
 }
 
 export interface Conversation {
+  id: string
   businessId: string
   businessName: string
   businessSlug: string
-  peerId: string
-  peerName: string | null
+  customerId: string
+  customerName: string | null
+  assigneeId: string | null
+  assigneeName: string | null
+  status: ConversationStatus
   lastText: string
   lastAt: ISODateString
   unreadCount: number
+  viewerRole: ConversationRole
 }
 
 export interface AuditLog {

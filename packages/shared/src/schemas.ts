@@ -185,6 +185,7 @@ export const BusinessUserSchema = z.object({
   userId: uuidSchema,
   role: businessRoleSchema,
   permissions: z.array(permissionNameSchema),
+  isActive: z.boolean(),
   createdAt: isoDateSchema,
   updatedAt: isoDateSchema,
 })
@@ -198,6 +199,7 @@ export const AddBusinessUserSchema = z.object({
 export const UpdateBusinessUserSchema = z.object({
   role: businessRoleSchema.exclude([BUSINESS_ROLES.OWNER]).optional(),
   permissions: z.array(permissionNameSchema).optional(),
+  isActive: z.boolean().optional(),
 })
 
 // --------------------------------------------------------------------------
@@ -327,8 +329,9 @@ export const CreateEventSchema = z
 export const MessageSchema = z.object({
   id: uuidSchema,
   senderId: uuidSchema,
-  receiverId: uuidSchema,
+  receiverId: uuidSchema.nullable(),
   businessId: uuidSchema,
+  conversationId: uuidSchema,
   text: z.string().min(1),
   isRead: z.boolean(),
   createdAt: isoDateSchema,
@@ -337,7 +340,10 @@ export const MessageSchema = z.object({
 
 export const SendMessageSchema = z.object({
   businessId: uuidSchema,
-  receiverId: uuidSchema,
+  text: z.string().trim().min(1, "El mensaje no puede estar vacio").max(4000),
+})
+
+export const ReplyMessageSchema = z.object({
   text: z.string().trim().min(1, "El mensaje no puede estar vacio").max(4000),
 })
 
