@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { GalleryImage } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 
@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase"
 const allowed = new Set(["image/jpeg", "image/png", "image/webp"])
 
 export function GalleryPanel({ businessId }: { businessId: string }) {
+  const inputId = `gallery-${businessId}`
+  const inputRef = useRef<HTMLInputElement>(null)
   const [images, setImages] = useState<GalleryImage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -65,40 +67,58 @@ export function GalleryPanel({ businessId }: { businessId: string }) {
   }
 
   return (
-    <section className="mt-8">
-      <h2 className="text-lg font-semibold">Galería</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Opcional. El dueño y quien tenga permiso de galería pueden publicar las fotos del perfil.
-      </p>
-      <label className="mt-4 inline-flex">
-        <input
-          className="sr-only"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          disabled={busy}
-          onChange={(event) => {
-            void onFiles(event.target.files)
-            event.target.value = ""
-          }}
-        />
-        <span className="inline-flex h-8 cursor-pointer items-center rounded-md bg-primary px-3 text-sm text-primary-foreground">
-          {busy ? "Subiendo…" : "Elegir fotos"}
-        </span>
-      </label>
-      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-      {images.length > 0 ? (
-        <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {images.map((image) => (
-            <li key={image.id} className="space-y-2">
-              <img src={image.imageUrl} alt="" className="aspect-square w-full rounded-xl object-cover" />
-              <Button type="button" variant="outline" size="sm" onClick={() => void remove(image.id)}>
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Galería</h2>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            El dueño y quien tenga permiso de galería pueden publicar las fotos del perfil.
+          </p>
+        </div>
+        <Button className="rounded-full" disabled={busy} type="button" onClick={() => inputRef.current?.click()}>
+          {busy ? "Subiendo…" : "Subir fotos"}
+        </Button>
+      </div>
+      <input
+        ref={inputRef}
+        id={inputId}
+        className="sr-only"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        disabled={busy}
+        onChange={(event) => {
+          void onFiles(event.target.files)
+          event.target.value = ""
+        }}
+      />
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {images.map((image) => (
+          <li key={image.id} className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-2">
+            <img src={image.imageUrl} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
+            <div className="flex items-center justify-between gap-2 px-1 pb-1">
+              <span className="min-w-0 truncate text-xs text-muted-foreground">{fileName(image.imageUrl)}</span>
+              <Button type="button" variant="ghost" size="sm" onClick={() => void remove(image.id)}>
                 Quitar
               </Button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+            </div>
+          </li>
+        ))}
+        <li>
+          <label
+            htmlFor={inputId}
+            className="flex h-full min-h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 text-center text-sm text-muted-foreground"
+          >
+            Subir una foto
+          </label>
+        </li>
+      </ul>
     </section>
   )
+}
+
+function fileName(url: string) {
+  const piece = url.split("/").pop()?.split("?")[0]
+  return piece && piece.length < 40 ? piece : "Foto"
 }
