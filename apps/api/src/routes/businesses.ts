@@ -10,10 +10,24 @@ import { Hono } from "hono"
 import { z } from "zod"
 
 import { env } from "../config/env.js"
+import { businessPatchFromInput } from "../lib/business-input.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
-import { supabaseAdmin } from "../lib/supabase.js"
+import { createUserClient, supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
 import type { AppEnv } from "../types.js"
+
+async function canViewDraftBusiness(businessId: string, token: string | null) {
+  if (!token) return false
+  const { data, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !data.user) return false
+  const { data: member } = await createUserClient(token)
+    .from("business_users")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("user_id", data.user.id)
+    .maybeSingle()
+  return Boolean(member)
+}
 
 const cursorSeparator = "\u001f"
 
@@ -99,6 +113,20 @@ businessRoutes.get("/", async (c) => {
   })
 })
 
+businessRoutes.get("/:id/modules", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
+  const { data, error } = await c
+    .get("db")
+    .from("business_modules")
+    .select("*")
+    .eq("business_id", parsedId.data)
+  if (error) return dbFail(c, error)
+
+  return c.json({ data: (data ?? []).map(toBusinessModule) })
+})
+
 businessRoutes.get("/:id", async (c) => {
   const parsedId = z.uuid().safeParse(c.req.param("id"))
   if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
@@ -110,6 +138,13 @@ businessRoutes.get("/:id", async (c) => {
     .maybeSingle()
   if (error) return dbFail(c, error)
   if (!data) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+  if (data.is_draft) {
+    const header = c.req.header("Authorization")
+    const token = header?.startsWith("Bearer ") ? header.slice(7) : null
+    if (!(await canViewDraftBusiness(data.id, token))) {
+      return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+    }
+  }
 
   const { data: modules, error: moduleError } = await supabaseAdmin
     .from("business_modules")
@@ -131,21 +166,17 @@ businessRoutes.post("/", requireAuth, async (c) => {
   if (!parsed.success) return validationError(c, parsed.error)
   const input = parsed.data
 
+  const insert = businessPatchFromInput(input)
   const { data, error } = await c
     .get("db")
     .from("businesses")
     .insert({
       owner_id: c.get("userId"),
       name: input.name,
-      description: input.description ?? null,
       category: input.category,
-      latitude: input.latitude ?? null,
-      longitude: input.longitude ?? null,
-      address: input.address ?? null,
-      whatsapp_number: input.whatsappNumber ?? null,
-      website: input.website ?? null,
-      email: input.email ?? null,
-      phone: input.phone ?? null,
+      ...insert,
+      is_draft: input.isDraft ?? false,
+      is_active: input.isDraft ? false : true,
     })
     .select("*")
     .single()
@@ -156,43 +187,29 @@ businessRoutes.post("/", requireAuth, async (c) => {
 businessRoutes.patch("/:id", requireAuth, async (c) => {
   const parsed = UpdateBusinessSchema.safeParse(await c.req.json())
   if (!parsed.success) return validationError(c, parsed.error)
-  const input = parsed.data
-  const patch: {
-    name?: string
-    description?: string | null
-    category?: string
-    latitude?: number | null
-    longitude?: number | null
-    address?: string | null
-    whatsapp_number?: string | null
-    website?: string | null
-    email?: string | null
-    phone?: string | null
-    logo_url?: string | null
-    banner_url?: string | null
-    is_active?: boolean
-    chat_retention_days?: number
-  } = {}
-  if (input.name !== undefined) patch.name = input.name
-  if (input.description !== undefined) patch.description = input.description
-  if (input.category !== undefined) patch.category = input.category
-  if (input.latitude !== undefined) patch.latitude = input.latitude
-  if (input.longitude !== undefined) patch.longitude = input.longitude
-  if (input.address !== undefined) patch.address = input.address
-  if (input.whatsappNumber !== undefined) patch.whatsapp_number = input.whatsappNumber
-  if (input.website !== undefined) patch.website = input.website
-  if (input.email !== undefined) patch.email = input.email
-  if (input.phone !== undefined) patch.phone = input.phone
-  if (input.logoUrl !== undefined) patch.logo_url = input.logoUrl
-  if (input.bannerUrl !== undefined) patch.banner_url = input.bannerUrl
-  if (input.isActive !== undefined) patch.is_active = input.isActive
-  if (input.chatRetentionDays !== undefined) patch.chat_retention_days = input.chatRetentionDays
+  const patch = businessPatchFromInput(parsed.data)
 
   const { data, error } = await c
     .get("db")
     .from("businesses")
     .update(patch)
     .eq("id", c.req.param("id"))
+    .select("*")
+    .maybeSingle()
+  if (error) return dbFail(c, error)
+  if (!data) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+  return c.json({ data: toBusiness(data) })
+})
+
+businessRoutes.post("/:id/publish", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
+  const { data, error } = await c
+    .get("db")
+    .from("businesses")
+    .update({ is_draft: false, is_active: true })
+    .eq("id", parsedId.data)
     .select("*")
     .maybeSingle()
   if (error) return dbFail(c, error)

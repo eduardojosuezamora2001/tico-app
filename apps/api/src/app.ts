@@ -13,6 +13,7 @@ import { menuRoutes, productRoutes, serviceRoutes } from "./routes/catalog.js"
 import { businessRoutes } from "./routes/businesses.js"
 import { eventRoutes } from "./routes/events.js"
 import { galleryRoutes } from "./routes/gallery.js"
+import { hoursRoutes } from "./routes/hours.js"
 import { meRoutes } from "./routes/me.js"
 import { messageRoutes } from "./routes/messages.js"
 import { teamRoutes } from "./routes/team.js"
@@ -47,6 +48,7 @@ app.route("/businesses/:id/products", productRoutes)
 app.route("/businesses/:id/services", serviceRoutes)
 app.route("/businesses/:id/menu", menuRoutes)
 app.route("/businesses/:id/gallery", galleryRoutes)
+app.route("/businesses/:id/hours", hoursRoutes)
 app.route("/businesses/:id/events", eventRoutes)
 
 app.notFound((c) =>

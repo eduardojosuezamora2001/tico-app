@@ -5,6 +5,7 @@ import type { Business, MenuItem, Product, Service } from "@workspace/shared"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
+import { ModulesPanel, useBusinessModules } from "@/components/modules-panel"
 import { TeamPermissions, TeamRoster, useBusinessTeam } from "@/components/team-panel"
 import { api } from "@/lib/api"
 import { Button } from "@workspace/ui/components/button"
@@ -18,54 +19,6 @@ import {
 } from "@workspace/ui/components/dialog"
 import { Input } from "@workspace/ui/components/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
-
-const categories = ["Sodas", "Farmacia", "Ferretería", "Pulpería", "Belleza", "Servicios"]
-
-export function NewBusinessPage() {
-  const navigate = useNavigate()
-  const [name, setName] = useState("")
-  const [category, setCategory] = useState(categories[0] ?? "Servicios")
-  const [whatsapp, setWhatsapp] = useState("")
-  const [error, setError] = useState<string | null>(null)
-
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setError(null)
-    try {
-      const response = await api.post<{ data: Business }>("/businesses", {
-        name,
-        category,
-        whatsappNumber: whatsapp || undefined,
-      })
-      navigate(`/mi-negocio/${response.data.data.id}`)
-    } catch {
-      setError("No se pudo crear el negocio. Revisa el WhatsApp (+506…) y que hayas iniciado sesión.")
-    }
-  }
-
-  return (
-    <div className="min-h-svh bg-background">
-      <SiteHeader />
-      <main className="mx-auto max-w-md px-4 py-10">
-        <h1 className="text-2xl font-semibold">Publicar mi negocio</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Solo el nombre, la categoría y el WhatsApp. El catálogo y el equipo se agregan después, si quieres.
-        </p>
-        <form className="mt-6 space-y-3" onSubmit={(event) => void onSubmit(event)}>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del negocio" className="w-full rounded-xl border border-border bg-card px-3 py-2" />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-border bg-card px-3 py-2">
-            {categories.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-          <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="WhatsApp +506..." className="w-full rounded-xl border border-border bg-card px-3 py-2" />
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button type="submit" className="w-full">Crear negocio</Button>
-        </form>
-      </main>
-    </div>
-  )
-}
 
 type Membership = { businessId: string; business: { name: string; slug: string } | null }
 
@@ -186,6 +139,8 @@ function CatalogRows({
 
 export function MerchantBusinessPage() {
   const { id = "" } = useParams()
+  const navigate = useNavigate()
+  const [ready, setReady] = useState(false)
   const [business, setBusiness] = useState<Business | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [services, setServices] = useState<Service[]>([])
@@ -193,7 +148,9 @@ export function MerchantBusinessPage() {
   const [listIds, setListIds] = useState<string[]>(["productos"])
   const [error, setError] = useState<string | null>(null)
   const [editor, setEditor] = useState<{ kind: CatalogKind; id: string; name: string; price: number | null } | null>(null)
+  const [tab, setTab] = useState("galeria")
   const team = useBusinessTeam(id)
+  const businessModules = useBusinessModules(id)
 
   function loadCatalog() {
     void Promise.all([
@@ -208,13 +165,33 @@ export function MerchantBusinessPage() {
   }
 
   useEffect(() => {
+    if (!id) return
+    setReady(false)
+    void api
+      .get<{ data: { memberships: Membership[] } }>("/me")
+      .then((response) => {
+        const member = response.data.data.memberships.some((row) => row.businessId === id)
+        if (!member) {
+          navigate("/mi-negocio", { replace: true })
+          return
+        }
+        setReady(true)
+      })
+      .catch(() => navigate("/mi-negocio", { replace: true }))
+  }, [id, navigate])
+
+  useEffect(() => {
+    if (!ready || !id) return
     void api.get<{ data: { business: Business } }>(`/businesses/${id}`).then((res) => setBusiness(res.data.data.business))
     loadCatalog()
-  }, [id])
+  }, [id, ready])
 
-  async function enable(moduleName: "products" | "services" | "menu") {
-    await api.put(`/businesses/${id}/modules/${moduleName}`, { enabled: true })
-    setError(null)
+  if (!ready) {
+    return (
+      <div className="min-h-svh bg-background">
+        <SiteHeader />
+      </div>
+    )
   }
 
   async function removeItem(kind: CatalogKind, itemId: string) {
@@ -255,10 +232,11 @@ export function MerchantBusinessPage() {
           ) : null}
         </header>
 
-        <Tabs defaultValue="galeria">
+        <Tabs value={tab} onValueChange={setTab}>
           <div className="-mx-4 overflow-x-auto overflow-y-hidden border-b border-border px-4 sm:mx-0 sm:px-0">
             <TabsList variant="line" className="h-11 w-max bg-transparent">
               <TabsTrigger value="galeria" className="data-active:text-primary after:bg-primary">Galería</TabsTrigger>
+              <TabsTrigger value="modulos" className="data-active:text-primary after:bg-primary">Módulos</TabsTrigger>
               <TabsTrigger value="catalogo" className="data-active:text-primary after:bg-primary">Catálogo</TabsTrigger>
               <TabsTrigger value="equipo" className="data-active:text-primary after:bg-primary">Equipo</TabsTrigger>
               <TabsTrigger value="permisos" className="data-active:text-primary after:bg-primary">Permisos</TabsTrigger>
@@ -269,122 +247,142 @@ export function MerchantBusinessPage() {
             {id ? <GalleryPanel businessId={id} /> : null}
           </TabsContent>
 
+          <TabsContent value="modulos" className="pt-4">
+            {id ? (
+              <ModulesPanel
+                businessId={id}
+                modules={businessModules.modules}
+                loading={businessModules.loading}
+                error={businessModules.error}
+                onReload={() => void businessModules.reload()}
+              />
+            ) : null}
+          </TabsContent>
+
           <TabsContent value="catalogo" className="flex flex-col gap-4 pt-4">
             <div>
               <h2 className="text-lg font-semibold">Catálogo</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                El local ya está publicado. Productos, servicios y menú se agregan cuando quieras.
+                Agrega lo que vendes o ofreces. Primero activa un módulo en la sección Módulos.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" className="rounded-full" onClick={() => void enable("products")}>
-                Activar productos
-              </Button>
-              <Button type="button" variant="outline" className="rounded-full" onClick={() => void enable("services")}>
-                Activar servicios
-              </Button>
-              <Button type="button" variant="outline" className="rounded-full" onClick={() => void enable("menu")}>
-                Activar menú
-              </Button>
-            </div>
-            {listIds.length === 0 || listIds.includes("productos") ? (
-              <CatalogForm
-                placeholder="Producto"
-                submitLabel="Agregar producto"
-                onSubmit={async (name, price) => {
-                  try {
-                    await api.post(`/businesses/${id}/products`, { name, price: Number(price) })
-                    setError(null)
-                    loadCatalog()
-                  } catch {
-                    setError("Activa el módulo de productos antes de publicar, o revisa el precio.")
-                  }
-                }}
-              />
-            ) : null}
-            {listIds.length === 0 || listIds.includes("servicios") ? (
-              <CatalogForm
-                placeholder="Servicio"
-                submitLabel="Agregar servicio"
-                onSubmit={async (name, price) => {
-                  try {
-                    await api.post(`/businesses/${id}/services`, { name, price: Number(price) })
-                    setError(null)
-                    loadCatalog()
-                  } catch {
-                    setError("Activa el módulo de servicios antes de publicar.")
-                  }
-                }}
-              />
-            ) : null}
-            {listIds.length === 0 || listIds.includes("menu") ? (
-              <CatalogForm
-                placeholder="Plato del menú"
-                submitLabel="Agregar al menú"
-                onSubmit={async (name, price) => {
-                  try {
-                    await api.post(`/businesses/${id}/menu`, { name, price: Number(price) })
-                    setError(null)
-                    loadCatalog()
-                  } catch {
-                    setError("Activa el módulo de menú antes de publicar.")
-                  }
-                }}
-              />
-            ) : null}
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            <ListFilter
-              activeIds={listIds}
-              onActiveChange={setListIds}
-              placeholder="Buscar en el catálogo"
-              lists={[
-                {
-                  id: "productos",
-                  label: "Productos",
-                  empty: "Todavía no hay productos.",
-                  items: products,
-                  text: (item) => item.name,
-                  group: (item) => item.category,
-                  render: (items) => (
-                    <CatalogRows
-                      rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
-                      onEdit={(row) => setEditor({ kind: "products", ...row })}
-                      onDelete={(itemId) => void removeItem("products", itemId)}
-                    />
-                  ),
-                },
-                {
-                  id: "servicios",
-                  label: "Servicios",
-                  empty: "Todavía no hay servicios.",
-                  items: services,
-                  text: (item) => item.name,
-                  group: (item) => item.category,
-                  render: (items) => (
-                    <CatalogRows
-                      rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
-                      onEdit={(row) => setEditor({ kind: "services", ...row })}
-                      onDelete={(itemId) => void removeItem("services", itemId)}
-                    />
-                  ),
-                },
-                {
-                  id: "menu",
-                  label: "Menú",
-                  empty: "Todavía no hay platos.",
-                  items: menu,
-                  text: (item) => item.name,
-                  group: (item) => item.section,
-                  render: (items) => (
-                    <CatalogRows
-                      rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
-                      onEdit={(row) => setEditor({ kind: "menu", ...row })}
-                      onDelete={(itemId) => void removeItem("menu", itemId)}
-                    />
-                  ),
-                },
-              ]}
-            />
+            {!businessModules.isEnabled("products") &&
+            !businessModules.isEnabled("services") &&
+            !businessModules.isEnabled("menu") ? (
+              <div className="rounded-2xl border border-dashed border-border bg-card px-4 py-6 text-center">
+                <p className="text-sm text-muted-foreground">Todavía no hay módulos de catálogo activos.</p>
+                <Button type="button" className="mt-4 rounded-full" onClick={() => setTab("modulos")}>
+                  Buscar y activar módulos
+                </Button>
+              </div>
+            ) : (
+              <>
+                {businessModules.isEnabled("products") && (listIds.length === 0 || listIds.includes("productos")) ? (
+                  <CatalogForm
+                    placeholder="Producto"
+                    submitLabel="Agregar producto"
+                    onSubmit={async (name, price) => {
+                      try {
+                        await api.post(`/businesses/${id}/products`, { name, price: Number(price) })
+                        setError(null)
+                        loadCatalog()
+                      } catch {
+                        setError("No se pudo agregar el producto. Revisa el precio.")
+                      }
+                    }}
+                  />
+                ) : null}
+                {businessModules.isEnabled("services") && (listIds.length === 0 || listIds.includes("servicios")) ? (
+                  <CatalogForm
+                    placeholder="Servicio"
+                    submitLabel="Agregar servicio"
+                    onSubmit={async (name, price) => {
+                      try {
+                        await api.post(`/businesses/${id}/services`, { name, price: Number(price) })
+                        setError(null)
+                        loadCatalog()
+                      } catch {
+                        setError("No se pudo agregar el servicio.")
+                      }
+                    }}
+                  />
+                ) : null}
+                {businessModules.isEnabled("menu") && (listIds.length === 0 || listIds.includes("menu")) ? (
+                  <CatalogForm
+                    placeholder="Plato del menú"
+                    submitLabel="Agregar al menú"
+                    onSubmit={async (name, price) => {
+                      try {
+                        await api.post(`/businesses/${id}/menu`, { name, price: Number(price) })
+                        setError(null)
+                        loadCatalog()
+                      } catch {
+                        setError("No se pudo agregar al menú.")
+                      }
+                    }}
+                  />
+                ) : null}
+                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                <ListFilter
+                  activeIds={listIds}
+                  onActiveChange={setListIds}
+                  placeholder="Buscar en el catálogo"
+                  lists={[
+                    businessModules.isEnabled("products")
+                      ? {
+                          id: "productos",
+                          label: "Productos",
+                          empty: "Todavía no hay productos.",
+                          items: products,
+                          text: (item) => item.name,
+                          group: (item) => item.category,
+                          render: (items) => (
+                            <CatalogRows
+                              rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
+                              onEdit={(row) => setEditor({ kind: "products", ...row })}
+                              onDelete={(itemId) => void removeItem("products", itemId)}
+                            />
+                          ),
+                        }
+                      : null,
+                    businessModules.isEnabled("services")
+                      ? {
+                          id: "servicios",
+                          label: "Servicios",
+                          empty: "Todavía no hay servicios.",
+                          items: services,
+                          text: (item) => item.name,
+                          group: (item) => item.category,
+                          render: (items) => (
+                            <CatalogRows
+                              rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
+                              onEdit={(row) => setEditor({ kind: "services", ...row })}
+                              onDelete={(itemId) => void removeItem("services", itemId)}
+                            />
+                          ),
+                        }
+                      : null,
+                    businessModules.isEnabled("menu")
+                      ? {
+                          id: "menu",
+                          label: "Menú",
+                          empty: "Todavía no hay platos.",
+                          items: menu,
+                          text: (item) => item.name,
+                          group: (item) => item.section,
+                          render: (items) => (
+                            <CatalogRows
+                              rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
+                              onEdit={(row) => setEditor({ kind: "menu", ...row })}
+                              onDelete={(itemId) => void removeItem("menu", itemId)}
+                            />
+                          ),
+                        }
+                      : null,
+                  ].filter((list): list is NonNullable<typeof list> => list !== null)}
+                />
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="equipo" className="pt-4">

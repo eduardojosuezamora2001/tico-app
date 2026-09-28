@@ -1,4 +1,4 @@
-import { AddBusinessUserSchema, toTeamMember, UpdateBusinessUserSchema } from "@workspace/shared"
+import { AddBusinessUserSchema, AddCoOwnerSchema, toTeamMember, UpdateBusinessUserSchema } from "@workspace/shared"
 import type { Context } from "hono"
 import { Hono } from "hono"
 import { z } from "zod"
@@ -31,6 +31,54 @@ teamRoutes.get("/", async (c) => {
       return [toTeamMember(row, profile)]
     }),
   })
+})
+
+teamRoutes.post("/co-owners", async (c) => {
+  const id = businessId(c)
+  const parsed = AddCoOwnerSchema.safeParse(await c.req.json().catch(() => null))
+  if (!parsed.success) return validationError(c, parsed.error)
+  if (!(await callerIsOwner(c, id))) {
+    return fail(c, 403, "FORBIDDEN", "Solo un dueño puede agregar co-dueños")
+  }
+
+  const { data: account, error: accountError } = await supabaseAdmin
+    .from("users")
+    .select("id, full_name, email")
+    .eq("email", parsed.data.email)
+    .maybeSingle()
+  if (accountError) return dbFail(c, accountError)
+  if (!account) return fail(c, 404, "NOT_FOUND", "No hay una cuenta con ese correo")
+
+  const { data: existing } = await c
+    .get("db")
+    .from("business_users")
+    .select("role")
+    .eq("business_id", id)
+    .eq("user_id", account.id)
+    .maybeSingle()
+  if (existing?.role === "owner") {
+    return fail(c, 409, "CONFLICT", "Esa persona ya es dueña de este negocio")
+  }
+
+  const { data, error } = await c
+    .get("db")
+    .from("business_users")
+    .upsert(
+      {
+        business_id: id,
+        user_id: account.id,
+        role: "owner",
+        permissions: [],
+        is_active: true,
+      },
+      { onConflict: "business_id,user_id" },
+    )
+    .select("*, users(full_name, email)")
+    .single()
+  if (error) return dbFail(c, error)
+  const profile = data.users
+  if (!profile || Array.isArray(profile)) return fail(c, 404, "NOT_FOUND", "Co-dueño no encontrado")
+  return c.json({ data: toTeamMember(data, profile) }, 201)
 })
 
 teamRoutes.post("/", async (c) => {
@@ -132,4 +180,16 @@ async function callerCanManage(c: Context<AppEnv>, businessId: string) {
     .maybeSingle()
   if (error || !data) return false
   return data.role === "owner" || data.permissions.includes("employees:manage")
+}
+
+async function callerIsOwner(c: Context<AppEnv>, businessId: string) {
+  const { data, error } = await c
+    .get("db")
+    .from("business_users")
+    .select("role")
+    .eq("business_id", businessId)
+    .eq("user_id", c.get("userId"))
+    .maybeSingle()
+  if (error || !data) return false
+  return data.role === "owner"
 }
