@@ -17,12 +17,7 @@ const categories = [
   { id: "servicios", label: "Servicios", hint: "Oficios", tint: "bg-violet-500/15 text-violet-700 dark:text-violet-200" },
 ] as const
 
-const provinces = ["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"] as const
-
-const provinceOptions = [
-  { id: "todos", label: "Todas las provincias" },
-  ...provinces.map((item) => ({ id: item, label: item })),
-]
+const fallbackProvinces = ["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"] as const
 
 const provinceHints: Record<string, string[]> = {
   "San José": ["san jose", "san josé", "escazu", "escazú", "desamparados", "curridabat"],
@@ -49,6 +44,10 @@ export function HomePage() {
   const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""))
   const [category, setCategory] = useQueryState("category", parseAsArrayOf(parseAsString).withDefault([]))
   const [draft, setDraft] = useState(query)
+  const [provinceOptions, setProvinceOptions] = useState([
+    { id: "todos", label: "Todas las provincias" },
+    ...fallbackProvinces.map((item) => ({ id: item, label: item })),
+  ])
   const [selectedProvinces, setSelectedProvinces] = useState<string[]>([])
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locating, setLocating] = useState(false)
@@ -59,10 +58,30 @@ export function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const cursors = useRef<(string | null)[]>([null])
+  const provinceNames = provinceOptions
+    .filter((option) => option.id !== "todos")
+    .map((option) => option.label)
 
   useEffect(() => {
     setDraft(query)
   }, [query])
+
+  useEffect(() => {
+    void api
+      .get<{ data: Array<{ name: string }> }>("/administrative-divisions", { params: { country: "CR" } })
+      .then((response) => {
+        const items = response.data.data.map((division) => ({
+          id: division.name,
+          label: division.name,
+        }))
+        if (items.length > 0) {
+          setProvinceOptions([{ id: "todos", label: "Todas las provincias" }, ...items])
+        }
+      })
+      .catch(() => {
+        // Mantener fallback local si la API no responde.
+      })
+  }, [])
 
   useEffect(() => {
     if (draft.trim() === query) return
@@ -238,7 +257,7 @@ export function HomePage() {
             })}
             query={draft}
             group={selectedProvinces}
-            groups={[...provinces]}
+            groups={provinceNames}
             showCount={false}
             loading={loading}
             onActiveChange={(ids) => {
@@ -281,7 +300,7 @@ export function HomePage() {
           <h2 className="text-2xl font-semibold">Explorá por provincia</h2>
           <p className="mt-1 text-sm text-muted-foreground">Los comercios publicados cuya dirección cae en esa provincia.</p>
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-            {provinces.map((item) => {
+            {provinceNames.map((item) => {
               const count = items.filter((business) => inProvince(business.address, item)).length
               const selected = selectedProvinces.includes(item)
               return (

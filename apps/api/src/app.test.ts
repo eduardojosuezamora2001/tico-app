@@ -50,4 +50,17 @@ describe("API skeleton", () => {
     const body = (await res.json()) as { error: { code: string } }
     expect(body.error.code).toBe("NOT_FOUND")
   })
+
+  it("rejects address writes without a session", async () => {
+    const res = await app.request("/api/addresses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        countryId: "c1111111-1111-4111-8111-111111111111",
+        addressLine1: "Centro",
+      }),
+    })
+    expect(res.status).toBe(401)
+  })
+
 })

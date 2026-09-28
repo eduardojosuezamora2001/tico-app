@@ -1,0 +1,2012 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "distritos-cs",
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p class=\"res-header-id\"><b>Generated Narrative: CodeSystem distritos-cs</b></p><a name=\"distritos-cs\"> </a><a name=\"hcdistritos-cs\"> </a><p>This case-sensitive code system <code>https://ministeriodesalud.go.cr/fhir/CodeSystem/distritos-cs</code> defines the following codes:</p><table class=\"codes\"><tr><td style=\"white-space:nowrap\"><b>Code</b></td><td><b>Display</b></td></tr><tr><td style=\"white-space:nowrap\">10101<a name=\"distritos-cs-10101\"> </a></td><td>Carmen</td></tr><tr><td style=\"white-space:nowrap\">10102<a name=\"distritos-cs-10102\"> </a></td><td>Merced</td></tr><tr><td style=\"white-space:nowrap\">10103<a name=\"distritos-cs-10103\"> </a></td><td>Hospital</td></tr><tr><td style=\"white-space:nowrap\">10104<a name=\"distritos-cs-10104\"> </a></td><td>Catedral</td></tr><tr><td style=\"white-space:nowrap\">10105<a name=\"distritos-cs-10105\"> </a></td><td>Zapote</td></tr><tr><td style=\"white-space:nowrap\">10106<a name=\"distritos-cs-10106\"> </a></td><td>San Francisco de Dos Ríos</td></tr><tr><td style=\"white-space:nowrap\">10107<a name=\"distritos-cs-10107\"> </a></td><td>Uruca</td></tr><tr><td style=\"white-space:nowrap\">10108<a name=\"distritos-cs-10108\"> </a></td><td>Mata Redonda</td></tr><tr><td style=\"white-space:nowrap\">10109<a name=\"distritos-cs-10109\"> </a></td><td>Pavas</td></tr><tr><td style=\"white-space:nowrap\">10110<a name=\"distritos-cs-10110\"> </a></td><td>Hatillo</td></tr><tr><td style=\"white-space:nowrap\">10111<a name=\"distritos-cs-10111\"> </a></td><td>San Sebastián</td></tr><tr><td style=\"white-space:nowrap\">10201<a name=\"distritos-cs-10201\"> </a></td><td>Escazú</td></tr><tr><td style=\"white-space:nowrap\">10202<a name=\"distritos-cs-10202\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">10203<a name=\"distritos-cs-10203\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">10301<a name=\"distritos-cs-10301\"> </a></td><td>Desamparados</td></tr><tr><td style=\"white-space:nowrap\">10302<a name=\"distritos-cs-10302\"> </a></td><td>San Miguel</td></tr><tr><td style=\"white-space:nowrap\">10303<a name=\"distritos-cs-10303\"> </a></td><td>San Juan de Dios</td></tr><tr><td style=\"white-space:nowrap\">10304<a name=\"distritos-cs-10304\"> </a></td><td>San Rafael Arriba</td></tr><tr><td style=\"white-space:nowrap\">10305<a name=\"distritos-cs-10305\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">10306<a name=\"distritos-cs-10306\"> </a></td><td>Frailes</td></tr><tr><td style=\"white-space:nowrap\">10307<a name=\"distritos-cs-10307\"> </a></td><td>Patarrá</td></tr><tr><td style=\"white-space:nowrap\">10308<a name=\"distritos-cs-10308\"> </a></td><td>San Cristóbal</td></tr><tr><td style=\"white-space:nowrap\">10309<a name=\"distritos-cs-10309\"> </a></td><td>Rosario</td></tr><tr><td style=\"white-space:nowrap\">10310<a name=\"distritos-cs-10310\"> </a></td><td>Damas</td></tr><tr><td style=\"white-space:nowrap\">10311<a name=\"distritos-cs-10311\"> </a></td><td>San Rafael Abajo</td></tr><tr><td style=\"white-space:nowrap\">10312<a name=\"distritos-cs-10312\"> </a></td><td>Gravilias</td></tr><tr><td style=\"white-space:nowrap\">10313<a name=\"distritos-cs-10313\"> </a></td><td>Los Guido</td></tr><tr><td style=\"white-space:nowrap\">10401<a name=\"distritos-cs-10401\"> </a></td><td>Santiago</td></tr><tr><td style=\"white-space:nowrap\">10402<a name=\"distritos-cs-10402\"> </a></td><td>Mercedes Sur</td></tr><tr><td style=\"white-space:nowrap\">10403<a name=\"distritos-cs-10403\"> </a></td><td>Barbacoas</td></tr><tr><td style=\"white-space:nowrap\">10404<a name=\"distritos-cs-10404\"> </a></td><td>Grifo Alto</td></tr><tr><td style=\"white-space:nowrap\">10405<a name=\"distritos-cs-10405\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">10406<a name=\"distritos-cs-10406\"> </a></td><td>Candelarita</td></tr><tr><td style=\"white-space:nowrap\">10407<a name=\"distritos-cs-10407\"> </a></td><td>Desamparaditos</td></tr><tr><td style=\"white-space:nowrap\">10408<a name=\"distritos-cs-10408\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">10409<a name=\"distritos-cs-10409\"> </a></td><td>Chires</td></tr><tr><td style=\"white-space:nowrap\">10501<a name=\"distritos-cs-10501\"> </a></td><td>San Marcos</td></tr><tr><td style=\"white-space:nowrap\">10502<a name=\"distritos-cs-10502\"> </a></td><td>San Lorenzo</td></tr><tr><td style=\"white-space:nowrap\">10503<a name=\"distritos-cs-10503\"> </a></td><td>San Carlos</td></tr><tr><td style=\"white-space:nowrap\">10601<a name=\"distritos-cs-10601\"> </a></td><td>Aserrí</td></tr><tr><td style=\"white-space:nowrap\">10602<a name=\"distritos-cs-10602\"> </a></td><td>Tarbaca</td></tr><tr><td style=\"white-space:nowrap\">10603<a name=\"distritos-cs-10603\"> </a></td><td>Vuelta de Jorco</td></tr><tr><td style=\"white-space:nowrap\">10604<a name=\"distritos-cs-10604\"> </a></td><td>San Gabriel</td></tr><tr><td style=\"white-space:nowrap\">10605<a name=\"distritos-cs-10605\"> </a></td><td>Legua</td></tr><tr><td style=\"white-space:nowrap\">10606<a name=\"distritos-cs-10606\"> </a></td><td>Monterrey</td></tr><tr><td style=\"white-space:nowrap\">10607<a name=\"distritos-cs-10607\"> </a></td><td>Salitrillos</td></tr><tr><td style=\"white-space:nowrap\">10701<a name=\"distritos-cs-10701\"> </a></td><td>Ciudad Colón</td></tr><tr><td style=\"white-space:nowrap\">10702<a name=\"distritos-cs-10702\"> </a></td><td>Guayabo</td></tr><tr><td style=\"white-space:nowrap\">10703<a name=\"distritos-cs-10703\"> </a></td><td>Tabarcia</td></tr><tr><td style=\"white-space:nowrap\">10704<a name=\"distritos-cs-10704\"> </a></td><td>Piedras Negras</td></tr><tr><td style=\"white-space:nowrap\">10705<a name=\"distritos-cs-10705\"> </a></td><td>Picagres</td></tr><tr><td style=\"white-space:nowrap\">10706<a name=\"distritos-cs-10706\"> </a></td><td>Jaris</td></tr><tr><td style=\"white-space:nowrap\">10707<a name=\"distritos-cs-10707\"> </a></td><td>Quitirrisí</td></tr><tr><td style=\"white-space:nowrap\">10801<a name=\"distritos-cs-10801\"> </a></td><td>Goicoechea</td></tr><tr><td style=\"white-space:nowrap\">10802<a name=\"distritos-cs-10802\"> </a></td><td>San Francisco</td></tr><tr><td style=\"white-space:nowrap\">10803<a name=\"distritos-cs-10803\"> </a></td><td>Calle Blancos</td></tr><tr><td style=\"white-space:nowrap\">10804<a name=\"distritos-cs-10804\"> </a></td><td>Mata de Plátano</td></tr><tr><td style=\"white-space:nowrap\">10805<a name=\"distritos-cs-10805\"> </a></td><td>Ipís</td></tr><tr><td style=\"white-space:nowrap\">10806<a name=\"distritos-cs-10806\"> </a></td><td>Rancho Redondo</td></tr><tr><td style=\"white-space:nowrap\">10807<a name=\"distritos-cs-10807\"> </a></td><td>Purral</td></tr><tr><td style=\"white-space:nowrap\">10901<a name=\"distritos-cs-10901\"> </a></td><td>Santa Ana</td></tr><tr><td style=\"white-space:nowrap\">10902<a name=\"distritos-cs-10902\"> </a></td><td>Salitral</td></tr><tr><td style=\"white-space:nowrap\">10903<a name=\"distritos-cs-10903\"> </a></td><td>Pozos</td></tr><tr><td style=\"white-space:nowrap\">10904<a name=\"distritos-cs-10904\"> </a></td><td>Uruca</td></tr><tr><td style=\"white-space:nowrap\">10905<a name=\"distritos-cs-10905\"> </a></td><td>Piedades</td></tr><tr><td style=\"white-space:nowrap\">10906<a name=\"distritos-cs-10906\"> </a></td><td>Brasil</td></tr><tr><td style=\"white-space:nowrap\">11001<a name=\"distritos-cs-11001\"> </a></td><td>Alajuelita</td></tr><tr><td style=\"white-space:nowrap\">11002<a name=\"distritos-cs-11002\"> </a></td><td>San Josecito</td></tr><tr><td style=\"white-space:nowrap\">11003<a name=\"distritos-cs-11003\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">11004<a name=\"distritos-cs-11004\"> </a></td><td>Concepción</td></tr><tr><td style=\"white-space:nowrap\">11005<a name=\"distritos-cs-11005\"> </a></td><td>San Felipe</td></tr><tr><td style=\"white-space:nowrap\">11101<a name=\"distritos-cs-11101\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">11102<a name=\"distritos-cs-11102\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">11103<a name=\"distritos-cs-11103\"> </a></td><td>Dulce Nombre de Jesús</td></tr><tr><td style=\"white-space:nowrap\">11104<a name=\"distritos-cs-11104\"> </a></td><td>Patalillo</td></tr><tr><td style=\"white-space:nowrap\">11105<a name=\"distritos-cs-11105\"> </a></td><td>Cascajal</td></tr><tr><td style=\"white-space:nowrap\">11201<a name=\"distritos-cs-11201\"> </a></td><td>San Ignacio</td></tr><tr><td style=\"white-space:nowrap\">11202<a name=\"distritos-cs-11202\"> </a></td><td>Guaitil</td></tr><tr><td style=\"white-space:nowrap\">11203<a name=\"distritos-cs-11203\"> </a></td><td>Palmichal</td></tr><tr><td style=\"white-space:nowrap\">11204<a name=\"distritos-cs-11204\"> </a></td><td>Cangrejal</td></tr><tr><td style=\"white-space:nowrap\">11205<a name=\"distritos-cs-11205\"> </a></td><td>Sabanillas</td></tr><tr><td style=\"white-space:nowrap\">11301<a name=\"distritos-cs-11301\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">11302<a name=\"distritos-cs-11302\"> </a></td><td>Cinco Esquinas</td></tr><tr><td style=\"white-space:nowrap\">11303<a name=\"distritos-cs-11303\"> </a></td><td>Anselmo Llorente</td></tr><tr><td style=\"white-space:nowrap\">11304<a name=\"distritos-cs-11304\"> </a></td><td>León XIII</td></tr><tr><td style=\"white-space:nowrap\">11305<a name=\"distritos-cs-11305\"> </a></td><td>Colima</td></tr><tr><td style=\"white-space:nowrap\">11401<a name=\"distritos-cs-11401\"> </a></td><td>San Vicente</td></tr><tr><td style=\"white-space:nowrap\">11402<a name=\"distritos-cs-11402\"> </a></td><td>San Jerónimo</td></tr><tr><td style=\"white-space:nowrap\">11403<a name=\"distritos-cs-11403\"> </a></td><td>La Trinidad</td></tr><tr><td style=\"white-space:nowrap\">11501<a name=\"distritos-cs-11501\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">11502<a name=\"distritos-cs-11502\"> </a></td><td>Sabanilla</td></tr><tr><td style=\"white-space:nowrap\">11503<a name=\"distritos-cs-11503\"> </a></td><td>Mercedes</td></tr><tr><td style=\"white-space:nowrap\">11504<a name=\"distritos-cs-11504\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">11601<a name=\"distritos-cs-11601\"> </a></td><td>San Pablo</td></tr><tr><td style=\"white-space:nowrap\">11602<a name=\"distritos-cs-11602\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">11603<a name=\"distritos-cs-11603\"> </a></td><td>San Juan de Mata</td></tr><tr><td style=\"white-space:nowrap\">11604<a name=\"distritos-cs-11604\"> </a></td><td>San Luis</td></tr><tr><td style=\"white-space:nowrap\">11605<a name=\"distritos-cs-11605\"> </a></td><td>Carara</td></tr><tr><td style=\"white-space:nowrap\">11701<a name=\"distritos-cs-11701\"> </a></td><td>Santa María</td></tr><tr><td style=\"white-space:nowrap\">11702<a name=\"distritos-cs-11702\"> </a></td><td>Jardín</td></tr><tr><td style=\"white-space:nowrap\">11703<a name=\"distritos-cs-11703\"> </a></td><td>Copey</td></tr><tr><td style=\"white-space:nowrap\">11801<a name=\"distritos-cs-11801\"> </a></td><td>Curridabat</td></tr><tr><td style=\"white-space:nowrap\">11802<a name=\"distritos-cs-11802\"> </a></td><td>Granadilla</td></tr><tr><td style=\"white-space:nowrap\">11803<a name=\"distritos-cs-11803\"> </a></td><td>Sánchez</td></tr><tr><td style=\"white-space:nowrap\">11804<a name=\"distritos-cs-11804\"> </a></td><td>Tirrases</td></tr><tr><td style=\"white-space:nowrap\">11901<a name=\"distritos-cs-11901\"> </a></td><td>San Isidro de El General</td></tr><tr><td style=\"white-space:nowrap\">11902<a name=\"distritos-cs-11902\"> </a></td><td>El General</td></tr><tr><td style=\"white-space:nowrap\">11903<a name=\"distritos-cs-11903\"> </a></td><td>Daniel Flores</td></tr><tr><td style=\"white-space:nowrap\">11904<a name=\"distritos-cs-11904\"> </a></td><td>Rivas</td></tr><tr><td style=\"white-space:nowrap\">11905<a name=\"distritos-cs-11905\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">11906<a name=\"distritos-cs-11906\"> </a></td><td>Platanares</td></tr><tr><td style=\"white-space:nowrap\">11907<a name=\"distritos-cs-11907\"> </a></td><td>Pejibaye</td></tr><tr><td style=\"white-space:nowrap\">11908<a name=\"distritos-cs-11908\"> </a></td><td>Cajón</td></tr><tr><td style=\"white-space:nowrap\">11909<a name=\"distritos-cs-11909\"> </a></td><td>Barú</td></tr><tr><td style=\"white-space:nowrap\">11910<a name=\"distritos-cs-11910\"> </a></td><td>Río Nuevo</td></tr><tr><td style=\"white-space:nowrap\">11911<a name=\"distritos-cs-11911\"> </a></td><td>Páramo</td></tr><tr><td style=\"white-space:nowrap\">11912<a name=\"distritos-cs-11912\"> </a></td><td>La Amistad</td></tr><tr><td style=\"white-space:nowrap\">12001<a name=\"distritos-cs-12001\"> </a></td><td>San Pablo</td></tr><tr><td style=\"white-space:nowrap\">12002<a name=\"distritos-cs-12002\"> </a></td><td>San Andrés</td></tr><tr><td style=\"white-space:nowrap\">12003<a name=\"distritos-cs-12003\"> </a></td><td>Llano Bonito</td></tr><tr><td style=\"white-space:nowrap\">12004<a name=\"distritos-cs-12004\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">12005<a name=\"distritos-cs-12005\"> </a></td><td>Santa Cruz</td></tr><tr><td style=\"white-space:nowrap\">12006<a name=\"distritos-cs-12006\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">20101<a name=\"distritos-cs-20101\"> </a></td><td>Alajuela</td></tr><tr><td style=\"white-space:nowrap\">20102<a name=\"distritos-cs-20102\"> </a></td><td>San José</td></tr><tr><td style=\"white-space:nowrap\">20103<a name=\"distritos-cs-20103\"> </a></td><td>Carrizal</td></tr><tr><td style=\"white-space:nowrap\">20104<a name=\"distritos-cs-20104\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">20105<a name=\"distritos-cs-20105\"> </a></td><td>Guácima</td></tr><tr><td style=\"white-space:nowrap\">20106<a name=\"distritos-cs-20106\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">20107<a name=\"distritos-cs-20107\"> </a></td><td>Sabanilla</td></tr><tr><td style=\"white-space:nowrap\">20108<a name=\"distritos-cs-20108\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">20109<a name=\"distritos-cs-20109\"> </a></td><td>Río Segundo</td></tr><tr><td style=\"white-space:nowrap\">20110<a name=\"distritos-cs-20110\"> </a></td><td>Desamparados</td></tr><tr><td style=\"white-space:nowrap\">20111<a name=\"distritos-cs-20111\"> </a></td><td>Turrúcares</td></tr><tr><td style=\"white-space:nowrap\">20112<a name=\"distritos-cs-20112\"> </a></td><td>Tambor</td></tr><tr><td style=\"white-space:nowrap\">20113<a name=\"distritos-cs-20113\"> </a></td><td>Garita</td></tr><tr><td style=\"white-space:nowrap\">20114<a name=\"distritos-cs-20114\"> </a></td><td>Sarapiquí</td></tr><tr><td style=\"white-space:nowrap\">20201<a name=\"distritos-cs-20201\"> </a></td><td>San Ramón</td></tr><tr><td style=\"white-space:nowrap\">20202<a name=\"distritos-cs-20202\"> </a></td><td>Santiago</td></tr><tr><td style=\"white-space:nowrap\">20203<a name=\"distritos-cs-20203\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">20204<a name=\"distritos-cs-20204\"> </a></td><td>Piedades Norte</td></tr><tr><td style=\"white-space:nowrap\">20205<a name=\"distritos-cs-20205\"> </a></td><td>Piedades Sur</td></tr><tr><td style=\"white-space:nowrap\">20206<a name=\"distritos-cs-20206\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">20207<a name=\"distritos-cs-20207\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">20208<a name=\"distritos-cs-20208\"> </a></td><td>Ángeles</td></tr><tr><td style=\"white-space:nowrap\">20209<a name=\"distritos-cs-20209\"> </a></td><td>Alfaro</td></tr><tr><td style=\"white-space:nowrap\">20210<a name=\"distritos-cs-20210\"> </a></td><td>Volio</td></tr><tr><td style=\"white-space:nowrap\">20211<a name=\"distritos-cs-20211\"> </a></td><td>Concepción</td></tr><tr><td style=\"white-space:nowrap\">20212<a name=\"distritos-cs-20212\"> </a></td><td>Zapotal</td></tr><tr><td style=\"white-space:nowrap\">20213<a name=\"distritos-cs-20213\"> </a></td><td>Peñas Blancas</td></tr><tr><td style=\"white-space:nowrap\">20214<a name=\"distritos-cs-20214\"> </a></td><td>San Lorenzo</td></tr><tr><td style=\"white-space:nowrap\">20301<a name=\"distritos-cs-20301\"> </a></td><td>Grecia</td></tr><tr><td style=\"white-space:nowrap\">20302<a name=\"distritos-cs-20302\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">20303<a name=\"distritos-cs-20303\"> </a></td><td>San José</td></tr><tr><td style=\"white-space:nowrap\">20304<a name=\"distritos-cs-20304\"> </a></td><td>San Roque</td></tr><tr><td style=\"white-space:nowrap\">20305<a name=\"distritos-cs-20305\"> </a></td><td>Tacares</td></tr><tr><td style=\"white-space:nowrap\">20307<a name=\"distritos-cs-20307\"> </a></td><td>Puente de Piedra</td></tr><tr><td style=\"white-space:nowrap\">20308<a name=\"distritos-cs-20308\"> </a></td><td>Bolívar</td></tr><tr><td style=\"white-space:nowrap\">20401<a name=\"distritos-cs-20401\"> </a></td><td>San Mateo</td></tr><tr><td style=\"white-space:nowrap\">20402<a name=\"distritos-cs-20402\"> </a></td><td>Desmonte</td></tr><tr><td style=\"white-space:nowrap\">20403<a name=\"distritos-cs-20403\"> </a></td><td>Jesús María</td></tr><tr><td style=\"white-space:nowrap\">20404<a name=\"distritos-cs-20404\"> </a></td><td>Labrador</td></tr><tr><td style=\"white-space:nowrap\">20501<a name=\"distritos-cs-20501\"> </a></td><td>Atenas</td></tr><tr><td style=\"white-space:nowrap\">20502<a name=\"distritos-cs-20502\"> </a></td><td>Jesús</td></tr><tr><td style=\"white-space:nowrap\">20503<a name=\"distritos-cs-20503\"> </a></td><td>Mercedes</td></tr><tr><td style=\"white-space:nowrap\">20504<a name=\"distritos-cs-20504\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">20505<a name=\"distritos-cs-20505\"> </a></td><td>Concepción</td></tr><tr><td style=\"white-space:nowrap\">20506<a name=\"distritos-cs-20506\"> </a></td><td>San José</td></tr><tr><td style=\"white-space:nowrap\">20507<a name=\"distritos-cs-20507\"> </a></td><td>Santa Eulalia</td></tr><tr><td style=\"white-space:nowrap\">20508<a name=\"distritos-cs-20508\"> </a></td><td>Escobal</td></tr><tr><td style=\"white-space:nowrap\">20601<a name=\"distritos-cs-20601\"> </a></td><td>Naranjo</td></tr><tr><td style=\"white-space:nowrap\">20602<a name=\"distritos-cs-20602\"> </a></td><td>San Miguel</td></tr><tr><td style=\"white-space:nowrap\">20603<a name=\"distritos-cs-20603\"> </a></td><td>San José</td></tr><tr><td style=\"white-space:nowrap\">20604<a name=\"distritos-cs-20604\"> </a></td><td>Cirrí Sur</td></tr><tr><td style=\"white-space:nowrap\">20605<a name=\"distritos-cs-20605\"> </a></td><td>San Jerónimo</td></tr><tr><td style=\"white-space:nowrap\">20606<a name=\"distritos-cs-20606\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">20607<a name=\"distritos-cs-20607\"> </a></td><td>El Rosario</td></tr><tr><td style=\"white-space:nowrap\">20608<a name=\"distritos-cs-20608\"> </a></td><td>Palmitos</td></tr><tr><td style=\"white-space:nowrap\">20701<a name=\"distritos-cs-20701\"> </a></td><td>Palmares</td></tr><tr><td style=\"white-space:nowrap\">20702<a name=\"distritos-cs-20702\"> </a></td><td>Zaragoza</td></tr><tr><td style=\"white-space:nowrap\">20703<a name=\"distritos-cs-20703\"> </a></td><td>Buenos Aires</td></tr><tr><td style=\"white-space:nowrap\">20704<a name=\"distritos-cs-20704\"> </a></td><td>Santiago</td></tr><tr><td style=\"white-space:nowrap\">20705<a name=\"distritos-cs-20705\"> </a></td><td>Candelaria</td></tr><tr><td style=\"white-space:nowrap\">20706<a name=\"distritos-cs-20706\"> </a></td><td>Esquipulas</td></tr><tr><td style=\"white-space:nowrap\">20707<a name=\"distritos-cs-20707\"> </a></td><td>La Granja</td></tr><tr><td style=\"white-space:nowrap\">20801<a name=\"distritos-cs-20801\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">20802<a name=\"distritos-cs-20802\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">20803<a name=\"distritos-cs-20803\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">20804<a name=\"distritos-cs-20804\"> </a></td><td>Carrillos</td></tr><tr><td style=\"white-space:nowrap\">20805<a name=\"distritos-cs-20805\"> </a></td><td>Sabana Redonda</td></tr><tr><td style=\"white-space:nowrap\">20901<a name=\"distritos-cs-20901\"> </a></td><td>Orotina</td></tr><tr><td style=\"white-space:nowrap\">20902<a name=\"distritos-cs-20902\"> </a></td><td>Mastate</td></tr><tr><td style=\"white-space:nowrap\">20903<a name=\"distritos-cs-20903\"> </a></td><td>Hacienda Vieja</td></tr><tr><td style=\"white-space:nowrap\">20904<a name=\"distritos-cs-20904\"> </a></td><td>Coyolar</td></tr><tr><td style=\"white-space:nowrap\">20905<a name=\"distritos-cs-20905\"> </a></td><td>La Ceiba</td></tr><tr><td style=\"white-space:nowrap\">21001<a name=\"distritos-cs-21001\"> </a></td><td>Quesada</td></tr><tr><td style=\"white-space:nowrap\">21002<a name=\"distritos-cs-21002\"> </a></td><td>Florencia</td></tr><tr><td style=\"white-space:nowrap\">21003<a name=\"distritos-cs-21003\"> </a></td><td>Buenavista</td></tr><tr><td style=\"white-space:nowrap\">21004<a name=\"distritos-cs-21004\"> </a></td><td>Aguas Zarcas</td></tr><tr><td style=\"white-space:nowrap\">21005<a name=\"distritos-cs-21005\"> </a></td><td>Venecia</td></tr><tr><td style=\"white-space:nowrap\">21006<a name=\"distritos-cs-21006\"> </a></td><td>Pital</td></tr><tr><td style=\"white-space:nowrap\">21007<a name=\"distritos-cs-21007\"> </a></td><td>La Fortuna</td></tr><tr><td style=\"white-space:nowrap\">21008<a name=\"distritos-cs-21008\"> </a></td><td>La Tigra</td></tr><tr><td style=\"white-space:nowrap\">21009<a name=\"distritos-cs-21009\"> </a></td><td>La Palmera</td></tr><tr><td style=\"white-space:nowrap\">21010<a name=\"distritos-cs-21010\"> </a></td><td>Venado</td></tr><tr><td style=\"white-space:nowrap\">21011<a name=\"distritos-cs-21011\"> </a></td><td>Cutris</td></tr><tr><td style=\"white-space:nowrap\">21012<a name=\"distritos-cs-21012\"> </a></td><td>Monterrey</td></tr><tr><td style=\"white-space:nowrap\">21013<a name=\"distritos-cs-21013\"> </a></td><td>Pocosol</td></tr><tr><td style=\"white-space:nowrap\">21101<a name=\"distritos-cs-21101\"> </a></td><td>Zarcero</td></tr><tr><td style=\"white-space:nowrap\">21102<a name=\"distritos-cs-21102\"> </a></td><td>Laguna</td></tr><tr><td style=\"white-space:nowrap\">21103<a name=\"distritos-cs-21103\"> </a></td><td>Tapezco</td></tr><tr><td style=\"white-space:nowrap\">21104<a name=\"distritos-cs-21104\"> </a></td><td>Guadalupe</td></tr><tr><td style=\"white-space:nowrap\">21105<a name=\"distritos-cs-21105\"> </a></td><td>Palmira</td></tr><tr><td style=\"white-space:nowrap\">21106<a name=\"distritos-cs-21106\"> </a></td><td>Zapote</td></tr><tr><td style=\"white-space:nowrap\">21107<a name=\"distritos-cs-21107\"> </a></td><td>Brisas</td></tr><tr><td style=\"white-space:nowrap\">21201<a name=\"distritos-cs-21201\"> </a></td><td>Sarchí Norte</td></tr><tr><td style=\"white-space:nowrap\">21202<a name=\"distritos-cs-21202\"> </a></td><td>Sarchí Sur</td></tr><tr><td style=\"white-space:nowrap\">21203<a name=\"distritos-cs-21203\"> </a></td><td>Toro Amarillo</td></tr><tr><td style=\"white-space:nowrap\">21204<a name=\"distritos-cs-21204\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">21205<a name=\"distritos-cs-21205\"> </a></td><td>Rodríguez</td></tr><tr><td style=\"white-space:nowrap\">21301<a name=\"distritos-cs-21301\"> </a></td><td>Upala</td></tr><tr><td style=\"white-space:nowrap\">21302<a name=\"distritos-cs-21302\"> </a></td><td>Aguas Claras</td></tr><tr><td style=\"white-space:nowrap\">21303<a name=\"distritos-cs-21303\"> </a></td><td>San José (Pizote)</td></tr><tr><td style=\"white-space:nowrap\">21304<a name=\"distritos-cs-21304\"> </a></td><td>Bijagua</td></tr><tr><td style=\"white-space:nowrap\">21305<a name=\"distritos-cs-21305\"> </a></td><td>Delicias</td></tr><tr><td style=\"white-space:nowrap\">21306<a name=\"distritos-cs-21306\"> </a></td><td>Dos Ríos</td></tr><tr><td style=\"white-space:nowrap\">21307<a name=\"distritos-cs-21307\"> </a></td><td>Yolillal</td></tr><tr><td style=\"white-space:nowrap\">21308<a name=\"distritos-cs-21308\"> </a></td><td>Canalete</td></tr><tr><td style=\"white-space:nowrap\">21401<a name=\"distritos-cs-21401\"> </a></td><td>Los Chiles</td></tr><tr><td style=\"white-space:nowrap\">21402<a name=\"distritos-cs-21402\"> </a></td><td>Caño Negro</td></tr><tr><td style=\"white-space:nowrap\">21403<a name=\"distritos-cs-21403\"> </a></td><td>El Amparo</td></tr><tr><td style=\"white-space:nowrap\">21404<a name=\"distritos-cs-21404\"> </a></td><td>San Jorge</td></tr><tr><td style=\"white-space:nowrap\">21501<a name=\"distritos-cs-21501\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">21502<a name=\"distritos-cs-21502\"> </a></td><td>Buenavista</td></tr><tr><td style=\"white-space:nowrap\">21503<a name=\"distritos-cs-21503\"> </a></td><td>Cote</td></tr><tr><td style=\"white-space:nowrap\">21504<a name=\"distritos-cs-21504\"> </a></td><td>Katira</td></tr><tr><td style=\"white-space:nowrap\">21601<a name=\"distritos-cs-21601\"> </a></td><td>Río Cuarto</td></tr><tr><td style=\"white-space:nowrap\">21602<a name=\"distritos-cs-21602\"> </a></td><td>Santa Rita</td></tr><tr><td style=\"white-space:nowrap\">21603<a name=\"distritos-cs-21603\"> </a></td><td>Santa Isabel</td></tr><tr><td style=\"white-space:nowrap\">30101<a name=\"distritos-cs-30101\"> </a></td><td>Cartago</td></tr><tr><td style=\"white-space:nowrap\">30102<a name=\"distritos-cs-30102\"> </a></td><td>Occidental</td></tr><tr><td style=\"white-space:nowrap\">30103<a name=\"distritos-cs-30103\"> </a></td><td>Carmen</td></tr><tr><td style=\"white-space:nowrap\">30104<a name=\"distritos-cs-30104\"> </a></td><td>San Nicolás</td></tr><tr><td style=\"white-space:nowrap\">30105<a name=\"distritos-cs-30105\"> </a></td><td>Aguacaliente</td></tr><tr><td style=\"white-space:nowrap\">30106<a name=\"distritos-cs-30106\"> </a></td><td>Guadalupe o Arenilla</td></tr><tr><td style=\"white-space:nowrap\">30107<a name=\"distritos-cs-30107\"> </a></td><td>Corralillo</td></tr><tr><td style=\"white-space:nowrap\">30108<a name=\"distritos-cs-30108\"> </a></td><td>Tierra Blanca</td></tr><tr><td style=\"white-space:nowrap\">30109<a name=\"distritos-cs-30109\"> </a></td><td>Dulce Nombre</td></tr><tr><td style=\"white-space:nowrap\">30110<a name=\"distritos-cs-30110\"> </a></td><td>Llano Grande</td></tr><tr><td style=\"white-space:nowrap\">30111<a name=\"distritos-cs-30111\"> </a></td><td>Quebradilla</td></tr><tr><td style=\"white-space:nowrap\">30201<a name=\"distritos-cs-30201\"> </a></td><td>Paraíso</td></tr><tr><td style=\"white-space:nowrap\">30202<a name=\"distritos-cs-30202\"> </a></td><td>Santiago</td></tr><tr><td style=\"white-space:nowrap\">30203<a name=\"distritos-cs-30203\"> </a></td><td>Orosi</td></tr><tr><td style=\"white-space:nowrap\">30204<a name=\"distritos-cs-30204\"> </a></td><td>Cachí</td></tr><tr><td style=\"white-space:nowrap\">30205<a name=\"distritos-cs-30205\"> </a></td><td>Llanos de Santa Lucía</td></tr><tr><td style=\"white-space:nowrap\">30206<a name=\"distritos-cs-30206\"> </a></td><td>Birrisito</td></tr><tr><td style=\"white-space:nowrap\">30301<a name=\"distritos-cs-30301\"> </a></td><td>Tres Ríos</td></tr><tr><td style=\"white-space:nowrap\">30302<a name=\"distritos-cs-30302\"> </a></td><td>San Diego</td></tr><tr><td style=\"white-space:nowrap\">30303<a name=\"distritos-cs-30303\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">30304<a name=\"distritos-cs-30304\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">30305<a name=\"distritos-cs-30305\"> </a></td><td>Concepción</td></tr><tr><td style=\"white-space:nowrap\">30306<a name=\"distritos-cs-30306\"> </a></td><td>Dulce Nombre</td></tr><tr><td style=\"white-space:nowrap\">30307<a name=\"distritos-cs-30307\"> </a></td><td>San Ramón</td></tr><tr><td style=\"white-space:nowrap\">30308<a name=\"distritos-cs-30308\"> </a></td><td>Río Azul</td></tr><tr><td style=\"white-space:nowrap\">30401<a name=\"distritos-cs-30401\"> </a></td><td>Juan Viñas</td></tr><tr><td style=\"white-space:nowrap\">30402<a name=\"distritos-cs-30402\"> </a></td><td>Tucurrique</td></tr><tr><td style=\"white-space:nowrap\">30403<a name=\"distritos-cs-30403\"> </a></td><td>Pejibaye</td></tr><tr><td style=\"white-space:nowrap\">30404<a name=\"distritos-cs-30404\"> </a></td><td>La Victoria</td></tr><tr><td style=\"white-space:nowrap\">30501<a name=\"distritos-cs-30501\"> </a></td><td>Turrialba</td></tr><tr><td style=\"white-space:nowrap\">30502<a name=\"distritos-cs-30502\"> </a></td><td>La Suiza</td></tr><tr><td style=\"white-space:nowrap\">30503<a name=\"distritos-cs-30503\"> </a></td><td>Peralta</td></tr><tr><td style=\"white-space:nowrap\">30504<a name=\"distritos-cs-30504\"> </a></td><td>Santa Cruz</td></tr><tr><td style=\"white-space:nowrap\">30505<a name=\"distritos-cs-30505\"> </a></td><td>Santa Teresita</td></tr><tr><td style=\"white-space:nowrap\">30506<a name=\"distritos-cs-30506\"> </a></td><td>Pavones</td></tr><tr><td style=\"white-space:nowrap\">30507<a name=\"distritos-cs-30507\"> </a></td><td>Tuis</td></tr><tr><td style=\"white-space:nowrap\">30508<a name=\"distritos-cs-30508\"> </a></td><td>Tayutic</td></tr><tr><td style=\"white-space:nowrap\">30509<a name=\"distritos-cs-30509\"> </a></td><td>Santa Rosa</td></tr><tr><td style=\"white-space:nowrap\">30510<a name=\"distritos-cs-30510\"> </a></td><td>Tres Equis</td></tr><tr><td style=\"white-space:nowrap\">30511<a name=\"distritos-cs-30511\"> </a></td><td>La Isabel</td></tr><tr><td style=\"white-space:nowrap\">30512<a name=\"distritos-cs-30512\"> </a></td><td>Chirripó</td></tr><tr><td style=\"white-space:nowrap\">30601<a name=\"distritos-cs-30601\"> </a></td><td>Pacayas</td></tr><tr><td style=\"white-space:nowrap\">30602<a name=\"distritos-cs-30602\"> </a></td><td>Cervantes</td></tr><tr><td style=\"white-space:nowrap\">30603<a name=\"distritos-cs-30603\"> </a></td><td>Capellades</td></tr><tr><td style=\"white-space:nowrap\">30701<a name=\"distritos-cs-30701\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">30702<a name=\"distritos-cs-30702\"> </a></td><td>Cot</td></tr><tr><td style=\"white-space:nowrap\">30703<a name=\"distritos-cs-30703\"> </a></td><td>Potrero Cerrado</td></tr><tr><td style=\"white-space:nowrap\">30704<a name=\"distritos-cs-30704\"> </a></td><td>Cipreses</td></tr><tr><td style=\"white-space:nowrap\">30705<a name=\"distritos-cs-30705\"> </a></td><td>Santa Rosa</td></tr><tr><td style=\"white-space:nowrap\">30801<a name=\"distritos-cs-30801\"> </a></td><td>El Tejar</td></tr><tr><td style=\"white-space:nowrap\">30802<a name=\"distritos-cs-30802\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">30803<a name=\"distritos-cs-30803\"> </a></td><td>Tobosi</td></tr><tr><td style=\"white-space:nowrap\">30804<a name=\"distritos-cs-30804\"> </a></td><td>Patio de Agua</td></tr><tr><td style=\"white-space:nowrap\">40101<a name=\"distritos-cs-40101\"> </a></td><td>Heredia</td></tr><tr><td style=\"white-space:nowrap\">40102<a name=\"distritos-cs-40102\"> </a></td><td>Mercedes</td></tr><tr><td style=\"white-space:nowrap\">40103<a name=\"distritos-cs-40103\"> </a></td><td>San Francisco</td></tr><tr><td style=\"white-space:nowrap\">40104<a name=\"distritos-cs-40104\"> </a></td><td>Ulloa</td></tr><tr><td style=\"white-space:nowrap\">40105<a name=\"distritos-cs-40105\"> </a></td><td>Vara Blanca</td></tr><tr><td style=\"white-space:nowrap\">40201<a name=\"distritos-cs-40201\"> </a></td><td>Barva</td></tr><tr><td style=\"white-space:nowrap\">40202<a name=\"distritos-cs-40202\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">40203<a name=\"distritos-cs-40203\"> </a></td><td>San Pablo</td></tr><tr><td style=\"white-space:nowrap\">40204<a name=\"distritos-cs-40204\"> </a></td><td>San Roque</td></tr><tr><td style=\"white-space:nowrap\">40205<a name=\"distritos-cs-40205\"> </a></td><td>Santa Lucía</td></tr><tr><td style=\"white-space:nowrap\">40206<a name=\"distritos-cs-40206\"> </a></td><td>San José de la Montaña</td></tr><tr><td style=\"white-space:nowrap\">40207<a name=\"distritos-cs-40207\"> </a></td><td>Puente Salas</td></tr><tr><td style=\"white-space:nowrap\">40301<a name=\"distritos-cs-40301\"> </a></td><td>Santo Domingo</td></tr><tr><td style=\"white-space:nowrap\">40302<a name=\"distritos-cs-40302\"> </a></td><td>San Vicente</td></tr><tr><td style=\"white-space:nowrap\">40303<a name=\"distritos-cs-40303\"> </a></td><td>San Miguel</td></tr><tr><td style=\"white-space:nowrap\">40304<a name=\"distritos-cs-40304\"> </a></td><td>Paracito</td></tr><tr><td style=\"white-space:nowrap\">40305<a name=\"distritos-cs-40305\"> </a></td><td>Santo Tomás</td></tr><tr><td style=\"white-space:nowrap\">40306<a name=\"distritos-cs-40306\"> </a></td><td>Santa Rosa</td></tr><tr><td style=\"white-space:nowrap\">40307<a name=\"distritos-cs-40307\"> </a></td><td>Tures</td></tr><tr><td style=\"white-space:nowrap\">40308<a name=\"distritos-cs-40308\"> </a></td><td>Pará</td></tr><tr><td style=\"white-space:nowrap\">40401<a name=\"distritos-cs-40401\"> </a></td><td>Santa Bárbara</td></tr><tr><td style=\"white-space:nowrap\">40402<a name=\"distritos-cs-40402\"> </a></td><td>San Pedro</td></tr><tr><td style=\"white-space:nowrap\">40403<a name=\"distritos-cs-40403\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">40404<a name=\"distritos-cs-40404\"> </a></td><td>Jesús</td></tr><tr><td style=\"white-space:nowrap\">40405<a name=\"distritos-cs-40405\"> </a></td><td>Santo Domingo</td></tr><tr><td style=\"white-space:nowrap\">40406<a name=\"distritos-cs-40406\"> </a></td><td>Purabá</td></tr><tr><td style=\"white-space:nowrap\">40501<a name=\"distritos-cs-40501\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">40502<a name=\"distritos-cs-40502\"> </a></td><td>San Josecito</td></tr><tr><td style=\"white-space:nowrap\">40503<a name=\"distritos-cs-40503\"> </a></td><td>Santiago</td></tr><tr><td style=\"white-space:nowrap\">40504<a name=\"distritos-cs-40504\"> </a></td><td>Ángeles</td></tr><tr><td style=\"white-space:nowrap\">40505<a name=\"distritos-cs-40505\"> </a></td><td>Concepción</td></tr><tr><td style=\"white-space:nowrap\">40601<a name=\"distritos-cs-40601\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">40602<a name=\"distritos-cs-40602\"> </a></td><td>San José</td></tr><tr><td style=\"white-space:nowrap\">40603<a name=\"distritos-cs-40603\"> </a></td><td>Concepción</td></tr><tr><td style=\"white-space:nowrap\">40604<a name=\"distritos-cs-40604\"> </a></td><td>San Francisco</td></tr><tr><td style=\"white-space:nowrap\">40701<a name=\"distritos-cs-40701\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">40702<a name=\"distritos-cs-40702\"> </a></td><td>La Ribera</td></tr><tr><td style=\"white-space:nowrap\">40703<a name=\"distritos-cs-40703\"> </a></td><td>La Asunción</td></tr><tr><td style=\"white-space:nowrap\">40801<a name=\"distritos-cs-40801\"> </a></td><td>San Joaquín</td></tr><tr><td style=\"white-space:nowrap\">40802<a name=\"distritos-cs-40802\"> </a></td><td>Barrantes</td></tr><tr><td style=\"white-space:nowrap\">40803<a name=\"distritos-cs-40803\"> </a></td><td>Llorente</td></tr><tr><td style=\"white-space:nowrap\">40901<a name=\"distritos-cs-40901\"> </a></td><td>San Pablo</td></tr><tr><td style=\"white-space:nowrap\">40902<a name=\"distritos-cs-40902\"> </a></td><td>Rincón de Sabanilla</td></tr><tr><td style=\"white-space:nowrap\">41001<a name=\"distritos-cs-41001\"> </a></td><td>Puerto Viejo</td></tr><tr><td style=\"white-space:nowrap\">41002<a name=\"distritos-cs-41002\"> </a></td><td>La Virgen</td></tr><tr><td style=\"white-space:nowrap\">41003<a name=\"distritos-cs-41003\"> </a></td><td>Horquetas</td></tr><tr><td style=\"white-space:nowrap\">41004<a name=\"distritos-cs-41004\"> </a></td><td>Llanuras del Gaspar</td></tr><tr><td style=\"white-space:nowrap\">41005<a name=\"distritos-cs-41005\"> </a></td><td>Cureña</td></tr><tr><td style=\"white-space:nowrap\">50101<a name=\"distritos-cs-50101\"> </a></td><td>Liberia</td></tr><tr><td style=\"white-space:nowrap\">50102<a name=\"distritos-cs-50102\"> </a></td><td>Cañas Dulces</td></tr><tr><td style=\"white-space:nowrap\">50103<a name=\"distritos-cs-50103\"> </a></td><td>Mayorga</td></tr><tr><td style=\"white-space:nowrap\">50104<a name=\"distritos-cs-50104\"> </a></td><td>Nacascolo</td></tr><tr><td style=\"white-space:nowrap\">50105<a name=\"distritos-cs-50105\"> </a></td><td>Curubandé</td></tr><tr><td style=\"white-space:nowrap\">50201<a name=\"distritos-cs-50201\"> </a></td><td>Nicoya</td></tr><tr><td style=\"white-space:nowrap\">50202<a name=\"distritos-cs-50202\"> </a></td><td>Mansión</td></tr><tr><td style=\"white-space:nowrap\">50203<a name=\"distritos-cs-50203\"> </a></td><td>San Antonio</td></tr><tr><td style=\"white-space:nowrap\">50204<a name=\"distritos-cs-50204\"> </a></td><td>Quebrada Honda</td></tr><tr><td style=\"white-space:nowrap\">50205<a name=\"distritos-cs-50205\"> </a></td><td>Sámara</td></tr><tr><td style=\"white-space:nowrap\">50206<a name=\"distritos-cs-50206\"> </a></td><td>Nosara</td></tr><tr><td style=\"white-space:nowrap\">50207<a name=\"distritos-cs-50207\"> </a></td><td>Belén de Nosarita</td></tr><tr><td style=\"white-space:nowrap\">50301<a name=\"distritos-cs-50301\"> </a></td><td>Santa Cruz</td></tr><tr><td style=\"white-space:nowrap\">50302<a name=\"distritos-cs-50302\"> </a></td><td>Bolsón</td></tr><tr><td style=\"white-space:nowrap\">50303<a name=\"distritos-cs-50303\"> </a></td><td>Veintisiete de Abril</td></tr><tr><td style=\"white-space:nowrap\">50304<a name=\"distritos-cs-50304\"> </a></td><td>Tempate</td></tr><tr><td style=\"white-space:nowrap\">50305<a name=\"distritos-cs-50305\"> </a></td><td>Cartagena</td></tr><tr><td style=\"white-space:nowrap\">50306<a name=\"distritos-cs-50306\"> </a></td><td>Cuajiniquil</td></tr><tr><td style=\"white-space:nowrap\">50307<a name=\"distritos-cs-50307\"> </a></td><td>Diriá</td></tr><tr><td style=\"white-space:nowrap\">50308<a name=\"distritos-cs-50308\"> </a></td><td>Cabo Velas</td></tr><tr><td style=\"white-space:nowrap\">50309<a name=\"distritos-cs-50309\"> </a></td><td>Tamarindo</td></tr><tr><td style=\"white-space:nowrap\">50401<a name=\"distritos-cs-50401\"> </a></td><td>Bagaces</td></tr><tr><td style=\"white-space:nowrap\">50402<a name=\"distritos-cs-50402\"> </a></td><td>La Fortuna</td></tr><tr><td style=\"white-space:nowrap\">50403<a name=\"distritos-cs-50403\"> </a></td><td>Mogote</td></tr><tr><td style=\"white-space:nowrap\">50404<a name=\"distritos-cs-50404\"> </a></td><td>Río Naranjo</td></tr><tr><td style=\"white-space:nowrap\">50501<a name=\"distritos-cs-50501\"> </a></td><td>Filadelfia</td></tr><tr><td style=\"white-space:nowrap\">50502<a name=\"distritos-cs-50502\"> </a></td><td>Palmira</td></tr><tr><td style=\"white-space:nowrap\">50503<a name=\"distritos-cs-50503\"> </a></td><td>Sardinal</td></tr><tr><td style=\"white-space:nowrap\">50504<a name=\"distritos-cs-50504\"> </a></td><td>Belén</td></tr><tr><td style=\"white-space:nowrap\">50601<a name=\"distritos-cs-50601\"> </a></td><td>Cañas</td></tr><tr><td style=\"white-space:nowrap\">50602<a name=\"distritos-cs-50602\"> </a></td><td>Palmira</td></tr><tr><td style=\"white-space:nowrap\">50603<a name=\"distritos-cs-50603\"> </a></td><td>San Miguel</td></tr><tr><td style=\"white-space:nowrap\">50604<a name=\"distritos-cs-50604\"> </a></td><td>Bebedero</td></tr><tr><td style=\"white-space:nowrap\">50605<a name=\"distritos-cs-50605\"> </a></td><td>Porozal</td></tr><tr><td style=\"white-space:nowrap\">50701<a name=\"distritos-cs-50701\"> </a></td><td>Las Juntas</td></tr><tr><td style=\"white-space:nowrap\">50702<a name=\"distritos-cs-50702\"> </a></td><td>Sierra</td></tr><tr><td style=\"white-space:nowrap\">50703<a name=\"distritos-cs-50703\"> </a></td><td>San Juan</td></tr><tr><td style=\"white-space:nowrap\">50704<a name=\"distritos-cs-50704\"> </a></td><td>Colorado</td></tr><tr><td style=\"white-space:nowrap\">50801<a name=\"distritos-cs-50801\"> </a></td><td>Tilarán</td></tr><tr><td style=\"white-space:nowrap\">50802<a name=\"distritos-cs-50802\"> </a></td><td>Quebrada Grande</td></tr><tr><td style=\"white-space:nowrap\">50803<a name=\"distritos-cs-50803\"> </a></td><td>Tronadora</td></tr><tr><td style=\"white-space:nowrap\">50804<a name=\"distritos-cs-50804\"> </a></td><td>Santa Rosa</td></tr><tr><td style=\"white-space:nowrap\">50805<a name=\"distritos-cs-50805\"> </a></td><td>Líbano</td></tr><tr><td style=\"white-space:nowrap\">50806<a name=\"distritos-cs-50806\"> </a></td><td>Tierras Morenas</td></tr><tr><td style=\"white-space:nowrap\">50807<a name=\"distritos-cs-50807\"> </a></td><td>Arenal</td></tr><tr><td style=\"white-space:nowrap\">50808<a name=\"distritos-cs-50808\"> </a></td><td>Cabeceras</td></tr><tr><td style=\"white-space:nowrap\">50901<a name=\"distritos-cs-50901\"> </a></td><td>Carmona</td></tr><tr><td style=\"white-space:nowrap\">50902<a name=\"distritos-cs-50902\"> </a></td><td>Santa Rita</td></tr><tr><td style=\"white-space:nowrap\">50903<a name=\"distritos-cs-50903\"> </a></td><td>Zapotal</td></tr><tr><td style=\"white-space:nowrap\">50904<a name=\"distritos-cs-50904\"> </a></td><td>San Pablo</td></tr><tr><td style=\"white-space:nowrap\">50905<a name=\"distritos-cs-50905\"> </a></td><td>Porvenir</td></tr><tr><td style=\"white-space:nowrap\">50906<a name=\"distritos-cs-50906\"> </a></td><td>Bejuco</td></tr><tr><td style=\"white-space:nowrap\">51001<a name=\"distritos-cs-51001\"> </a></td><td>La Cruz</td></tr><tr><td style=\"white-space:nowrap\">51002<a name=\"distritos-cs-51002\"> </a></td><td>Santa Cecilia</td></tr><tr><td style=\"white-space:nowrap\">51003<a name=\"distritos-cs-51003\"> </a></td><td>La Garita</td></tr><tr><td style=\"white-space:nowrap\">51004<a name=\"distritos-cs-51004\"> </a></td><td>Santa Elena</td></tr><tr><td style=\"white-space:nowrap\">51101<a name=\"distritos-cs-51101\"> </a></td><td>Hojancha</td></tr><tr><td style=\"white-space:nowrap\">51102<a name=\"distritos-cs-51102\"> </a></td><td>Monte Romo</td></tr><tr><td style=\"white-space:nowrap\">51103<a name=\"distritos-cs-51103\"> </a></td><td>Puerto Carrillo</td></tr><tr><td style=\"white-space:nowrap\">51104<a name=\"distritos-cs-51104\"> </a></td><td>Huacas</td></tr><tr><td style=\"white-space:nowrap\">51105<a name=\"distritos-cs-51105\"> </a></td><td>Matambú</td></tr><tr><td style=\"white-space:nowrap\">60101<a name=\"distritos-cs-60101\"> </a></td><td>Puntarenas</td></tr><tr><td style=\"white-space:nowrap\">60102<a name=\"distritos-cs-60102\"> </a></td><td>Pitahaya</td></tr><tr><td style=\"white-space:nowrap\">60103<a name=\"distritos-cs-60103\"> </a></td><td>Chomes</td></tr><tr><td style=\"white-space:nowrap\">60104<a name=\"distritos-cs-60104\"> </a></td><td>Lepanto</td></tr><tr><td style=\"white-space:nowrap\">60105<a name=\"distritos-cs-60105\"> </a></td><td>Paquera</td></tr><tr><td style=\"white-space:nowrap\">60106<a name=\"distritos-cs-60106\"> </a></td><td>Manzanillo</td></tr><tr><td style=\"white-space:nowrap\">60107<a name=\"distritos-cs-60107\"> </a></td><td>Guacimal</td></tr><tr><td style=\"white-space:nowrap\">60108<a name=\"distritos-cs-60108\"> </a></td><td>Barranca</td></tr><tr><td style=\"white-space:nowrap\">60110<a name=\"distritos-cs-60110\"> </a></td><td>Isla del Coco</td></tr><tr><td style=\"white-space:nowrap\">60111<a name=\"distritos-cs-60111\"> </a></td><td>Cóbano</td></tr><tr><td style=\"white-space:nowrap\">60112<a name=\"distritos-cs-60112\"> </a></td><td>Chacarita</td></tr><tr><td style=\"white-space:nowrap\">60113<a name=\"distritos-cs-60113\"> </a></td><td>Chira</td></tr><tr><td style=\"white-space:nowrap\">60114<a name=\"distritos-cs-60114\"> </a></td><td>Acapulco</td></tr><tr><td style=\"white-space:nowrap\">60115<a name=\"distritos-cs-60115\"> </a></td><td>El Roble</td></tr><tr><td style=\"white-space:nowrap\">60116<a name=\"distritos-cs-60116\"> </a></td><td>Arancibia</td></tr><tr><td style=\"white-space:nowrap\">60201<a name=\"distritos-cs-60201\"> </a></td><td>Espíritu Santo</td></tr><tr><td style=\"white-space:nowrap\">60202<a name=\"distritos-cs-60202\"> </a></td><td>San Juan Grande</td></tr><tr><td style=\"white-space:nowrap\">60203<a name=\"distritos-cs-60203\"> </a></td><td>Macacona</td></tr><tr><td style=\"white-space:nowrap\">60204<a name=\"distritos-cs-60204\"> </a></td><td>San Rafael</td></tr><tr><td style=\"white-space:nowrap\">60205<a name=\"distritos-cs-60205\"> </a></td><td>San Jerónimo</td></tr><tr><td style=\"white-space:nowrap\">60206<a name=\"distritos-cs-60206\"> </a></td><td>Caldera</td></tr><tr><td style=\"white-space:nowrap\">60301<a name=\"distritos-cs-60301\"> </a></td><td>Buenos Aires</td></tr><tr><td style=\"white-space:nowrap\">60302<a name=\"distritos-cs-60302\"> </a></td><td>Volcán</td></tr><tr><td style=\"white-space:nowrap\">60303<a name=\"distritos-cs-60303\"> </a></td><td>Potrero Grande</td></tr><tr><td style=\"white-space:nowrap\">60304<a name=\"distritos-cs-60304\"> </a></td><td>Boruca</td></tr><tr><td style=\"white-space:nowrap\">60305<a name=\"distritos-cs-60305\"> </a></td><td>Pilas</td></tr><tr><td style=\"white-space:nowrap\">60306<a name=\"distritos-cs-60306\"> </a></td><td>Colinas</td></tr><tr><td style=\"white-space:nowrap\">60307<a name=\"distritos-cs-60307\"> </a></td><td>Chánguena</td></tr><tr><td style=\"white-space:nowrap\">60308<a name=\"distritos-cs-60308\"> </a></td><td>Biolley</td></tr><tr><td style=\"white-space:nowrap\">60309<a name=\"distritos-cs-60309\"> </a></td><td>Brunka</td></tr><tr><td style=\"white-space:nowrap\">60401<a name=\"distritos-cs-60401\"> </a></td><td>Miramar</td></tr><tr><td style=\"white-space:nowrap\">60402<a name=\"distritos-cs-60402\"> </a></td><td>La Unión</td></tr><tr><td style=\"white-space:nowrap\">60403<a name=\"distritos-cs-60403\"> </a></td><td>San Isidro</td></tr><tr><td style=\"white-space:nowrap\">60501<a name=\"distritos-cs-60501\"> </a></td><td>Ciudad Cortés</td></tr><tr><td style=\"white-space:nowrap\">60502<a name=\"distritos-cs-60502\"> </a></td><td>Palmar</td></tr><tr><td style=\"white-space:nowrap\">60503<a name=\"distritos-cs-60503\"> </a></td><td>Sierpe</td></tr><tr><td style=\"white-space:nowrap\">60504<a name=\"distritos-cs-60504\"> </a></td><td>Bahía Ballena</td></tr><tr><td style=\"white-space:nowrap\">60505<a name=\"distritos-cs-60505\"> </a></td><td>Piedras Blancas</td></tr><tr><td style=\"white-space:nowrap\">60506<a name=\"distritos-cs-60506\"> </a></td><td>Bahía Drake</td></tr><tr><td style=\"white-space:nowrap\">60601<a name=\"distritos-cs-60601\"> </a></td><td>Quepos</td></tr><tr><td style=\"white-space:nowrap\">60602<a name=\"distritos-cs-60602\"> </a></td><td>Savegre</td></tr><tr><td style=\"white-space:nowrap\">60603<a name=\"distritos-cs-60603\"> </a></td><td>Naranjito</td></tr><tr><td style=\"white-space:nowrap\">60701<a name=\"distritos-cs-60701\"> </a></td><td>Golfito</td></tr><tr><td style=\"white-space:nowrap\">60703<a name=\"distritos-cs-60703\"> </a></td><td>Guaycará</td></tr><tr><td style=\"white-space:nowrap\">60704<a name=\"distritos-cs-60704\"> </a></td><td>Pavón</td></tr><tr><td style=\"white-space:nowrap\">60801<a name=\"distritos-cs-60801\"> </a></td><td>San Vito</td></tr><tr><td style=\"white-space:nowrap\">60802<a name=\"distritos-cs-60802\"> </a></td><td>Sabalito</td></tr><tr><td style=\"white-space:nowrap\">60803<a name=\"distritos-cs-60803\"> </a></td><td>Aguabuena</td></tr><tr><td style=\"white-space:nowrap\">60804<a name=\"distritos-cs-60804\"> </a></td><td>Limoncito</td></tr><tr><td style=\"white-space:nowrap\">60805<a name=\"distritos-cs-60805\"> </a></td><td>Pittier</td></tr><tr><td style=\"white-space:nowrap\">60806<a name=\"distritos-cs-60806\"> </a></td><td>Gutiérrez Brown</td></tr><tr><td style=\"white-space:nowrap\">60901<a name=\"distritos-cs-60901\"> </a></td><td>Parrita</td></tr><tr><td style=\"white-space:nowrap\">61001<a name=\"distritos-cs-61001\"> </a></td><td>Corredor</td></tr><tr><td style=\"white-space:nowrap\">61002<a name=\"distritos-cs-61002\"> </a></td><td>La Cuesta</td></tr><tr><td style=\"white-space:nowrap\">61003<a name=\"distritos-cs-61003\"> </a></td><td>Paso Canoas</td></tr><tr><td style=\"white-space:nowrap\">61004<a name=\"distritos-cs-61004\"> </a></td><td>Laurel</td></tr><tr><td style=\"white-space:nowrap\">61101<a name=\"distritos-cs-61101\"> </a></td><td>Jacó</td></tr><tr><td style=\"white-space:nowrap\">61102<a name=\"distritos-cs-61102\"> </a></td><td>Tárcoles</td></tr><tr><td style=\"white-space:nowrap\">61103<a name=\"distritos-cs-61103\"> </a></td><td>Lagunillas</td></tr><tr><td style=\"white-space:nowrap\">61201<a name=\"distritos-cs-61201\"> </a></td><td>Monteverde</td></tr><tr><td style=\"white-space:nowrap\">61301<a name=\"distritos-cs-61301\"> </a></td><td>Puerto Jiménez</td></tr><tr><td style=\"white-space:nowrap\">70101<a name=\"distritos-cs-70101\"> </a></td><td>Limón</td></tr><tr><td style=\"white-space:nowrap\">70102<a name=\"distritos-cs-70102\"> </a></td><td>Valle La Estrella</td></tr><tr><td style=\"white-space:nowrap\">70103<a name=\"distritos-cs-70103\"> </a></td><td>Río Blanco</td></tr><tr><td style=\"white-space:nowrap\">70104<a name=\"distritos-cs-70104\"> </a></td><td>Matama</td></tr><tr><td style=\"white-space:nowrap\">70201<a name=\"distritos-cs-70201\"> </a></td><td>Guápiles</td></tr><tr><td style=\"white-space:nowrap\">70202<a name=\"distritos-cs-70202\"> </a></td><td>Jiménez</td></tr><tr><td style=\"white-space:nowrap\">70203<a name=\"distritos-cs-70203\"> </a></td><td>La Rita</td></tr><tr><td style=\"white-space:nowrap\">70204<a name=\"distritos-cs-70204\"> </a></td><td>Roxana</td></tr><tr><td style=\"white-space:nowrap\">70205<a name=\"distritos-cs-70205\"> </a></td><td>Cariari</td></tr><tr><td style=\"white-space:nowrap\">70206<a name=\"distritos-cs-70206\"> </a></td><td>Colorado</td></tr><tr><td style=\"white-space:nowrap\">70207<a name=\"distritos-cs-70207\"> </a></td><td>La Colonia</td></tr><tr><td style=\"white-space:nowrap\">70301<a name=\"distritos-cs-70301\"> </a></td><td>Siquirres</td></tr><tr><td style=\"white-space:nowrap\">70302<a name=\"distritos-cs-70302\"> </a></td><td>Pacuarito</td></tr><tr><td style=\"white-space:nowrap\">70303<a name=\"distritos-cs-70303\"> </a></td><td>Florida</td></tr><tr><td style=\"white-space:nowrap\">70304<a name=\"distritos-cs-70304\"> </a></td><td>Germania</td></tr><tr><td style=\"white-space:nowrap\">70305<a name=\"distritos-cs-70305\"> </a></td><td>Cairo</td></tr><tr><td style=\"white-space:nowrap\">70306<a name=\"distritos-cs-70306\"> </a></td><td>Alegría</td></tr><tr><td style=\"white-space:nowrap\">70307<a name=\"distritos-cs-70307\"> </a></td><td>Reventazón</td></tr><tr><td style=\"white-space:nowrap\">70401<a name=\"distritos-cs-70401\"> </a></td><td>Bratsi</td></tr><tr><td style=\"white-space:nowrap\">70402<a name=\"distritos-cs-70402\"> </a></td><td>Sixaola</td></tr><tr><td style=\"white-space:nowrap\">70403<a name=\"distritos-cs-70403\"> </a></td><td>Cahuita</td></tr><tr><td style=\"white-space:nowrap\">70404<a name=\"distritos-cs-70404\"> </a></td><td>Telire</td></tr><tr><td style=\"white-space:nowrap\">70501<a name=\"distritos-cs-70501\"> </a></td><td>Matina</td></tr><tr><td style=\"white-space:nowrap\">70502<a name=\"distritos-cs-70502\"> </a></td><td>Batán</td></tr><tr><td style=\"white-space:nowrap\">70503<a name=\"distritos-cs-70503\"> </a></td><td>Carrandi</td></tr><tr><td style=\"white-space:nowrap\">70601<a name=\"distritos-cs-70601\"> </a></td><td>Guácimo</td></tr><tr><td style=\"white-space:nowrap\">70602<a name=\"distritos-cs-70602\"> </a></td><td>Mercedes</td></tr><tr><td style=\"white-space:nowrap\">70603<a name=\"distritos-cs-70603\"> </a></td><td>Pocora</td></tr><tr><td style=\"white-space:nowrap\">70604<a name=\"distritos-cs-70604\"> </a></td><td>Río Jiménez</td></tr><tr><td style=\"white-space:nowrap\">70605<a name=\"distritos-cs-70605\"> </a></td><td>Duacarí</td></tr></table></div>"
+  },
+  "url": "https://ministeriodesalud.go.cr/fhir/CodeSystem/distritos-cs",
+  "version": "1.1.0-ballot",
+  "name": "Distritos",
+  "title": "Distritos de Costa Rica",
+  "status": "active",
+  "experimental": false,
+  "date": "2024-09-20T00:00:00-03:00",
+  "publisher": "Ministerio de Salud de Costa Rica",
+  "contact": [
+    {
+      "name": "Ministerio de Salud de Costa Rica",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "https://www.ministeriodesalud.go.cr/fhir"
+        }
+      ]
+    }
+  ],
+  "description": "Distritos de Costa Rica",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CR",
+          "display": "Costa Rica"
+        }
+      ]
+    }
+  ],
+  "caseSensitive": true,
+  "content": "complete",
+  "count": 492,
+  "concept": [
+    {
+      "code": "10101",
+      "display": "Carmen"
+    },
+    {
+      "code": "10102",
+      "display": "Merced"
+    },
+    {
+      "code": "10103",
+      "display": "Hospital"
+    },
+    {
+      "code": "10104",
+      "display": "Catedral"
+    },
+    {
+      "code": "10105",
+      "display": "Zapote"
+    },
+    {
+      "code": "10106",
+      "display": "San Francisco de Dos Ríos"
+    },
+    {
+      "code": "10107",
+      "display": "Uruca"
+    },
+    {
+      "code": "10108",
+      "display": "Mata Redonda"
+    },
+    {
+      "code": "10109",
+      "display": "Pavas"
+    },
+    {
+      "code": "10110",
+      "display": "Hatillo"
+    },
+    {
+      "code": "10111",
+      "display": "San Sebastián"
+    },
+    {
+      "code": "10201",
+      "display": "Escazú"
+    },
+    {
+      "code": "10202",
+      "display": "San Antonio"
+    },
+    {
+      "code": "10203",
+      "display": "San Rafael"
+    },
+    {
+      "code": "10301",
+      "display": "Desamparados"
+    },
+    {
+      "code": "10302",
+      "display": "San Miguel"
+    },
+    {
+      "code": "10303",
+      "display": "San Juan de Dios"
+    },
+    {
+      "code": "10304",
+      "display": "San Rafael Arriba"
+    },
+    {
+      "code": "10305",
+      "display": "San Antonio"
+    },
+    {
+      "code": "10306",
+      "display": "Frailes"
+    },
+    {
+      "code": "10307",
+      "display": "Patarrá"
+    },
+    {
+      "code": "10308",
+      "display": "San Cristóbal"
+    },
+    {
+      "code": "10309",
+      "display": "Rosario"
+    },
+    {
+      "code": "10310",
+      "display": "Damas"
+    },
+    {
+      "code": "10311",
+      "display": "San Rafael Abajo"
+    },
+    {
+      "code": "10312",
+      "display": "Gravilias"
+    },
+    {
+      "code": "10313",
+      "display": "Los Guido"
+    },
+    {
+      "code": "10401",
+      "display": "Santiago"
+    },
+    {
+      "code": "10402",
+      "display": "Mercedes Sur"
+    },
+    {
+      "code": "10403",
+      "display": "Barbacoas"
+    },
+    {
+      "code": "10404",
+      "display": "Grifo Alto"
+    },
+    {
+      "code": "10405",
+      "display": "San Rafael"
+    },
+    {
+      "code": "10406",
+      "display": "Candelarita"
+    },
+    {
+      "code": "10407",
+      "display": "Desamparaditos"
+    },
+    {
+      "code": "10408",
+      "display": "San Antonio"
+    },
+    {
+      "code": "10409",
+      "display": "Chires"
+    },
+    {
+      "code": "10501",
+      "display": "San Marcos"
+    },
+    {
+      "code": "10502",
+      "display": "San Lorenzo"
+    },
+    {
+      "code": "10503",
+      "display": "San Carlos"
+    },
+    {
+      "code": "10601",
+      "display": "Aserrí"
+    },
+    {
+      "code": "10602",
+      "display": "Tarbaca"
+    },
+    {
+      "code": "10603",
+      "display": "Vuelta de Jorco"
+    },
+    {
+      "code": "10604",
+      "display": "San Gabriel"
+    },
+    {
+      "code": "10605",
+      "display": "Legua"
+    },
+    {
+      "code": "10606",
+      "display": "Monterrey"
+    },
+    {
+      "code": "10607",
+      "display": "Salitrillos"
+    },
+    {
+      "code": "10701",
+      "display": "Ciudad Colón"
+    },
+    {
+      "code": "10702",
+      "display": "Guayabo"
+    },
+    {
+      "code": "10703",
+      "display": "Tabarcia"
+    },
+    {
+      "code": "10704",
+      "display": "Piedras Negras"
+    },
+    {
+      "code": "10705",
+      "display": "Picagres"
+    },
+    {
+      "code": "10706",
+      "display": "Jaris"
+    },
+    {
+      "code": "10707",
+      "display": "Quitirrisí"
+    },
+    {
+      "code": "10801",
+      "display": "Goicoechea"
+    },
+    {
+      "code": "10802",
+      "display": "San Francisco"
+    },
+    {
+      "code": "10803",
+      "display": "Calle Blancos"
+    },
+    {
+      "code": "10804",
+      "display": "Mata de Plátano"
+    },
+    {
+      "code": "10805",
+      "display": "Ipís"
+    },
+    {
+      "code": "10806",
+      "display": "Rancho Redondo"
+    },
+    {
+      "code": "10807",
+      "display": "Purral"
+    },
+    {
+      "code": "10901",
+      "display": "Santa Ana"
+    },
+    {
+      "code": "10902",
+      "display": "Salitral"
+    },
+    {
+      "code": "10903",
+      "display": "Pozos"
+    },
+    {
+      "code": "10904",
+      "display": "Uruca"
+    },
+    {
+      "code": "10905",
+      "display": "Piedades"
+    },
+    {
+      "code": "10906",
+      "display": "Brasil"
+    },
+    {
+      "code": "11001",
+      "display": "Alajuelita"
+    },
+    {
+      "code": "11002",
+      "display": "San Josecito"
+    },
+    {
+      "code": "11003",
+      "display": "San Antonio"
+    },
+    {
+      "code": "11004",
+      "display": "Concepción"
+    },
+    {
+      "code": "11005",
+      "display": "San Felipe"
+    },
+    {
+      "code": "11101",
+      "display": "San Isidro"
+    },
+    {
+      "code": "11102",
+      "display": "San Rafael"
+    },
+    {
+      "code": "11103",
+      "display": "Dulce Nombre de Jesús"
+    },
+    {
+      "code": "11104",
+      "display": "Patalillo"
+    },
+    {
+      "code": "11105",
+      "display": "Cascajal"
+    },
+    {
+      "code": "11201",
+      "display": "San Ignacio"
+    },
+    {
+      "code": "11202",
+      "display": "Guaitil"
+    },
+    {
+      "code": "11203",
+      "display": "Palmichal"
+    },
+    {
+      "code": "11204",
+      "display": "Cangrejal"
+    },
+    {
+      "code": "11205",
+      "display": "Sabanillas"
+    },
+    {
+      "code": "11301",
+      "display": "San Juan"
+    },
+    {
+      "code": "11302",
+      "display": "Cinco Esquinas"
+    },
+    {
+      "code": "11303",
+      "display": "Anselmo Llorente"
+    },
+    {
+      "code": "11304",
+      "display": "León XIII"
+    },
+    {
+      "code": "11305",
+      "display": "Colima"
+    },
+    {
+      "code": "11401",
+      "display": "San Vicente"
+    },
+    {
+      "code": "11402",
+      "display": "San Jerónimo"
+    },
+    {
+      "code": "11403",
+      "display": "La Trinidad"
+    },
+    {
+      "code": "11501",
+      "display": "San Pedro"
+    },
+    {
+      "code": "11502",
+      "display": "Sabanilla"
+    },
+    {
+      "code": "11503",
+      "display": "Mercedes"
+    },
+    {
+      "code": "11504",
+      "display": "San Rafael"
+    },
+    {
+      "code": "11601",
+      "display": "San Pablo"
+    },
+    {
+      "code": "11602",
+      "display": "San Pedro"
+    },
+    {
+      "code": "11603",
+      "display": "San Juan de Mata"
+    },
+    {
+      "code": "11604",
+      "display": "San Luis"
+    },
+    {
+      "code": "11605",
+      "display": "Carara"
+    },
+    {
+      "code": "11701",
+      "display": "Santa María"
+    },
+    {
+      "code": "11702",
+      "display": "Jardín"
+    },
+    {
+      "code": "11703",
+      "display": "Copey"
+    },
+    {
+      "code": "11801",
+      "display": "Curridabat"
+    },
+    {
+      "code": "11802",
+      "display": "Granadilla"
+    },
+    {
+      "code": "11803",
+      "display": "Sánchez"
+    },
+    {
+      "code": "11804",
+      "display": "Tirrases"
+    },
+    {
+      "code": "11901",
+      "display": "San Isidro de El General"
+    },
+    {
+      "code": "11902",
+      "display": "El General"
+    },
+    {
+      "code": "11903",
+      "display": "Daniel Flores"
+    },
+    {
+      "code": "11904",
+      "display": "Rivas"
+    },
+    {
+      "code": "11905",
+      "display": "San Pedro"
+    },
+    {
+      "code": "11906",
+      "display": "Platanares"
+    },
+    {
+      "code": "11907",
+      "display": "Pejibaye"
+    },
+    {
+      "code": "11908",
+      "display": "Cajón"
+    },
+    {
+      "code": "11909",
+      "display": "Barú"
+    },
+    {
+      "code": "11910",
+      "display": "Río Nuevo"
+    },
+    {
+      "code": "11911",
+      "display": "Páramo"
+    },
+    {
+      "code": "11912",
+      "display": "La Amistad"
+    },
+    {
+      "code": "12001",
+      "display": "San Pablo"
+    },
+    {
+      "code": "12002",
+      "display": "San Andrés"
+    },
+    {
+      "code": "12003",
+      "display": "Llano Bonito"
+    },
+    {
+      "code": "12004",
+      "display": "San Isidro"
+    },
+    {
+      "code": "12005",
+      "display": "Santa Cruz"
+    },
+    {
+      "code": "12006",
+      "display": "San Antonio"
+    },
+    {
+      "code": "20101",
+      "display": "Alajuela"
+    },
+    {
+      "code": "20102",
+      "display": "San José"
+    },
+    {
+      "code": "20103",
+      "display": "Carrizal"
+    },
+    {
+      "code": "20104",
+      "display": "San Antonio"
+    },
+    {
+      "code": "20105",
+      "display": "Guácima"
+    },
+    {
+      "code": "20106",
+      "display": "San Isidro"
+    },
+    {
+      "code": "20107",
+      "display": "Sabanilla"
+    },
+    {
+      "code": "20108",
+      "display": "San Rafael"
+    },
+    {
+      "code": "20109",
+      "display": "Río Segundo"
+    },
+    {
+      "code": "20110",
+      "display": "Desamparados"
+    },
+    {
+      "code": "20111",
+      "display": "Turrúcares"
+    },
+    {
+      "code": "20112",
+      "display": "Tambor"
+    },
+    {
+      "code": "20113",
+      "display": "Garita"
+    },
+    {
+      "code": "20114",
+      "display": "Sarapiquí"
+    },
+    {
+      "code": "20201",
+      "display": "San Ramón"
+    },
+    {
+      "code": "20202",
+      "display": "Santiago"
+    },
+    {
+      "code": "20203",
+      "display": "San Juan"
+    },
+    {
+      "code": "20204",
+      "display": "Piedades Norte"
+    },
+    {
+      "code": "20205",
+      "display": "Piedades Sur"
+    },
+    {
+      "code": "20206",
+      "display": "San Rafael"
+    },
+    {
+      "code": "20207",
+      "display": "San Isidro"
+    },
+    {
+      "code": "20208",
+      "display": "Ángeles"
+    },
+    {
+      "code": "20209",
+      "display": "Alfaro"
+    },
+    {
+      "code": "20210",
+      "display": "Volio"
+    },
+    {
+      "code": "20211",
+      "display": "Concepción"
+    },
+    {
+      "code": "20212",
+      "display": "Zapotal"
+    },
+    {
+      "code": "20213",
+      "display": "Peñas Blancas"
+    },
+    {
+      "code": "20214",
+      "display": "San Lorenzo"
+    },
+    {
+      "code": "20301",
+      "display": "Grecia"
+    },
+    {
+      "code": "20302",
+      "display": "San Isidro"
+    },
+    {
+      "code": "20303",
+      "display": "San José"
+    },
+    {
+      "code": "20304",
+      "display": "San Roque"
+    },
+    {
+      "code": "20305",
+      "display": "Tacares"
+    },
+    {
+      "code": "20307",
+      "display": "Puente de Piedra"
+    },
+    {
+      "code": "20308",
+      "display": "Bolívar"
+    },
+    {
+      "code": "20401",
+      "display": "San Mateo"
+    },
+    {
+      "code": "20402",
+      "display": "Desmonte"
+    },
+    {
+      "code": "20403",
+      "display": "Jesús María"
+    },
+    {
+      "code": "20404",
+      "display": "Labrador"
+    },
+    {
+      "code": "20501",
+      "display": "Atenas"
+    },
+    {
+      "code": "20502",
+      "display": "Jesús"
+    },
+    {
+      "code": "20503",
+      "display": "Mercedes"
+    },
+    {
+      "code": "20504",
+      "display": "San Isidro"
+    },
+    {
+      "code": "20505",
+      "display": "Concepción"
+    },
+    {
+      "code": "20506",
+      "display": "San José"
+    },
+    {
+      "code": "20507",
+      "display": "Santa Eulalia"
+    },
+    {
+      "code": "20508",
+      "display": "Escobal"
+    },
+    {
+      "code": "20601",
+      "display": "Naranjo"
+    },
+    {
+      "code": "20602",
+      "display": "San Miguel"
+    },
+    {
+      "code": "20603",
+      "display": "San José"
+    },
+    {
+      "code": "20604",
+      "display": "Cirrí Sur"
+    },
+    {
+      "code": "20605",
+      "display": "San Jerónimo"
+    },
+    {
+      "code": "20606",
+      "display": "San Juan"
+    },
+    {
+      "code": "20607",
+      "display": "El Rosario"
+    },
+    {
+      "code": "20608",
+      "display": "Palmitos"
+    },
+    {
+      "code": "20701",
+      "display": "Palmares"
+    },
+    {
+      "code": "20702",
+      "display": "Zaragoza"
+    },
+    {
+      "code": "20703",
+      "display": "Buenos Aires"
+    },
+    {
+      "code": "20704",
+      "display": "Santiago"
+    },
+    {
+      "code": "20705",
+      "display": "Candelaria"
+    },
+    {
+      "code": "20706",
+      "display": "Esquipulas"
+    },
+    {
+      "code": "20707",
+      "display": "La Granja"
+    },
+    {
+      "code": "20801",
+      "display": "San Pedro"
+    },
+    {
+      "code": "20802",
+      "display": "San Juan"
+    },
+    {
+      "code": "20803",
+      "display": "San Rafael"
+    },
+    {
+      "code": "20804",
+      "display": "Carrillos"
+    },
+    {
+      "code": "20805",
+      "display": "Sabana Redonda"
+    },
+    {
+      "code": "20901",
+      "display": "Orotina"
+    },
+    {
+      "code": "20902",
+      "display": "Mastate"
+    },
+    {
+      "code": "20903",
+      "display": "Hacienda Vieja"
+    },
+    {
+      "code": "20904",
+      "display": "Coyolar"
+    },
+    {
+      "code": "20905",
+      "display": "La Ceiba"
+    },
+    {
+      "code": "21001",
+      "display": "Quesada"
+    },
+    {
+      "code": "21002",
+      "display": "Florencia"
+    },
+    {
+      "code": "21003",
+      "display": "Buenavista"
+    },
+    {
+      "code": "21004",
+      "display": "Aguas Zarcas"
+    },
+    {
+      "code": "21005",
+      "display": "Venecia"
+    },
+    {
+      "code": "21006",
+      "display": "Pital"
+    },
+    {
+      "code": "21007",
+      "display": "La Fortuna"
+    },
+    {
+      "code": "21008",
+      "display": "La Tigra"
+    },
+    {
+      "code": "21009",
+      "display": "La Palmera"
+    },
+    {
+      "code": "21010",
+      "display": "Venado"
+    },
+    {
+      "code": "21011",
+      "display": "Cutris"
+    },
+    {
+      "code": "21012",
+      "display": "Monterrey"
+    },
+    {
+      "code": "21013",
+      "display": "Pocosol"
+    },
+    {
+      "code": "21101",
+      "display": "Zarcero"
+    },
+    {
+      "code": "21102",
+      "display": "Laguna"
+    },
+    {
+      "code": "21103",
+      "display": "Tapezco"
+    },
+    {
+      "code": "21104",
+      "display": "Guadalupe"
+    },
+    {
+      "code": "21105",
+      "display": "Palmira"
+    },
+    {
+      "code": "21106",
+      "display": "Zapote"
+    },
+    {
+      "code": "21107",
+      "display": "Brisas"
+    },
+    {
+      "code": "21201",
+      "display": "Sarchí Norte"
+    },
+    {
+      "code": "21202",
+      "display": "Sarchí Sur"
+    },
+    {
+      "code": "21203",
+      "display": "Toro Amarillo"
+    },
+    {
+      "code": "21204",
+      "display": "San Pedro"
+    },
+    {
+      "code": "21205",
+      "display": "Rodríguez"
+    },
+    {
+      "code": "21301",
+      "display": "Upala"
+    },
+    {
+      "code": "21302",
+      "display": "Aguas Claras"
+    },
+    {
+      "code": "21303",
+      "display": "San José (Pizote)"
+    },
+    {
+      "code": "21304",
+      "display": "Bijagua"
+    },
+    {
+      "code": "21305",
+      "display": "Delicias"
+    },
+    {
+      "code": "21306",
+      "display": "Dos Ríos"
+    },
+    {
+      "code": "21307",
+      "display": "Yolillal"
+    },
+    {
+      "code": "21308",
+      "display": "Canalete"
+    },
+    {
+      "code": "21401",
+      "display": "Los Chiles"
+    },
+    {
+      "code": "21402",
+      "display": "Caño Negro"
+    },
+    {
+      "code": "21403",
+      "display": "El Amparo"
+    },
+    {
+      "code": "21404",
+      "display": "San Jorge"
+    },
+    {
+      "code": "21501",
+      "display": "San Rafael"
+    },
+    {
+      "code": "21502",
+      "display": "Buenavista"
+    },
+    {
+      "code": "21503",
+      "display": "Cote"
+    },
+    {
+      "code": "21504",
+      "display": "Katira"
+    },
+    {
+      "code": "21601",
+      "display": "Río Cuarto"
+    },
+    {
+      "code": "21602",
+      "display": "Santa Rita"
+    },
+    {
+      "code": "21603",
+      "display": "Santa Isabel"
+    },
+    {
+      "code": "30101",
+      "display": "Cartago"
+    },
+    {
+      "code": "30102",
+      "display": "Occidental"
+    },
+    {
+      "code": "30103",
+      "display": "Carmen"
+    },
+    {
+      "code": "30104",
+      "display": "San Nicolás"
+    },
+    {
+      "code": "30105",
+      "display": "Aguacaliente"
+    },
+    {
+      "code": "30106",
+      "display": "Guadalupe o Arenilla"
+    },
+    {
+      "code": "30107",
+      "display": "Corralillo"
+    },
+    {
+      "code": "30108",
+      "display": "Tierra Blanca"
+    },
+    {
+      "code": "30109",
+      "display": "Dulce Nombre"
+    },
+    {
+      "code": "30110",
+      "display": "Llano Grande"
+    },
+    {
+      "code": "30111",
+      "display": "Quebradilla"
+    },
+    {
+      "code": "30201",
+      "display": "Paraíso"
+    },
+    {
+      "code": "30202",
+      "display": "Santiago"
+    },
+    {
+      "code": "30203",
+      "display": "Orosi"
+    },
+    {
+      "code": "30204",
+      "display": "Cachí"
+    },
+    {
+      "code": "30205",
+      "display": "Llanos de Santa Lucía"
+    },
+    {
+      "code": "30206",
+      "display": "Birrisito"
+    },
+    {
+      "code": "30301",
+      "display": "Tres Ríos"
+    },
+    {
+      "code": "30302",
+      "display": "San Diego"
+    },
+    {
+      "code": "30303",
+      "display": "San Juan"
+    },
+    {
+      "code": "30304",
+      "display": "San Rafael"
+    },
+    {
+      "code": "30305",
+      "display": "Concepción"
+    },
+    {
+      "code": "30306",
+      "display": "Dulce Nombre"
+    },
+    {
+      "code": "30307",
+      "display": "San Ramón"
+    },
+    {
+      "code": "30308",
+      "display": "Río Azul"
+    },
+    {
+      "code": "30401",
+      "display": "Juan Viñas"
+    },
+    {
+      "code": "30402",
+      "display": "Tucurrique"
+    },
+    {
+      "code": "30403",
+      "display": "Pejibaye"
+    },
+    {
+      "code": "30404",
+      "display": "La Victoria"
+    },
+    {
+      "code": "30501",
+      "display": "Turrialba"
+    },
+    {
+      "code": "30502",
+      "display": "La Suiza"
+    },
+    {
+      "code": "30503",
+      "display": "Peralta"
+    },
+    {
+      "code": "30504",
+      "display": "Santa Cruz"
+    },
+    {
+      "code": "30505",
+      "display": "Santa Teresita"
+    },
+    {
+      "code": "30506",
+      "display": "Pavones"
+    },
+    {
+      "code": "30507",
+      "display": "Tuis"
+    },
+    {
+      "code": "30508",
+      "display": "Tayutic"
+    },
+    {
+      "code": "30509",
+      "display": "Santa Rosa"
+    },
+    {
+      "code": "30510",
+      "display": "Tres Equis"
+    },
+    {
+      "code": "30511",
+      "display": "La Isabel"
+    },
+    {
+      "code": "30512",
+      "display": "Chirripó"
+    },
+    {
+      "code": "30601",
+      "display": "Pacayas"
+    },
+    {
+      "code": "30602",
+      "display": "Cervantes"
+    },
+    {
+      "code": "30603",
+      "display": "Capellades"
+    },
+    {
+      "code": "30701",
+      "display": "San Rafael"
+    },
+    {
+      "code": "30702",
+      "display": "Cot"
+    },
+    {
+      "code": "30703",
+      "display": "Potrero Cerrado"
+    },
+    {
+      "code": "30704",
+      "display": "Cipreses"
+    },
+    {
+      "code": "30705",
+      "display": "Santa Rosa"
+    },
+    {
+      "code": "30801",
+      "display": "El Tejar"
+    },
+    {
+      "code": "30802",
+      "display": "San Isidro"
+    },
+    {
+      "code": "30803",
+      "display": "Tobosi"
+    },
+    {
+      "code": "30804",
+      "display": "Patio de Agua"
+    },
+    {
+      "code": "40101",
+      "display": "Heredia"
+    },
+    {
+      "code": "40102",
+      "display": "Mercedes"
+    },
+    {
+      "code": "40103",
+      "display": "San Francisco"
+    },
+    {
+      "code": "40104",
+      "display": "Ulloa"
+    },
+    {
+      "code": "40105",
+      "display": "Vara Blanca"
+    },
+    {
+      "code": "40201",
+      "display": "Barva"
+    },
+    {
+      "code": "40202",
+      "display": "San Pedro"
+    },
+    {
+      "code": "40203",
+      "display": "San Pablo"
+    },
+    {
+      "code": "40204",
+      "display": "San Roque"
+    },
+    {
+      "code": "40205",
+      "display": "Santa Lucía"
+    },
+    {
+      "code": "40206",
+      "display": "San José de la Montaña"
+    },
+    {
+      "code": "40207",
+      "display": "Puente Salas"
+    },
+    {
+      "code": "40301",
+      "display": "Santo Domingo"
+    },
+    {
+      "code": "40302",
+      "display": "San Vicente"
+    },
+    {
+      "code": "40303",
+      "display": "San Miguel"
+    },
+    {
+      "code": "40304",
+      "display": "Paracito"
+    },
+    {
+      "code": "40305",
+      "display": "Santo Tomás"
+    },
+    {
+      "code": "40306",
+      "display": "Santa Rosa"
+    },
+    {
+      "code": "40307",
+      "display": "Tures"
+    },
+    {
+      "code": "40308",
+      "display": "Pará"
+    },
+    {
+      "code": "40401",
+      "display": "Santa Bárbara"
+    },
+    {
+      "code": "40402",
+      "display": "San Pedro"
+    },
+    {
+      "code": "40403",
+      "display": "San Juan"
+    },
+    {
+      "code": "40404",
+      "display": "Jesús"
+    },
+    {
+      "code": "40405",
+      "display": "Santo Domingo"
+    },
+    {
+      "code": "40406",
+      "display": "Purabá"
+    },
+    {
+      "code": "40501",
+      "display": "San Rafael"
+    },
+    {
+      "code": "40502",
+      "display": "San Josecito"
+    },
+    {
+      "code": "40503",
+      "display": "Santiago"
+    },
+    {
+      "code": "40504",
+      "display": "Ángeles"
+    },
+    {
+      "code": "40505",
+      "display": "Concepción"
+    },
+    {
+      "code": "40601",
+      "display": "San Isidro"
+    },
+    {
+      "code": "40602",
+      "display": "San José"
+    },
+    {
+      "code": "40603",
+      "display": "Concepción"
+    },
+    {
+      "code": "40604",
+      "display": "San Francisco"
+    },
+    {
+      "code": "40701",
+      "display": "San Antonio"
+    },
+    {
+      "code": "40702",
+      "display": "La Ribera"
+    },
+    {
+      "code": "40703",
+      "display": "La Asunción"
+    },
+    {
+      "code": "40801",
+      "display": "San Joaquín"
+    },
+    {
+      "code": "40802",
+      "display": "Barrantes"
+    },
+    {
+      "code": "40803",
+      "display": "Llorente"
+    },
+    {
+      "code": "40901",
+      "display": "San Pablo"
+    },
+    {
+      "code": "40902",
+      "display": "Rincón de Sabanilla"
+    },
+    {
+      "code": "41001",
+      "display": "Puerto Viejo"
+    },
+    {
+      "code": "41002",
+      "display": "La Virgen"
+    },
+    {
+      "code": "41003",
+      "display": "Horquetas"
+    },
+    {
+      "code": "41004",
+      "display": "Llanuras del Gaspar"
+    },
+    {
+      "code": "41005",
+      "display": "Cureña"
+    },
+    {
+      "code": "50101",
+      "display": "Liberia"
+    },
+    {
+      "code": "50102",
+      "display": "Cañas Dulces"
+    },
+    {
+      "code": "50103",
+      "display": "Mayorga"
+    },
+    {
+      "code": "50104",
+      "display": "Nacascolo"
+    },
+    {
+      "code": "50105",
+      "display": "Curubandé"
+    },
+    {
+      "code": "50201",
+      "display": "Nicoya"
+    },
+    {
+      "code": "50202",
+      "display": "Mansión"
+    },
+    {
+      "code": "50203",
+      "display": "San Antonio"
+    },
+    {
+      "code": "50204",
+      "display": "Quebrada Honda"
+    },
+    {
+      "code": "50205",
+      "display": "Sámara"
+    },
+    {
+      "code": "50206",
+      "display": "Nosara"
+    },
+    {
+      "code": "50207",
+      "display": "Belén de Nosarita"
+    },
+    {
+      "code": "50301",
+      "display": "Santa Cruz"
+    },
+    {
+      "code": "50302",
+      "display": "Bolsón"
+    },
+    {
+      "code": "50303",
+      "display": "Veintisiete de Abril"
+    },
+    {
+      "code": "50304",
+      "display": "Tempate"
+    },
+    {
+      "code": "50305",
+      "display": "Cartagena"
+    },
+    {
+      "code": "50306",
+      "display": "Cuajiniquil"
+    },
+    {
+      "code": "50307",
+      "display": "Diriá"
+    },
+    {
+      "code": "50308",
+      "display": "Cabo Velas"
+    },
+    {
+      "code": "50309",
+      "display": "Tamarindo"
+    },
+    {
+      "code": "50401",
+      "display": "Bagaces"
+    },
+    {
+      "code": "50402",
+      "display": "La Fortuna"
+    },
+    {
+      "code": "50403",
+      "display": "Mogote"
+    },
+    {
+      "code": "50404",
+      "display": "Río Naranjo"
+    },
+    {
+      "code": "50501",
+      "display": "Filadelfia"
+    },
+    {
+      "code": "50502",
+      "display": "Palmira"
+    },
+    {
+      "code": "50503",
+      "display": "Sardinal"
+    },
+    {
+      "code": "50504",
+      "display": "Belén"
+    },
+    {
+      "code": "50601",
+      "display": "Cañas"
+    },
+    {
+      "code": "50602",
+      "display": "Palmira"
+    },
+    {
+      "code": "50603",
+      "display": "San Miguel"
+    },
+    {
+      "code": "50604",
+      "display": "Bebedero"
+    },
+    {
+      "code": "50605",
+      "display": "Porozal"
+    },
+    {
+      "code": "50701",
+      "display": "Las Juntas"
+    },
+    {
+      "code": "50702",
+      "display": "Sierra"
+    },
+    {
+      "code": "50703",
+      "display": "San Juan"
+    },
+    {
+      "code": "50704",
+      "display": "Colorado"
+    },
+    {
+      "code": "50801",
+      "display": "Tilarán"
+    },
+    {
+      "code": "50802",
+      "display": "Quebrada Grande"
+    },
+    {
+      "code": "50803",
+      "display": "Tronadora"
+    },
+    {
+      "code": "50804",
+      "display": "Santa Rosa"
+    },
+    {
+      "code": "50805",
+      "display": "Líbano"
+    },
+    {
+      "code": "50806",
+      "display": "Tierras Morenas"
+    },
+    {
+      "code": "50807",
+      "display": "Arenal"
+    },
+    {
+      "code": "50808",
+      "display": "Cabeceras"
+    },
+    {
+      "code": "50901",
+      "display": "Carmona"
+    },
+    {
+      "code": "50902",
+      "display": "Santa Rita"
+    },
+    {
+      "code": "50903",
+      "display": "Zapotal"
+    },
+    {
+      "code": "50904",
+      "display": "San Pablo"
+    },
+    {
+      "code": "50905",
+      "display": "Porvenir"
+    },
+    {
+      "code": "50906",
+      "display": "Bejuco"
+    },
+    {
+      "code": "51001",
+      "display": "La Cruz"
+    },
+    {
+      "code": "51002",
+      "display": "Santa Cecilia"
+    },
+    {
+      "code": "51003",
+      "display": "La Garita"
+    },
+    {
+      "code": "51004",
+      "display": "Santa Elena"
+    },
+    {
+      "code": "51101",
+      "display": "Hojancha"
+    },
+    {
+      "code": "51102",
+      "display": "Monte Romo"
+    },
+    {
+      "code": "51103",
+      "display": "Puerto Carrillo"
+    },
+    {
+      "code": "51104",
+      "display": "Huacas"
+    },
+    {
+      "code": "51105",
+      "display": "Matambú"
+    },
+    {
+      "code": "60101",
+      "display": "Puntarenas"
+    },
+    {
+      "code": "60102",
+      "display": "Pitahaya"
+    },
+    {
+      "code": "60103",
+      "display": "Chomes"
+    },
+    {
+      "code": "60104",
+      "display": "Lepanto"
+    },
+    {
+      "code": "60105",
+      "display": "Paquera"
+    },
+    {
+      "code": "60106",
+      "display": "Manzanillo"
+    },
+    {
+      "code": "60107",
+      "display": "Guacimal"
+    },
+    {
+      "code": "60108",
+      "display": "Barranca"
+    },
+    {
+      "code": "60110",
+      "display": "Isla del Coco"
+    },
+    {
+      "code": "60111",
+      "display": "Cóbano"
+    },
+    {
+      "code": "60112",
+      "display": "Chacarita"
+    },
+    {
+      "code": "60113",
+      "display": "Chira"
+    },
+    {
+      "code": "60114",
+      "display": "Acapulco"
+    },
+    {
+      "code": "60115",
+      "display": "El Roble"
+    },
+    {
+      "code": "60116",
+      "display": "Arancibia"
+    },
+    {
+      "code": "60201",
+      "display": "Espíritu Santo"
+    },
+    {
+      "code": "60202",
+      "display": "San Juan Grande"
+    },
+    {
+      "code": "60203",
+      "display": "Macacona"
+    },
+    {
+      "code": "60204",
+      "display": "San Rafael"
+    },
+    {
+      "code": "60205",
+      "display": "San Jerónimo"
+    },
+    {
+      "code": "60206",
+      "display": "Caldera"
+    },
+    {
+      "code": "60301",
+      "display": "Buenos Aires"
+    },
+    {
+      "code": "60302",
+      "display": "Volcán"
+    },
+    {
+      "code": "60303",
+      "display": "Potrero Grande"
+    },
+    {
+      "code": "60304",
+      "display": "Boruca"
+    },
+    {
+      "code": "60305",
+      "display": "Pilas"
+    },
+    {
+      "code": "60306",
+      "display": "Colinas"
+    },
+    {
+      "code": "60307",
+      "display": "Chánguena"
+    },
+    {
+      "code": "60308",
+      "display": "Biolley"
+    },
+    {
+      "code": "60309",
+      "display": "Brunka"
+    },
+    {
+      "code": "60401",
+      "display": "Miramar"
+    },
+    {
+      "code": "60402",
+      "display": "La Unión"
+    },
+    {
+      "code": "60403",
+      "display": "San Isidro"
+    },
+    {
+      "code": "60501",
+      "display": "Ciudad Cortés"
+    },
+    {
+      "code": "60502",
+      "display": "Palmar"
+    },
+    {
+      "code": "60503",
+      "display": "Sierpe"
+    },
+    {
+      "code": "60504",
+      "display": "Bahía Ballena"
+    },
+    {
+      "code": "60505",
+      "display": "Piedras Blancas"
+    },
+    {
+      "code": "60506",
+      "display": "Bahía Drake"
+    },
+    {
+      "code": "60601",
+      "display": "Quepos"
+    },
+    {
+      "code": "60602",
+      "display": "Savegre"
+    },
+    {
+      "code": "60603",
+      "display": "Naranjito"
+    },
+    {
+      "code": "60701",
+      "display": "Golfito"
+    },
+    {
+      "code": "60703",
+      "display": "Guaycará"
+    },
+    {
+      "code": "60704",
+      "display": "Pavón"
+    },
+    {
+      "code": "60801",
+      "display": "San Vito"
+    },
+    {
+      "code": "60802",
+      "display": "Sabalito"
+    },
+    {
+      "code": "60803",
+      "display": "Aguabuena"
+    },
+    {
+      "code": "60804",
+      "display": "Limoncito"
+    },
+    {
+      "code": "60805",
+      "display": "Pittier"
+    },
+    {
+      "code": "60806",
+      "display": "Gutiérrez Brown"
+    },
+    {
+      "code": "60901",
+      "display": "Parrita"
+    },
+    {
+      "code": "61001",
+      "display": "Corredor"
+    },
+    {
+      "code": "61002",
+      "display": "La Cuesta"
+    },
+    {
+      "code": "61003",
+      "display": "Paso Canoas"
+    },
+    {
+      "code": "61004",
+      "display": "Laurel"
+    },
+    {
+      "code": "61101",
+      "display": "Jacó"
+    },
+    {
+      "code": "61102",
+      "display": "Tárcoles"
+    },
+    {
+      "code": "61103",
+      "display": "Lagunillas"
+    },
+    {
+      "code": "61201",
+      "display": "Monteverde"
+    },
+    {
+      "code": "61301",
+      "display": "Puerto Jiménez"
+    },
+    {
+      "code": "70101",
+      "display": "Limón"
+    },
+    {
+      "code": "70102",
+      "display": "Valle La Estrella"
+    },
+    {
+      "code": "70103",
+      "display": "Río Blanco"
+    },
+    {
+      "code": "70104",
+      "display": "Matama"
+    },
+    {
+      "code": "70201",
+      "display": "Guápiles"
+    },
+    {
+      "code": "70202",
+      "display": "Jiménez"
+    },
+    {
+      "code": "70203",
+      "display": "La Rita"
+    },
+    {
+      "code": "70204",
+      "display": "Roxana"
+    },
+    {
+      "code": "70205",
+      "display": "Cariari"
+    },
+    {
+      "code": "70206",
+      "display": "Colorado"
+    },
+    {
+      "code": "70207",
+      "display": "La Colonia"
+    },
+    {
+      "code": "70301",
+      "display": "Siquirres"
+    },
+    {
+      "code": "70302",
+      "display": "Pacuarito"
+    },
+    {
+      "code": "70303",
+      "display": "Florida"
+    },
+    {
+      "code": "70304",
+      "display": "Germania"
+    },
+    {
+      "code": "70305",
+      "display": "Cairo"
+    },
+    {
+      "code": "70306",
+      "display": "Alegría"
+    },
+    {
+      "code": "70307",
+      "display": "Reventazón"
+    },
+    {
+      "code": "70401",
+      "display": "Bratsi"
+    },
+    {
+      "code": "70402",
+      "display": "Sixaola"
+    },
+    {
+      "code": "70403",
+      "display": "Cahuita"
+    },
+    {
+      "code": "70404",
+      "display": "Telire"
+    },
+    {
+      "code": "70501",
+      "display": "Matina"
+    },
+    {
+      "code": "70502",
+      "display": "Batán"
+    },
+    {
+      "code": "70503",
+      "display": "Carrandi"
+    },
+    {
+      "code": "70601",
+      "display": "Guácimo"
+    },
+    {
+      "code": "70602",
+      "display": "Mercedes"
+    },
+    {
+      "code": "70603",
+      "display": "Pocora"
+    },
+    {
+      "code": "70604",
+      "display": "Río Jiménez"
+    },
+    {
+      "code": "70605",
+      "display": "Duacarí"
+    }
+  ]
+}

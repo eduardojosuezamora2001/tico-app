@@ -44,6 +44,109 @@ export const moduleNameSchema = z.enum(Object.values(MODULES))
 export const permissionNameSchema = z.enum(Object.values(PERMISSIONS))
 export const languageCodeSchema = z.enum(Object.values(LANGUAGES))
 export const appointmentStatusSchema = z.enum(Object.values(APPOINTMENT_STATUS))
+export const countryCodeSchema = z
+  .string()
+  .trim()
+  .length(2, "Código de país ISO de 2 letras")
+  .transform((value) => value.toUpperCase())
+
+// --------------------------------------------------------------------------
+// Países y direcciones
+// --------------------------------------------------------------------------
+
+export const CountrySchema = z.object({
+  id: uuidSchema,
+  code: countryCodeSchema,
+  name: z.string().min(1),
+  nativeName: z.string().min(1),
+  phoneCode: z.string().min(1),
+  currencyCode: z.string().length(3),
+  defaultLanguage: languageCodeSchema,
+  isActive: z.boolean(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+})
+
+export const CountryAdministrativeLevelSchema = z.object({
+  id: uuidSchema,
+  countryId: uuidSchema,
+  level: z.number().int().min(1).max(8),
+  type: z.string().min(1),
+  label: z.string().min(1),
+})
+
+export const AdministrativeDivisionSchema = z.object({
+  id: uuidSchema,
+  countryId: uuidSchema,
+  parentId: uuidSchema.nullable(),
+  name: z.string().min(1),
+  type: z.string().min(1),
+  level: z.number().int().min(1).max(8),
+  code: z.string().nullable(),
+  isActive: z.boolean(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+})
+
+export const ListAdministrativeDivisionsSchema = z.object({
+  country: countryCodeSchema,
+  parentId: uuidSchema.optional(),
+})
+
+export const AddressSchema = z.object({
+  id: uuidSchema,
+  countryId: uuidSchema,
+  administrativeDivisionId: uuidSchema.nullable(),
+  postalCode: z.string().trim().max(20).nullable(),
+  addressLine1: z.string().trim().min(1),
+  addressLine2: z.string().trim().max(300).nullable(),
+  reference: z.string().trim().max(500).nullable(),
+  latitude: latitudeSchema.nullable(),
+  longitude: longitudeSchema.nullable(),
+  formattedAddress: z.string().trim().max(500).nullable(),
+  placeId: z.string().trim().max(200).nullable(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+})
+
+const addressFieldsSchema = z.object({
+  countryId: uuidSchema,
+  administrativeDivisionId: uuidSchema.optional(),
+  postalCode: z.string().trim().max(20).optional(),
+  addressLine1: z.string().trim().min(1, "La dirección principal es requerida").max(300),
+  addressLine2: z.string().trim().max(300).optional(),
+  reference: z.string().trim().max(500).optional(),
+  latitude: latitudeSchema.optional(),
+  longitude: longitudeSchema.optional(),
+  formattedAddress: z.string().trim().max(500).optional(),
+  placeId: z.string().trim().max(200).optional(),
+})
+
+function coordinatesPairRefinement<T extends { latitude?: number; longitude?: number }>(
+  value: T,
+) {
+  return (value.latitude === undefined) === (value.longitude === undefined)
+}
+
+export const CreateAddressSchema = addressFieldsSchema.refine(coordinatesPairRefinement, {
+  message: "Latitud y longitud deben enviarse juntas",
+  path: ["longitude"],
+})
+
+export const UpdateAddressSchema = addressFieldsSchema
+  .partial()
+  .extend({ countryId: uuidSchema.optional() })
+  .refine(coordinatesPairRefinement, {
+    message: "Latitud y longitud deben enviarse juntas",
+    path: ["longitude"],
+  })
+
+export const NearbyBusinessesSchema = z.object({
+  lat: latitudeSchema,
+  lng: longitudeSchema,
+  radius: z.number().positive().max(50_000).default(5000),
+  limit: z.number().int().min(1).max(50).default(20),
+})
 
 // --------------------------------------------------------------------------
 // Usuarios
@@ -139,6 +242,7 @@ export const CreateBusinessSchema = z.object({
   sinpePhone: z.string().trim().max(30).optional(),
   sinpeHolder: z.string().trim().max(120).optional(),
   iban: z.string().trim().max(40).optional(),
+  addressId: uuidSchema.optional(),
   isDraft: z.boolean().optional(),
 })
 
@@ -395,6 +499,9 @@ export const AuditLogSchema = z.object({
 // Tipos inferidos de inputs
 // --------------------------------------------------------------------------
 
+export type CreateAddressInput = z.infer<typeof CreateAddressSchema>
+export type UpdateAddressInput = z.infer<typeof UpdateAddressSchema>
+export type NearbyBusinessesInput = z.infer<typeof NearbyBusinessesSchema>
 export type SignUpInput = z.infer<typeof SignUpSchema>
 export type SignInInput = z.infer<typeof SignInSchema>
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>

@@ -2,6 +2,7 @@ export * from "./constants.js"
 export * from "./types.js"
 export * from "./schemas.js"
 export * from "./mappers.js"
+export * from "./geocoding.js"
 export type {
   Database,
   Json,

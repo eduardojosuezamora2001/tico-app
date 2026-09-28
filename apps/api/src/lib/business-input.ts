@@ -43,5 +43,6 @@ export function businessPatchFromInput(input: BusinessInput) {
   if (input.isActive !== undefined) patch.is_active = input.isActive
   if (input.isDraft !== undefined) patch.is_draft = input.isDraft
   if (input.chatRetentionDays !== undefined) patch.chat_retention_days = input.chatRetentionDays
+  if (input.addressId !== undefined) patch.address_id = input.addressId || null
   return patch
 }
