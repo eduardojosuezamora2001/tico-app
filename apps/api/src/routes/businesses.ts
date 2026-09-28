@@ -99,6 +99,20 @@ businessRoutes.get("/", async (c) => {
   })
 })
 
+businessRoutes.get("/:id/modules", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
+  const { data, error } = await c
+    .get("db")
+    .from("business_modules")
+    .select("*")
+    .eq("business_id", parsedId.data)
+  if (error) return dbFail(c, error)
+
+  return c.json({ data: (data ?? []).map(toBusinessModule) })
+})
+
 businessRoutes.get("/:id", async (c) => {
   const parsedId = z.uuid().safeParse(c.req.param("id"))
   if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")

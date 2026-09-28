@@ -1,18 +1,38 @@
-import { useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router"
+import { useEffect, useState } from "react"
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router"
 
 import { GoogleSignInButton } from "@/components/google-sign-in-button"
 import { SiteHeader } from "@/components/site-header"
 import { supabase } from "@/lib/supabase"
+import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@workspace/ui/components/button"
+
+function safeNext(value: string | null | undefined, fallback = "/cuenta") {
+  if (value && value.startsWith("/") && !value.startsWith("//")) return value
+  return fallback
+}
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [params] = useSearchParams()
+  const status = useAuthStore((s) => s.status)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+
+  const fromState = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from
+  const destination = safeNext(
+    params.get("next") ??
+      (fromState ? `${fromState.pathname ?? ""}${fromState.search ?? ""}${fromState.hash ?? ""}` : null),
+  )
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      navigate(destination, { replace: true })
+    }
+  }, [destination, navigate, status])
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -22,10 +42,7 @@ export function LoginPage() {
     setPending(false)
     if (signInError) {
       setError("Correo o contraseña incorrectos.")
-      return
     }
-    const next = params.get("next")
-    navigate(next && next.startsWith("/") && !next.startsWith("//") ? next : "/cuenta")
   }
 
   return (

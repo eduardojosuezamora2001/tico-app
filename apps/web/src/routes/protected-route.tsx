@@ -23,7 +23,8 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps) {
   }
 
   if (status === "unauthenticated") {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    const next = `${location.pathname}${location.search}${location.hash}`
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace state={{ from: location }} />
   }
 
   if (roles && (!profile || !roles.includes(profile.role))) {
