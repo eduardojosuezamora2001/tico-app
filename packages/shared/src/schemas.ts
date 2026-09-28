@@ -103,23 +103,50 @@ export const BusinessSchema = z.object({
   updatedAt: isoDateSchema,
 })
 
+const businessSocialUrlSchema = z
+  .string()
+  .trim()
+  .max(300)
+  .refine((value) => value === "" || z.url().safeParse(value).success, {
+    message: "URL invalida",
+  })
+
 export const CreateBusinessSchema = z.object({
   name: z.string().trim().min(1, "Requerido").max(120),
+  tagline: z.string().trim().max(160).optional(),
   description: z.string().trim().max(2000).optional(),
   category: z.string().trim().min(1, "Requerido").max(60),
   latitude: latitudeSchema.optional(),
   longitude: longitudeSchema.optional(),
+  province: z.string().trim().max(60).optional(),
+  canton: z.string().trim().max(60).optional(),
+  district: z.string().trim().max(60).optional(),
   address: z.string().trim().max(300).optional(),
   whatsappNumber: phoneE164Schema.optional(),
-  website: urlSchema.optional(),
+  website: businessSocialUrlSchema.optional(),
   email: emailSchema.optional(),
   phone: z.string().trim().max(30).optional(),
+  facebookUrl: businessSocialUrlSchema.optional(),
+  instagramUrl: businessSocialUrlSchema.optional(),
+  tiktokUrl: businessSocialUrlSchema.optional(),
+  offersDelivery: z.boolean().optional(),
+  deliveryCost: priceSchema.optional(),
+  deliveryRadiusKm: z.number().positive().max(MAX_SEARCH_RADIUS_KM).optional(),
+  paymentCash: z.boolean().optional(),
+  paymentCard: z.boolean().optional(),
+  paymentSinpe: z.boolean().optional(),
+  paymentIban: z.boolean().optional(),
+  sinpePhone: z.string().trim().max(30).optional(),
+  sinpeHolder: z.string().trim().max(120).optional(),
+  iban: z.string().trim().max(40).optional(),
+  isDraft: z.boolean().optional(),
 })
 
 export const UpdateBusinessSchema = CreateBusinessSchema.partial().extend({
   logoUrl: urlSchema.nullable().optional(),
   bannerUrl: urlSchema.nullable().optional(),
   isActive: z.boolean().optional(),
+  isDraft: z.boolean().optional(),
   chatRetentionDays: z
     .number()
     .int()
@@ -166,6 +193,12 @@ export const BusinessHoursSchema = z
   .refine((v) => v.isClosed || (v.openTime !== null && v.closeTime !== null), {
     message: "openTime y closeTime son requeridos salvo que isClosed sea true",
   })
+
+export const UpsertBusinessHoursSchema = z.array(BusinessHoursSchema).min(1).max(14)
+
+export const AddCoOwnerSchema = z.object({
+  email: emailSchema,
+})
 
 // --------------------------------------------------------------------------
 // Empleados / permisos

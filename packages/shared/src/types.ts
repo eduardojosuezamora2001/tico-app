@@ -60,17 +60,35 @@ export interface Business {
   ownerId: string
   slug: string
   name: string
+  tagline: string | null
   description: string | null
   category: string
   latitude: number | null
   longitude: number | null
+  province: string | null
+  canton: string | null
+  district: string | null
   address: string | null
   whatsappNumber: string | null
   website: string | null
   email: string | null
   phone: string | null
+  facebookUrl: string | null
+  instagramUrl: string | null
+  tiktokUrl: string | null
   logoUrl: string | null
   bannerUrl: string | null
+  offersDelivery: boolean
+  deliveryCost: number | null
+  deliveryRadiusKm: number | null
+  paymentCash: boolean
+  paymentCard: boolean
+  paymentSinpe: boolean
+  paymentIban: boolean
+  sinpePhone: string | null
+  sinpeHolder: string | null
+  iban: string | null
+  isDraft: boolean
   isActive: boolean
   chatRetentionDays: number
   createdAt: ISODateString

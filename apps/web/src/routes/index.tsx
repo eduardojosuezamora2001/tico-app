@@ -8,7 +8,8 @@ import { RegisterPage } from "@/pages/register"
 import { AuthCallbackPage } from "@/pages/auth-callback"
 import { AccountPage } from "@/pages/account"
 import { BusinessPage } from "@/pages/business"
-import { MerchantBusinessPage, MerchantHomePage, NewBusinessPage } from "@/pages/merchant"
+import { MerchantBusinessPage, MerchantHomePage } from "@/pages/merchant"
+import { NewBusinessPage } from "@/pages/new-business"
 import { LocalChatPage, MessageThreadPage, MessagesPage } from "@/pages/messages"
 import { NotFoundPage } from "@/pages/not-found"
 
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
           { path: "mensajes/:conversationId", element: <MessageThreadPage /> },
           { path: "mi-negocio", element: <MerchantHomePage /> },
           { path: "mi-negocio/nuevo", element: <NewBusinessPage /> },
+          { path: "mi-negocio/nuevo/:draftId", element: <NewBusinessPage /> },
           { path: "mi-negocio/:id", element: <MerchantBusinessPage /> },
         ],
       },

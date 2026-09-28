@@ -1,5 +1,20 @@
 import type { Tables } from "./database.types.js"
-import type { Business, BusinessEvent, BusinessModule, BusinessRole, Conversation, GalleryImage, MenuItem, Message, PermissionName, Product, Service, TeamMember, User } from "./types.js"
+import type {
+  Business,
+  BusinessEvent,
+  BusinessHours,
+  BusinessModule,
+  BusinessRole,
+  Conversation,
+  GalleryImage,
+  MenuItem,
+  Message,
+  PermissionName,
+  Product,
+  Service,
+  TeamMember,
+  User,
+} from "./types.js"
 
 export function toUser(row: Tables<"users">): User {
   return {
@@ -20,21 +35,52 @@ export function toBusiness(row: Tables<"businesses">): Business {
     ownerId: row.owner_id,
     slug: row.slug,
     name: row.name,
+    tagline: row.tagline ?? null,
     description: row.description,
     category: row.category,
     latitude: row.latitude,
     longitude: row.longitude,
+    province: row.province ?? null,
+    canton: row.canton ?? null,
+    district: row.district ?? null,
     address: row.address,
     whatsappNumber: row.whatsapp_number,
     website: row.website,
     email: row.email,
     phone: row.phone,
+    facebookUrl: row.facebook_url ?? null,
+    instagramUrl: row.instagram_url ?? null,
+    tiktokUrl: row.tiktok_url ?? null,
     logoUrl: row.logo_url,
     bannerUrl: row.banner_url,
+    offersDelivery: row.offers_delivery ?? false,
+    deliveryCost: row.delivery_cost ?? null,
+    deliveryRadiusKm: row.delivery_radius_km ?? null,
+    paymentCash: row.payment_cash ?? false,
+    paymentCard: row.payment_card ?? false,
+    paymentSinpe: row.payment_sinpe ?? false,
+    paymentIban: row.payment_iban ?? false,
+    sinpePhone: row.sinpe_phone ?? null,
+    sinpeHolder: row.sinpe_holder ?? null,
+    iban: row.iban ?? null,
+    isDraft: row.is_draft ?? false,
     isActive: row.is_active,
     chatRetentionDays: row.chat_retention_days,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+export function toBusinessHours(row: Tables<"business_hours">): BusinessHours {
+  return {
+    id: row.id,
+    businessId: row.business_id,
+    dayOfWeek: row.day_of_week,
+    exceptionDate: row.exception_date,
+    openTime: row.open_time,
+    closeTime: row.close_time,
+    isClosed: row.is_closed,
+    createdAt: row.created_at,
   }
 }
 

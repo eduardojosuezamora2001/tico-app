@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, useParams } from "react-router"
-import type { Business, BusinessEvent, GalleryImage, MenuItem, Product, Service } from "@workspace/shared"
+import type { Business, BusinessEvent, BusinessHours, GalleryImage, MenuItem, Product, Service } from "@workspace/shared"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
@@ -23,6 +23,7 @@ export function BusinessPage() {
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [events, setEvents] = useState<BusinessEvent[]>([])
   const [gallery, setGallery] = useState<GalleryImage[]>([])
+  const [hours, setHours] = useState<BusinessHours[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function BusinessPage() {
         setPayload(next)
         const enabled = new Set(next.modules.filter((item) => item.enabled).map((item) => item.moduleName))
         const businessId = next.business.id
-        const [productRes, serviceRes, menuRes, eventRes, galleryRes] = await Promise.all([
+        const [productRes, serviceRes, menuRes, eventRes, galleryRes, hoursRes] = await Promise.all([
           enabled.has("products")
             ? api.get<{ data: Product[] }>(`/businesses/${businessId}/products`)
             : Promise.resolve({ data: { data: [] as Product[] } }),
@@ -47,12 +48,14 @@ export function BusinessPage() {
             : Promise.resolve({ data: { data: [] as MenuItem[] } }),
           api.get<{ data: BusinessEvent[] }>(`/businesses/${businessId}/events`),
           api.get<{ data: GalleryImage[] }>(`/businesses/${businessId}/gallery`),
+          api.get<{ data: BusinessHours[] }>(`/businesses/${businessId}/hours`).catch(() => ({ data: { data: [] as BusinessHours[] } })),
         ])
         setProducts(productRes.data.data)
         setServices(serviceRes.data.data)
         setMenu(menuRes.data.data)
         setEvents(eventRes.data.data)
         setGallery(galleryRes.data.data)
+        setHours(hoursRes.data.data)
       })
       .catch(() => setError("No encontramos ese comercio."))
   }, [id])
@@ -115,7 +118,7 @@ export function BusinessPage() {
                     <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{business.name}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {business.category}
-                      {business.description ? ` · ${business.description}` : ""}
+                      {business.tagline ? ` · ${business.tagline}` : ""}
                     </p>
                     {business.address ? <p className="mt-1 text-sm">{business.address}</p> : null}
                   </div>
@@ -186,6 +189,32 @@ export function BusinessPage() {
                           <a className="text-primary" href={business.website} target="_blank" rel="noreferrer">
                             {business.website.replace(/^https?:\/\//, "")}
                           </a>
+                        </InfoRow>
+                      ) : null}
+                      {hours.length > 0 ? (
+                        <InfoRow label="Horario">
+                          <ul className="flex flex-col gap-1">
+                            {hours.map((row) => (
+                              <li key={row.id} className="text-sm">
+                                {formatDay(row.dayOfWeek)}: {formatHours(row)}
+                              </li>
+                            ))}
+                          </ul>
+                        </InfoRow>
+                      ) : null}
+                      {paymentSummary(business).length > 0 ? (
+                        <InfoRow label="Pagos">
+                          <p>{paymentSummary(business).join(" · ")}</p>
+                          {business.paymentSinpe && business.sinpePhone ? <p className="mt-1 text-sm">SINPE {business.sinpePhone}</p> : null}
+                          {business.paymentSinpe && business.sinpeHolder ? <p className="text-sm text-muted-foreground">{business.sinpeHolder}</p> : null}
+                        </InfoRow>
+                      ) : null}
+                      {business.offersDelivery ? (
+                        <InfoRow label="Domicilio">
+                          <p className="text-sm">
+                            {business.deliveryCost != null ? `Costo desde ₡${business.deliveryCost.toLocaleString("es-CR")}` : "Servicio express disponible"}
+                            {business.deliveryRadiusKm != null ? ` · Radio ~${business.deliveryRadiusKm} km` : ""}
+                          </p>
                         </InfoRow>
                       ) : null}
                     </InfoCard>
@@ -271,6 +300,27 @@ export function BusinessPage() {
       </main>
     </div>
   )
+}
+
+const dayLabels = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+
+function formatDay(dayOfWeek: number | null) {
+  if (dayOfWeek == null) return "Horario"
+  return dayLabels[dayOfWeek] ?? "Día"
+}
+
+function formatHours(row: BusinessHours) {
+  if (row.isClosed) return "Cerrado"
+  return `${row.openTime?.slice(0, 5) ?? "--:--"} – ${row.closeTime?.slice(0, 5) ?? "--:--"}`
+}
+
+function paymentSummary(business: Business) {
+  const items: string[] = []
+  if (business.paymentSinpe) items.push("SINPE Móvil")
+  if (business.paymentCash) items.push("Efectivo")
+  if (business.paymentCard) items.push("Tarjeta")
+  if (business.paymentIban) items.push("IBAN")
+  return items
 }
 
 function InfoCard({ title, detail, children }: { title: string; detail: string; children: ReactNode }) {

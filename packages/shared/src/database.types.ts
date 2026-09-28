@@ -331,21 +331,39 @@ export type Database = {
         Row: {
           address: string | null
           banner_url: string | null
+          canton: string | null
           category: string
           chat_retention_days: number
           created_at: string
+          delivery_cost: number | null
+          delivery_radius_km: number | null
           description: string | null
+          district: string | null
           email: string | null
+          facebook_url: string | null
+          iban: string | null
           id: string
+          instagram_url: string | null
           is_active: boolean
+          is_draft: boolean
           latitude: number | null
           location: unknown
           logo_url: string | null
           longitude: number | null
           name: string
+          offers_delivery: boolean
           owner_id: string
+          payment_card: boolean
+          payment_cash: boolean
+          payment_iban: boolean
+          payment_sinpe: boolean
           phone: string | null
+          province: string | null
+          sinpe_holder: string | null
+          sinpe_phone: string | null
           slug: string
+          tagline: string | null
+          tiktok_url: string | null
           updated_at: string
           website: string | null
           whatsapp_number: string | null
@@ -353,21 +371,39 @@ export type Database = {
         Insert: {
           address?: string | null
           banner_url?: string | null
+          canton?: string | null
           category: string
           chat_retention_days?: number
           created_at?: string
+          delivery_cost?: number | null
+          delivery_radius_km?: number | null
           description?: string | null
+          district?: string | null
           email?: string | null
+          facebook_url?: string | null
+          iban?: string | null
           id?: string
+          instagram_url?: string | null
           is_active?: boolean
+          is_draft?: boolean
           latitude?: number | null
           location?: unknown
           logo_url?: string | null
           longitude?: number | null
           name: string
+          offers_delivery?: boolean
           owner_id: string
+          payment_card?: boolean
+          payment_cash?: boolean
+          payment_iban?: boolean
+          payment_sinpe?: boolean
           phone?: string | null
+          province?: string | null
+          sinpe_holder?: string | null
+          sinpe_phone?: string | null
           slug?: string
+          tagline?: string | null
+          tiktok_url?: string | null
           updated_at?: string
           website?: string | null
           whatsapp_number?: string | null
@@ -375,21 +411,39 @@ export type Database = {
         Update: {
           address?: string | null
           banner_url?: string | null
+          canton?: string | null
           category?: string
           chat_retention_days?: number
           created_at?: string
+          delivery_cost?: number | null
+          delivery_radius_km?: number | null
           description?: string | null
+          district?: string | null
           email?: string | null
+          facebook_url?: string | null
+          iban?: string | null
           id?: string
+          instagram_url?: string | null
           is_active?: boolean
+          is_draft?: boolean
           latitude?: number | null
           location?: unknown
           logo_url?: string | null
           longitude?: number | null
           name?: string
+          offers_delivery?: boolean
           owner_id?: string
+          payment_card?: boolean
+          payment_cash?: boolean
+          payment_iban?: boolean
+          payment_sinpe?: boolean
           phone?: string | null
+          province?: string | null
+          sinpe_holder?: string | null
+          sinpe_phone?: string | null
           slug?: string
+          tagline?: string | null
+          tiktok_url?: string | null
           updated_at?: string
           website?: string | null
           whatsapp_number?: string | null

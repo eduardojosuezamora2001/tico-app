@@ -20,54 +20,6 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
-const categories = ["Sodas", "Farmacia", "Ferretería", "Pulpería", "Belleza", "Servicios"]
-
-export function NewBusinessPage() {
-  const navigate = useNavigate()
-  const [name, setName] = useState("")
-  const [category, setCategory] = useState(categories[0] ?? "Servicios")
-  const [whatsapp, setWhatsapp] = useState("")
-  const [error, setError] = useState<string | null>(null)
-
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setError(null)
-    try {
-      const response = await api.post<{ data: Business }>("/businesses", {
-        name,
-        category,
-        whatsappNumber: whatsapp || undefined,
-      })
-      navigate(`/mi-negocio/${response.data.data.id}`)
-    } catch {
-      setError("No se pudo crear el negocio. Revisa el WhatsApp (+506…) y que hayas iniciado sesión.")
-    }
-  }
-
-  return (
-    <div className="min-h-svh bg-background">
-      <SiteHeader />
-      <main className="mx-auto max-w-md px-4 py-10">
-        <h1 className="text-2xl font-semibold">Publicar mi negocio</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Solo el nombre, la categoría y el WhatsApp. El catálogo y el equipo se agregan después, si quieres.
-        </p>
-        <form className="mt-6 space-y-3" onSubmit={(event) => void onSubmit(event)}>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del negocio" className="w-full rounded-xl border border-border bg-card px-3 py-2" />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-border bg-card px-3 py-2">
-            {categories.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-          <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="WhatsApp +506..." className="w-full rounded-xl border border-border bg-card px-3 py-2" />
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button type="submit" className="w-full">Crear negocio</Button>
-        </form>
-      </main>
-    </div>
-  )
-}
-
 type Membership = { businessId: string; business: { name: string; slug: string } | null }
 
 export function MerchantHomePage() {
