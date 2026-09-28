@@ -1,0 +1,1 @@
+-- Obsoleto: México solo usa 2 niveles (estado, municipio). Ver 20260928006400_mx_co_remove_level3.sql.

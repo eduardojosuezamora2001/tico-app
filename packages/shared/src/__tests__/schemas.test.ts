@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest"
 import {
   AddBusinessUserSchema,
   BusinessHoursSchema,
+  CreateAddressSchema,
   CreateBusinessSchema,
   CreateEventSchema,
   CreateProductSchema,
   CreateReviewSchema,
+  ListAdministrativeDivisionsSchema,
+  NearbyBusinessesSchema,
   SearchBusinessesSchema,
   SendMessageSchema,
   SignUpSchema,
@@ -179,5 +182,62 @@ describe("CreateReviewSchema / CreateEventSchema / SendMessageSchema", () => {
         text: "   ",
       }).success
     ).toBe(false)
+  })
+})
+
+describe("CreateAddressSchema", () => {
+  const countryId = "c1111111-1111-4111-8111-111111111111"
+
+  it("requires address line and validates coordinates as a pair", () => {
+    expect(
+      CreateAddressSchema.safeParse({
+        countryId,
+        addressLine1: "Avenida Central 100",
+        latitude: 9.93,
+        longitude: -84.08,
+      }).success,
+    ).toBe(true)
+
+    expect(
+      CreateAddressSchema.safeParse({
+        countryId,
+        addressLine1: "Avenida Central 100",
+        latitude: 9.93,
+      }).success,
+    ).toBe(false)
+
+    expect(
+      CreateAddressSchema.safeParse({
+        countryId,
+        addressLine1: "   ",
+      }).success,
+    ).toBe(false)
+  })
+
+  it("rejects invalid latitude and longitude", () => {
+    expect(
+      CreateAddressSchema.safeParse({
+        countryId,
+        addressLine1: "Centro",
+        latitude: 120,
+        longitude: 10,
+      }).success,
+    ).toBe(false)
+  })
+})
+
+describe("ListAdministrativeDivisionsSchema", () => {
+  it("normalizes country codes to uppercase", () => {
+    const parsed = ListAdministrativeDivisionsSchema.safeParse({ country: "cr" })
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.country).toBe("CR")
+  })
+})
+
+describe("NearbyBusinessesSchema", () => {
+  it("defaults radius to 5000 meters", () => {
+    const parsed = NearbyBusinessesSchema.safeParse({ lat: 9.93, lng: -84.08 })
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.radius).toBe(5000)
   })
 })

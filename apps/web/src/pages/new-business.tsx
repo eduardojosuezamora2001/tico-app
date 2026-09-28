@@ -2,10 +2,14 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { MODULES, type Business, type ModuleName } from "@workspace/shared"
 
-import { BusinessMapPicker } from "@/components/business-map-picker"
+import {
+  deepestDivisionId,
+  emptyInternationalAddress,
+  InternationalAddressForm,
+  type InternationalAddressValue,
+} from "@/components/international-address-form"
 import { SiteHeader } from "@/components/site-header"
 import {
-  COSTA_RICA_PROVINCES,
   defaultModuleSelection,
   defaultScheduleGroups,
   ONBOARDING_CATEGORIES,
@@ -32,12 +36,8 @@ type FormState = {
   category: string
   description: string
   coOwnerEmails: string[]
-  province: string
-  canton: string
-  district: string
-  address: string
-  latitude: number | null
-  longitude: number | null
+  addressId: string | null
+  address: InternationalAddressValue
   whatsappNumber: string
   phone: string
   facebookUrl: string
@@ -66,12 +66,8 @@ function initialForm(): FormState {
     category: ONBOARDING_CATEGORIES[0],
     description: "",
     coOwnerEmails: [""],
-    province: COSTA_RICA_PROVINCES[0],
-    canton: "",
-    district: "",
-    address: "",
-    latitude: null,
-    longitude: null,
+    addressId: null,
+    address: emptyInternationalAddress(),
     whatsappNumber: "",
     phone: "",
     facebookUrl: "",
@@ -102,12 +98,13 @@ function businessToForm(business: Business): FormState {
     tagline: business.tagline ?? "",
     category: business.category,
     description: business.description ?? "",
-    province: business.province ?? base.province,
-    canton: business.canton ?? "",
-    district: business.district ?? "",
-    address: business.address ?? "",
-    latitude: business.latitude,
-    longitude: business.longitude,
+    addressId: business.addressId,
+    address: {
+      ...base.address,
+      addressLine1: business.address ?? "",
+      latitude: business.latitude,
+      longitude: business.longitude,
+    },
     whatsappNumber: business.whatsappNumber ?? "",
     phone: business.phone ?? "",
     facebookUrl: business.facebookUrl ?? "",
@@ -134,12 +131,9 @@ function payloadFromForm(form: FormState, partial?: boolean) {
     tagline: form.tagline.trim() || undefined,
     category: form.category,
     description: form.description.trim() || undefined,
-    province: form.province || undefined,
-    canton: form.canton.trim() || undefined,
-    district: form.district.trim() || undefined,
-    address: form.address.trim() || undefined,
-    latitude: form.latitude ?? undefined,
-    longitude: form.longitude ?? undefined,
+    latitude: form.address.latitude ?? undefined,
+    longitude: form.address.longitude ?? undefined,
+    address: form.address.addressLine1.trim() || undefined,
     whatsappNumber: form.whatsappNumber.trim() || undefined,
     phone: form.phone.trim() || undefined,
     facebookUrl: form.facebookUrl.trim() || undefined,
@@ -195,10 +189,75 @@ export function NewBusinessPage() {
   useEffect(() => {
     if (!draftId) return
     setBusinessId(draftId)
-    void api.get<{ data: { business: Business } }>(`/businesses/${draftId}`).then((response) => {
-      setForm(businessToForm(response.data.data.business))
-    })
+    void (async () => {
+      const response = await api.get<{ data: { business: Business } }>(`/businesses/${draftId}`)
+      const next = businessToForm(response.data.data.business)
+      if (response.data.data.business.addressId) {
+        try {
+          const addressResponse = await api.get<{ data: import("@workspace/shared").Address }>(
+            `/addresses/${response.data.data.business.addressId}`,
+          )
+          const saved = addressResponse.data.data
+          let divisionIds: string[] = []
+          let countryCode: string | null = null
+          if (saved.administrativeDivisionId) {
+            const chain = await api.get<{ data: Array<{ id: string }> }>(
+              `/administrative-divisions/chain/${saved.administrativeDivisionId}`,
+            )
+            divisionIds = chain.data.data.map((division) => division.id)
+          }
+          const countries = await api.get<{ data: Array<{ id: string; code: string }> }>("/countries")
+          countryCode =
+            countries.data.data.find((country) => country.id === saved.countryId)?.code ?? null
+          next.address = {
+            countryId: saved.countryId,
+            countryCode,
+            divisionIds,
+            postalCode: saved.postalCode ?? "",
+            addressLine1: saved.addressLine1,
+            addressLine2: saved.addressLine2 ?? "",
+            reference: saved.reference ?? "",
+            latitude: saved.latitude,
+            longitude: saved.longitude,
+            formattedAddress: saved.formattedAddress,
+            placeId: saved.placeId,
+          }
+        } catch {
+          // Mantener datos legados del negocio si la dirección no es legible aún.
+        }
+      }
+      setForm(next)
+    })()
   }, [draftId])
+
+  async function syncAddressForBusiness(id: string) {
+    const { address, addressId } = form
+    if (!address.countryId || !address.addressLine1.trim()) return addressId
+
+    const payload = {
+      countryId: address.countryId,
+      administrativeDivisionId: deepestDivisionId(address) ?? undefined,
+      postalCode: address.postalCode || undefined,
+      addressLine1: address.addressLine1.trim(),
+      addressLine2: address.addressLine2.trim() || undefined,
+      reference: address.reference.trim() || undefined,
+      latitude: address.latitude ?? undefined,
+      longitude: address.longitude ?? undefined,
+      formattedAddress: address.formattedAddress ?? undefined,
+      placeId: address.placeId ?? undefined,
+    }
+
+    let nextId = addressId
+    if (nextId) {
+      await api.patch(`/addresses/${nextId}`, payload)
+    } else {
+      const created = await api.post<{ data: { id: string } }>("/addresses", payload)
+      nextId = created.data.data.id
+      patchForm("addressId", nextId)
+    }
+    await api.patch(`/businesses/${id}`, { addressId: nextId })
+    return nextId
+  }
 
   function patchForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -217,11 +276,12 @@ export function NewBusinessPage() {
         const created = await api.post<{ data: Business }>("/businesses", body)
         const id = created.data.data.id
         setBusinessId(id)
+        await syncAddressForBusiness(id)
+        await api.put(`/businesses/${id}/hours`, schedulesToHours(form.schedules))
         navigate(`/mi-negocio/nuevo/${id}`, { replace: true })
       } else {
         await api.patch(`/businesses/${businessId}`, body)
-      }
-      if (businessId) {
+        await syncAddressForBusiness(businessId)
         await api.put(`/businesses/${businessId}/hours`, schedulesToHours(form.schedules))
       }
       setSavedAt(new Date().toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" }))
@@ -249,6 +309,7 @@ export function NewBusinessPage() {
       } else {
         await api.patch(`/businesses/${id}`, body)
       }
+      await syncAddressForBusiness(id)
       await api.put(`/businesses/${id}/hours`, schedulesToHours(form.schedules))
       for (const moduleName of Object.values(MODULES)) {
         await api.put(`/businesses/${id}/modules/${moduleName}`, { enabled: form.modules[moduleName] })
@@ -372,34 +433,11 @@ export function NewBusinessPage() {
         ) : null}
 
         {step === 2 ? (
-          <StepCard title="Ubicación geográfica y señas" description="Marca el local en el mapa y escribe cómo llegar.">
-            <BusinessMapPicker
-              latitude={form.latitude}
-              longitude={form.longitude}
-              searchPlaceholder="Buscar dirección en Costa Rica"
-              onChange={({ lat, lng }) => {
-                patchForm("latitude", lat)
-                patchForm("longitude", lng)
-              }}
+          <StepCard title="Ubicación geográfica y señas" description="Selecciona país, divisiones administrativas y marca el local en el mapa.">
+            <InternationalAddressForm
+              value={form.address}
+              onChange={(address) => patchForm("address", address)}
             />
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Provincia">
-                <select value={form.province} onChange={(e) => patchForm("province", e.target.value)} className="h-11 rounded-xl border border-border bg-background px-3">
-                  {COSTA_RICA_PROVINCES.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Cantón">
-                <Input value={form.canton} onChange={(e) => patchForm("canton", e.target.value)} className="h-11 rounded-xl" />
-              </Field>
-              <Field label="Distrito">
-                <Input value={form.district} onChange={(e) => patchForm("district", e.target.value)} className="h-11 rounded-xl" />
-              </Field>
-            </div>
-            <Field label="Dirección escrita y señas">
-              <Textarea value={form.address} onChange={(e) => patchForm("address", e.target.value)} placeholder="200 metros sur del parque, casa blanca con portón verde." className="min-h-24 rounded-xl" />
-            </Field>
           </StepCard>
         ) : null}
 

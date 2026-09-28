@@ -55,6 +55,67 @@ export interface User {
 // Negocios
 // --------------------------------------------------------------------------
 
+export interface Country {
+  id: string
+  code: string
+  name: string
+  nativeName: string
+  phoneCode: string
+  currencyCode: string
+  defaultLanguage: string
+  isActive: boolean
+  createdAt: ISODateString
+  updatedAt: ISODateString
+}
+
+export interface CountryAdministrativeLevel {
+  id: string
+  countryId: string
+  level: number
+  type: string
+  label: string
+}
+
+export interface AdministrativeDivision {
+  id: string
+  countryId: string
+  parentId: string | null
+  name: string
+  type: string
+  level: number
+  code: string | null
+  isActive: boolean
+  createdAt: ISODateString
+  updatedAt: ISODateString
+}
+
+export interface Address {
+  id: string
+  countryId: string
+  administrativeDivisionId: string | null
+  postalCode: string | null
+  addressLine1: string
+  addressLine2: string | null
+  reference: string | null
+  latitude: number | null
+  longitude: number | null
+  formattedAddress: string | null
+  placeId: string | null
+  createdAt: ISODateString
+  updatedAt: ISODateString
+}
+
+export interface NearbyBusiness {
+  id: string
+  slug: string
+  name: string
+  category: string
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  distanceM: number
+}
+
 export interface Business {
   id: string
   ownerId: string
@@ -88,6 +149,7 @@ export interface Business {
   sinpePhone: string | null
   sinpeHolder: string | null
   iban: string | null
+  addressId: string | null
   isDraft: boolean
   isActive: boolean
   chatRetentionDays: number

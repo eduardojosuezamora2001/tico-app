@@ -1,10 +1,12 @@
 import {
   CreateBusinessSchema,
+  NearbyBusinessesSchema,
   SearchBusinessesSchema,
   ToggleBusinessModuleSchema,
   UpdateBusinessSchema,
   toBusiness,
   toBusinessModule,
+  toNearbyBusiness,
 } from "@workspace/shared"
 import { Hono } from "hono"
 import { z } from "zod"
@@ -55,6 +57,26 @@ const uploadSchema = z.object({
 })
 
 export const businessRoutes = new Hono<AppEnv>()
+
+businessRoutes.get("/nearby", async (c) => {
+  const parsed = NearbyBusinessesSchema.safeParse({
+    lat: c.req.query("lat") ? Number(c.req.query("lat")) : undefined,
+    lng: c.req.query("lng") ? Number(c.req.query("lng")) : undefined,
+    radius: c.req.query("radius") ? Number(c.req.query("radius")) : undefined,
+    limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
+  })
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const { data, error } = await supabaseAdmin.rpc("find_businesses_nearby", {
+    lat: parsed.data.lat,
+    lng: parsed.data.lng,
+    radius_m: parsed.data.radius,
+    lim: parsed.data.limit,
+  })
+  if (error) return dbFail(c, error)
+
+  return c.json({ data: (data ?? []).map(toNearbyBusiness) })
+})
 
 businessRoutes.get("/", async (c) => {
   const parsed = SearchBusinessesSchema.safeParse({

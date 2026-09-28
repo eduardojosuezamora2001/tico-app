@@ -20,6 +20,124 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          address_line_1: string
+          address_line_2: string | null
+          administrative_division_id: string | null
+          country_id: string
+          created_at: string
+          formatted_address: string | null
+          id: string
+          latitude: number | null
+          location: unknown
+          longitude: number | null
+          place_id: string | null
+          postal_code: string | null
+          reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line_1: string
+          address_line_2?: string | null
+          administrative_division_id?: string | null
+          country_id: string
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          postal_code?: string | null
+          reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line_1?: string
+          address_line_2?: string | null
+          administrative_division_id?: string | null
+          country_id?: string
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          postal_code?: string | null
+          reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addresses_administrative_division_id_fkey"
+            columns: ["administrative_division_id"]
+            isOneToOne: false
+            referencedRelation: "administrative_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "addresses_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      administrative_divisions: {
+        Row: {
+          code: string | null
+          country_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          level: number
+          name: string
+          parent_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          country_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level: number
+          name: string
+          parent_id?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          country_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          name?: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "administrative_divisions_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_divisions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "administrative_divisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           business_id: string
@@ -327,9 +445,81 @@ export type Database = {
           },
         ]
       }
+      countries: {
+        Row: {
+          code: string
+          created_at: string
+          currency_code: string
+          default_language: string
+          id: string
+          is_active: boolean
+          name: string
+          native_name: string
+          phone_code: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          currency_code: string
+          default_language?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          native_name: string
+          phone_code: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          currency_code?: string
+          default_language?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          native_name?: string
+          phone_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      country_administrative_levels: {
+        Row: {
+          country_id: string
+          id: string
+          label: string
+          level: number
+          type: string
+        }
+        Insert: {
+          country_id: string
+          id?: string
+          label: string
+          level: number
+          type: string
+        }
+        Update: {
+          country_id?: string
+          id?: string
+          label?: string
+          level?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "country_administrative_levels_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address: string | null
+          address_id: string | null
           banner_url: string | null
           canton: string | null
           category: string
@@ -370,6 +560,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          address_id?: string | null
           banner_url?: string | null
           canton?: string | null
           category: string
@@ -410,6 +601,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          address_id?: string | null
           banner_url?: string | null
           canton?: string | null
           category?: string
@@ -969,6 +1161,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_businesses_nearby: {
+        Args: {
+          lat: number
+          lng: number
+          radius_m?: number
+          lim?: number
+        }
+        Returns: {
+          id: string
+          slug: string
+          name: string
+          category: string
+          address: string | null
+          latitude: number | null
+          longitude: number | null
+          distance_m: number
+        }[]
+      }
       search_businesses: {
         Args: {
           q?: string | null

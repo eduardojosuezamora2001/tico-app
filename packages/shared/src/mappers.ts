@@ -1,20 +1,109 @@
 import type { Tables } from "./database.types.js"
 import type {
+  Address,
+  AdministrativeDivision,
   Business,
   BusinessEvent,
   BusinessHours,
   BusinessModule,
   BusinessRole,
   Conversation,
+  Country,
+  CountryAdministrativeLevel,
   GalleryImage,
   MenuItem,
   Message,
+  NearbyBusiness,
   PermissionName,
   Product,
   Service,
   TeamMember,
   User,
 } from "./types.js"
+
+export function toCountry(row: Tables<"countries">): Country {
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    nativeName: row.native_name,
+    phoneCode: row.phone_code,
+    currencyCode: row.currency_code,
+    defaultLanguage: row.default_language,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function toCountryAdministrativeLevel(
+  row: Tables<"country_administrative_levels">,
+): CountryAdministrativeLevel {
+  return {
+    id: row.id,
+    countryId: row.country_id,
+    level: row.level,
+    type: row.type,
+    label: row.label,
+  }
+}
+
+export function toAdministrativeDivision(
+  row: Tables<"administrative_divisions">,
+): AdministrativeDivision {
+  return {
+    id: row.id,
+    countryId: row.country_id,
+    parentId: row.parent_id,
+    name: row.name,
+    type: row.type,
+    level: row.level,
+    code: row.code,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function toAddress(row: Tables<"addresses">): Address {
+  return {
+    id: row.id,
+    countryId: row.country_id,
+    administrativeDivisionId: row.administrative_division_id,
+    postalCode: row.postal_code,
+    addressLine1: row.address_line_1,
+    addressLine2: row.address_line_2,
+    reference: row.reference,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    formattedAddress: row.formatted_address,
+    placeId: row.place_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function toNearbyBusiness(row: {
+  id: string
+  slug: string
+  name: string
+  category: string
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  distance_m: number
+}): NearbyBusiness {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    category: row.category,
+    address: row.address,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    distanceM: row.distance_m,
+  }
+}
 
 export function toUser(row: Tables<"users">): User {
   return {
@@ -63,6 +152,7 @@ export function toBusiness(row: Tables<"businesses">): Business {
     sinpePhone: row.sinpe_phone ?? null,
     sinpeHolder: row.sinpe_holder ?? null,
     iban: row.iban ?? null,
+    addressId: row.address_id ?? null,
     isDraft: row.is_draft ?? false,
     isActive: row.is_active,
     chatRetentionDays: row.chat_retention_days,

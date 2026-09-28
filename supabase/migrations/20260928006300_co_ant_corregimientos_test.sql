@@ -1,0 +1,1 @@
+-- Obsoleto: Colombia solo usa 2 niveles (departamento, municipio). Ver 20260928006400_mx_co_remove_level3.sql.
