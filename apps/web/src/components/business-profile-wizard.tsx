@@ -38,6 +38,7 @@ import { Textarea } from "@workspace/ui/components/textarea"
 type Props = {
   mode: "create" | "edit"
   businessId?: string | null
+  chainId?: string | null
   embedded?: boolean
   title: string
   subtitle: string
@@ -77,6 +78,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function BusinessProfileWizard({
   mode,
   businessId: initialBusinessId = null,
+  chainId = null,
   embedded = false,
   title,
   subtitle,
@@ -179,7 +181,10 @@ export function BusinessProfileWizard({
           const wasCreating = !id
 
           if (!id) {
-            const created = await createBusiness(body as CreateBusinessInput)
+            const created = await createBusiness({
+              ...(body as CreateBusinessInput),
+              ...(chainId ? { chainId } : {}),
+            })
             id = created.id
             setBusinessId(id)
             onDraftCreated?.(id)

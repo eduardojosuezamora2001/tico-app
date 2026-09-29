@@ -7,7 +7,9 @@ export type AccountBusiness = {
   category: string
   address: string | null
   isActive: boolean
+  isDraft?: boolean
   logoUrl: string | null
+  chainId?: string | null
 }
 
 export type Membership = {

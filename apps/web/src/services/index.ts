@@ -1,5 +1,6 @@
 export * from "@/services/addresses.service"
 export * from "@/services/businesses.service"
+export * from "@/services/chains.service"
 export * from "@/services/catalog.service"
 export * from "@/services/countries.service"
 export * from "@/services/events.service"
