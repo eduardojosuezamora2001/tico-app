@@ -11,6 +11,7 @@ import { BusinessPage } from "@/pages/business"
 import { MerchantBusinessPage, MerchantHomePage } from "@/pages/merchant"
 import { NewBusinessPage } from "@/pages/new-business"
 import { LocalChatPage, MessageThreadPage, MessagesPage } from "@/pages/messages"
+import { OrdersPage } from "@/pages/orders"
 import { NotFoundPage } from "@/pages/not-found"
 
 /**
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
           { path: "mensajes", element: <MessagesPage /> },
           { path: "mensajes/local/:businessId", element: <LocalChatPage /> },
           { path: "mensajes/:conversationId", element: <MessageThreadPage /> },
+          { path: "pedidos", element: <OrdersPage /> },
           { path: "mi-negocio", element: <MerchantHomePage /> },
           { path: "mi-negocio/nuevo", element: <NewBusinessPage /> },
           { path: "mi-negocio/nuevo/:draftId", element: <NewBusinessPage /> },

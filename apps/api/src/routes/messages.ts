@@ -1,7 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
+  ChatOrderDecisionSchema,
+  ORDER_FULFILLMENT_STAGE,
+  ORDER_STATUS,
+  buildOrderInsert,
+  createChatOrderPayload,
+  encodeChatOrderMessage,
+  parseMessageContent,
   ReplyMessageSchema,
   SendMessageSchema,
+  toChatOrder,
   toConversation,
   toMessage,
   type Conversation,
@@ -12,6 +20,7 @@ import {
 import { Hono } from "hono"
 import { z } from "zod"
 
+import { fanOutOrderUpdate, loadConversationOrders, syncOrderMessage } from "../lib/order-sync.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
 import { emitToUser } from "../lib/realtime.js"
 import { supabaseAdmin } from "../lib/supabase.js"
@@ -62,7 +71,13 @@ messageRoutes.get("/conversations/:id", async (c) => {
   }
 
   const conversation = await present(loaded.row, c.get("userId"))
-  return c.json({ data: { conversation, messages: (data ?? []).map(toMessage) } })
+  let orders: Awaited<ReturnType<typeof loadConversationOrders>> = []
+  try {
+    orders = await loadConversationOrders(c.get("db"), id)
+  } catch (orderError) {
+    return dbFail(c, orderError as { message: string })
+  }
+  return c.json({ data: { conversation, messages: (data ?? []).map(toMessage), orders } })
 })
 
 messageRoutes.get("/business/:businessId", async (c) => {
@@ -87,14 +102,37 @@ messageRoutes.post("/", async (c) => {
   const opened = await openOrCreate(c.get("db"), userId, parsed.data.businessId)
   if ("error" in opened) return dbFail(c, opened.error ?? { message: "No se pudo abrir el chat" })
 
+  const orderId = crypto.randomUUID()
+  const text = parsed.data.order
+    ? encodeChatOrderMessage(createChatOrderPayload(parsed.data.order, orderId))
+    : parsed.data.text!.trim()
+
   const sent = await insertMessage(c.get("db"), {
     businessId: opened.row.business_id,
     conversationId: opened.row.id,
     senderId: userId,
     receiverId: opened.row.assignee_id,
-    text: parsed.data.text,
+    text,
   })
   if (sent.error || !sent.message) return dbFail(c, sent.error ?? { message: "No se pudo enviar" })
+
+  if (parsed.data.order) {
+    const { error: orderError } = await supabaseAdmin.from("orders").insert(
+      buildOrderInsert({
+        id: orderId,
+        businessId: opened.row.business_id,
+        conversationId: opened.row.id,
+        messageId: sent.message.id,
+        customerId: userId,
+        businessName: parsed.data.order.businessName,
+        lines: parsed.data.order.lines,
+      }),
+    )
+    if (orderError) {
+      await supabaseAdmin.from("messages").delete().eq("id", sent.message.id)
+      return dbFail(c, orderError)
+    }
+  }
 
   const fresh = (await reload(c.get("db"), opened.row.id)) ?? opened.row
   const conversation = await present(fresh, userId)
@@ -154,6 +192,77 @@ messageRoutes.post("/conversations/:id/claim", async (c) => {
   const conversation = await present(row, userId)
   await fanOut(row)
   return c.json({ data: conversation })
+})
+
+messageRoutes.post("/:messageId/order-decision", async (c) => {
+  const messageId = uuidParam(c.req.param("messageId"))
+  if (!messageId) return fail(c, 400, "VALIDATION_ERROR", "Identificador inválido")
+
+  const parsed = ChatOrderDecisionSchema.safeParse(await c.req.json().catch(() => null))
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const userId = c.get("userId")
+  const { data: row, error } = await supabaseAdmin
+    .from("messages")
+    .select("*")
+    .eq("id", messageId)
+    .maybeSingle()
+  if (error) return dbFail(c, error)
+  if (!row) return fail(c, 404, "NOT_FOUND", "Mensaje no encontrado")
+
+  const content = parseMessageContent(row.text)
+  if (content.kind !== "order") {
+    return fail(c, 400, "VALIDATION", "Este mensaje no contiene un pedido")
+  }
+  if (content.order.status !== "pending") {
+    return fail(c, 409, "CONFLICT", "Este pedido ya fue gestionado")
+  }
+
+  const loaded = await loadVisible(supabaseAdmin, row.conversation_id, userId)
+  if (loaded.error) return dbFail(c, loaded.error)
+  if (!loaded.row || !loaded.role) return fail(c, 404, "NOT_FOUND", "Conversación no encontrada")
+  if (loaded.role === "customer" || loaded.role === "member") {
+    return fail(c, 403, "FORBIDDEN", "Solo quien atiende puede responder al pedido")
+  }
+
+  const accepted = parsed.data.decision === "accept"
+  const now = new Date().toISOString()
+  const { data: orderRow, error: orderLookupError } = await supabaseAdmin
+    .from("orders")
+    .select("*")
+    .eq("id", content.order.orderId)
+    .maybeSingle()
+  if (orderLookupError) return dbFail(c, orderLookupError)
+  if (!orderRow) return fail(c, 404, "NOT_FOUND", "Registro de pedido no encontrado")
+
+  const { data: updatedOrderRow, error: orderUpdateError } = await supabaseAdmin
+    .from("orders")
+    .update({
+      status: accepted ? ORDER_STATUS.accepted : ORDER_STATUS.denied,
+      fulfillment_stage: accepted ? ORDER_FULFILLMENT_STAGE.preparing : null,
+      decided_at: now,
+      stage_updated_at: accepted ? now : null,
+    })
+    .eq("id", orderRow.id)
+    .select("*")
+    .single()
+  if (orderUpdateError) return dbFail(c, orderUpdateError)
+
+  const order = toChatOrder(updatedOrderRow)
+  await syncOrderMessage(supabaseAdmin, order)
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from("messages")
+    .select("*")
+    .eq("id", messageId)
+    .single()
+  if (updateError) return dbFail(c, updateError)
+
+  const fresh = (await reload(supabaseAdmin, row.conversation_id)) ?? loaded.row
+  const message = toMessage(updated)
+  const conversation = await present(fresh, userId)
+  await fanOutOrderUpdate(fresh, order, roleOf)
+  return c.json({ data: { message, conversation, order } })
 })
 
 messageRoutes.post("/conversations/:id/take", async (c) => {
@@ -309,3 +418,4 @@ async function fanOut(row: ConversationRow, message?: Message) {
     else emitToUser(userId, "conversation:updated", conversation)
   }
 }
+

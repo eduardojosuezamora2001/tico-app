@@ -980,6 +980,89 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          business_id: string
+          business_name: string
+          conversation_id: string
+          created_at: string
+          customer_id: string
+          decided_at: string | null
+          fulfillment_stage: string | null
+          id: string
+          lines: Json
+          message_id: string
+          stage_updated_at: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          business_name: string
+          conversation_id: string
+          created_at?: string
+          customer_id: string
+          decided_at?: string | null
+          fulfillment_stage?: string | null
+          id?: string
+          lines: Json
+          message_id: string
+          stage_updated_at?: string | null
+          status?: string
+          subtotal: number
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          business_name?: string
+          conversation_id?: string
+          created_at?: string
+          customer_id?: string
+          decided_at?: string | null
+          fulfillment_stage?: string | null
+          id?: string
+          lines?: Json
+          message_id?: string
+          stage_updated_at?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           action: string

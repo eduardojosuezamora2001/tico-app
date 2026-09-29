@@ -1,10 +1,11 @@
-import type { Conversation, Message, SendMessageInput } from "@workspace/shared"
+import type { ChatOrder, Conversation, Message, SendMessageInput } from "@workspace/shared"
 
 import { getData, postData } from "@/services/http"
 
 export type ConversationThread = {
   conversation: Conversation
   messages: Message[]
+  orders: ChatOrder[]
 }
 
 export type SendMessageResult = {
@@ -42,4 +43,8 @@ export async function claimConversation(conversationId: string) {
 
 export async function takeConversation(conversationId: string) {
   return postData<Conversation>(`/messages/conversations/${conversationId}/take`)
+}
+
+export async function decideChatOrder(messageId: string, decision: "accept" | "deny") {
+  return postData<SendMessageResult & { order: ChatOrder }>(`/messages/${messageId}/order-decision`, { decision })
 }

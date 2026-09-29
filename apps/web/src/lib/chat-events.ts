@@ -1,8 +1,14 @@
 import axios from "axios"
-import type { Conversation, Message } from "@workspace/shared"
+import type { ChatOrder, Conversation, Message } from "@workspace/shared"
 
 export type IncomingMessage = {
   message: Message
+  conversation: Conversation
+}
+
+export type IncomingOrder = {
+  order: ChatOrder
+  message: Message | null
   conversation: Conversation
 }
 
