@@ -1,4 +1,4 @@
-import type { FormEvent } from "react"
+import type { SubmitEventHandler } from "react"
 import type { Message as ChatMessage } from "@workspace/shared"
 import { SentIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -204,7 +204,7 @@ export function MessageComposer({
 }: {
   value: string
   onChange: (value: string) => void
-  onSubmit: (event: FormEvent) => void
+  onSubmit: SubmitEventHandler<HTMLFormElement>
   placeholder?: string
 }) {
   return (

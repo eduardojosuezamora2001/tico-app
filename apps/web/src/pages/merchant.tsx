@@ -1,13 +1,34 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type { Business, MenuItem, Product, Service } from "@workspace/shared"
+import type {
+  Business,
+  CreateMenuItemInput,
+  CreateProductInput,
+  CreateServiceInput,
+  MenuItem,
+  Product,
+  Service,
+} from "@workspace/shared"
 
+import { BusinessProfileWizard } from "@/components/business-profile-wizard"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
 import { ModulesPanel, useBusinessModules } from "@/components/modules-panel"
 import { TeamPermissions, TeamRoster, useBusinessTeam } from "@/components/team-panel"
-import { api } from "@/lib/api"
+import { getBusiness } from "@/services/businesses.service"
+import {
+  createMenuItem,
+  createProduct,
+  createService,
+  deleteCatalogItem,
+  listMenuItems,
+  listProducts,
+  listServices,
+  updateCatalogItem,
+} from "@/services/catalog.service"
+import { getMe } from "@/services/me.service"
+import type { CatalogKind, Membership } from "@/services/types"
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
@@ -20,14 +41,12 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
-type Membership = { businessId: string; business: { name: string; slug: string } | null }
-
 export function MerchantHomePage() {
   const [rows, setRows] = useState<Membership[]>([])
 
   useEffect(() => {
-    void api.get<{ data: { memberships: Membership[] } }>("/me").then((response) => {
-      setRows(response.data.data.memberships)
+    void getMe().then((payload) => {
+      setRows(payload.memberships)
     })
   }, [])
 
@@ -58,8 +77,6 @@ const colones = new Intl.NumberFormat("es-CR", {
   currency: "CRC",
   maximumFractionDigits: 0,
 })
-
-type CatalogKind = "products" | "services" | "menu"
 
 function CatalogForm({
   placeholder,
@@ -148,29 +165,28 @@ export function MerchantBusinessPage() {
   const [listIds, setListIds] = useState<string[]>(["productos"])
   const [error, setError] = useState<string | null>(null)
   const [editor, setEditor] = useState<{ kind: CatalogKind; id: string; name: string; price: number | null } | null>(null)
-  const [tab, setTab] = useState("galeria")
+  const [tab, setTab] = useState("ficha")
   const team = useBusinessTeam(id)
   const businessModules = useBusinessModules(id)
 
   function loadCatalog() {
     void Promise.all([
-      api.get<{ data: Product[] }>(`/businesses/${id}/products`, { params: { includeUnavailable: true } }),
-      api.get<{ data: Service[] }>(`/businesses/${id}/services`).catch(() => ({ data: { data: [] as Service[] } })),
-      api.get<{ data: MenuItem[] }>(`/businesses/${id}/menu`).catch(() => ({ data: { data: [] as MenuItem[] } })),
-    ]).then(([productResponse, serviceResponse, menuResponse]) => {
-      setProducts(productResponse.data.data)
-      setServices(serviceResponse.data.data)
-      setMenu(menuResponse.data.data)
+      listProducts(id, { includeUnavailable: true }),
+      listServices(id).catch(() => [] as Service[]),
+      listMenuItems(id).catch(() => [] as MenuItem[]),
+    ]).then(([productRows, serviceRows, menuRows]) => {
+      setProducts(productRows)
+      setServices(serviceRows)
+      setMenu(menuRows)
     })
   }
 
   useEffect(() => {
     if (!id) return
     setReady(false)
-    void api
-      .get<{ data: { memberships: Membership[] } }>("/me")
-      .then((response) => {
-        const member = response.data.data.memberships.some((row) => row.businessId === id)
+    void getMe()
+      .then((payload) => {
+        const member = payload.memberships.some((row) => row.businessId === id)
         if (!member) {
           navigate("/mi-negocio", { replace: true })
           return
@@ -180,9 +196,14 @@ export function MerchantBusinessPage() {
       .catch(() => navigate("/mi-negocio", { replace: true }))
   }, [id, navigate])
 
+  function reloadBusiness() {
+    if (!id) return
+    void getBusiness(id).then((detail) => setBusiness(detail.business))
+  }
+
   useEffect(() => {
     if (!ready || !id) return
-    void api.get<{ data: { business: Business } }>(`/businesses/${id}`).then((res) => setBusiness(res.data.data.business))
+    reloadBusiness()
     loadCatalog()
   }, [id, ready])
 
@@ -196,7 +217,7 @@ export function MerchantBusinessPage() {
 
   async function removeItem(kind: CatalogKind, itemId: string) {
     try {
-      await api.delete(`/businesses/${id}/${kind}/${itemId}`)
+      await deleteCatalogItem(id, kind, itemId)
       setError(null)
       loadCatalog()
     } catch {
@@ -235,6 +256,7 @@ export function MerchantBusinessPage() {
         <Tabs value={tab} onValueChange={setTab}>
           <div className="-mx-4 overflow-x-auto overflow-y-hidden border-b border-border px-4 sm:mx-0 sm:px-0">
             <TabsList variant="line" className="h-11 w-max bg-transparent">
+              <TabsTrigger value="ficha" className="data-active:text-primary after:bg-primary">Ficha del negocio</TabsTrigger>
               <TabsTrigger value="galeria" className="data-active:text-primary after:bg-primary">Galería</TabsTrigger>
               <TabsTrigger value="modulos" className="data-active:text-primary after:bg-primary">Módulos</TabsTrigger>
               <TabsTrigger value="catalogo" className="data-active:text-primary after:bg-primary">Catálogo</TabsTrigger>
@@ -242,6 +264,21 @@ export function MerchantBusinessPage() {
               <TabsTrigger value="permisos" className="data-active:text-primary after:bg-primary">Permisos</TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="ficha" className="pt-4">
+            {id ? (
+              <BusinessProfileWizard
+                embedded
+                mode="edit"
+                businessId={id}
+                title="Editar ficha del negocio"
+                subtitle="Horarios, ubicación, contacto, redes sociales, pagos y módulos."
+                backLink={{ to: "/mi-negocio", label: "Panel de administración" }}
+                onSaved={reloadBusiness}
+                onPublished={reloadBusiness}
+              />
+            ) : null}
+          </TabsContent>
 
           <TabsContent value="galeria" className="pt-4">
             {id ? <GalleryPanel businessId={id} /> : null}
@@ -283,7 +320,7 @@ export function MerchantBusinessPage() {
                     submitLabel="Agregar producto"
                     onSubmit={async (name, price) => {
                       try {
-                        await api.post(`/businesses/${id}/products`, { name, price: Number(price) })
+                        await createProduct(id, { name, price: Number(price) } as CreateProductInput)
                         setError(null)
                         loadCatalog()
                       } catch {
@@ -298,7 +335,7 @@ export function MerchantBusinessPage() {
                     submitLabel="Agregar servicio"
                     onSubmit={async (name, price) => {
                       try {
-                        await api.post(`/businesses/${id}/services`, { name, price: Number(price) })
+                        await createService(id, { name, price: Number(price) } as CreateServiceInput)
                         setError(null)
                         loadCatalog()
                       } catch {
@@ -313,7 +350,7 @@ export function MerchantBusinessPage() {
                     submitLabel="Agregar al menú"
                     onSubmit={async (name, price) => {
                       try {
-                        await api.post(`/businesses/${id}/menu`, { name, price: Number(price) })
+                        await createMenuItem(id, { name, price: Number(price) } as CreateMenuItemInput)
                         setError(null)
                         loadCatalog()
                       } catch {
@@ -399,7 +436,7 @@ export function MerchantBusinessPage() {
           onClose={() => setEditor(null)}
           onSave={async (name, price) => {
             if (!editor) return
-            await api.patch(`/businesses/${id}/${editor.kind}/${editor.id}`, { name, price: Number(price) })
+            await updateCatalogItem(id, editor.kind, editor.id, { name, price: Number(price) })
             setEditor(null)
             loadCatalog()
           }}

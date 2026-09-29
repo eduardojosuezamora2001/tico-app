@@ -1,13 +1,32 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, useParams } from "react-router"
-import type { Business, BusinessEvent, BusinessHours, GalleryImage, MenuItem, Product, Service } from "@workspace/shared"
+import {
+  PAYMENT_METHOD_KEYS,
+  type Business,
+  type BusinessEvent,
+  type BusinessHours,
+  type GalleryImage,
+  type MenuItem,
+  type Product,
+  type Service,
+} from "@workspace/shared"
+
+import { PaymentMethodBadgeList } from "@/components/payment-methods"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
 import { colones, OrderBoard, type Offer } from "@/components/business-cart"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
-import { api } from "@/lib/api"
+import { getBusiness } from "@/services/businesses.service"
+import {
+  listMenuItems,
+  listProducts,
+  listServices,
+} from "@/services/catalog.service"
+import { listBusinessEvents } from "@/services/events.service"
+import { listGalleryImages } from "@/services/gallery.service"
+import { getBusinessHours } from "@/services/hours.service"
 import { useAuthStore } from "@/stores/auth-store"
 
 type Payload = {
@@ -29,33 +48,26 @@ export function BusinessPage() {
   useEffect(() => {
     setPayload(null)
     setError(null)
-    void api
-      .get<{ data: Payload }>(`/businesses/${id}`)
-      .then(async (response) => {
-        const next = response.data.data
+    void getBusiness(id)
+      .then(async (next) => {
         setPayload(next)
         const enabled = new Set(next.modules.filter((item) => item.enabled).map((item) => item.moduleName))
         const businessId = next.business.id
-        const [productRes, serviceRes, menuRes, eventRes, galleryRes, hoursRes] = await Promise.all([
-          enabled.has("products")
-            ? api.get<{ data: Product[] }>(`/businesses/${businessId}/products`)
-            : Promise.resolve({ data: { data: [] as Product[] } }),
-          enabled.has("services")
-            ? api.get<{ data: Service[] }>(`/businesses/${businessId}/services`)
-            : Promise.resolve({ data: { data: [] as Service[] } }),
-          enabled.has("menu")
-            ? api.get<{ data: MenuItem[] }>(`/businesses/${businessId}/menu`)
-            : Promise.resolve({ data: { data: [] as MenuItem[] } }),
-          api.get<{ data: BusinessEvent[] }>(`/businesses/${businessId}/events`),
-          api.get<{ data: GalleryImage[] }>(`/businesses/${businessId}/gallery`),
-          api.get<{ data: BusinessHours[] }>(`/businesses/${businessId}/hours`).catch(() => ({ data: { data: [] as BusinessHours[] } })),
-        ])
-        setProducts(productRes.data.data)
-        setServices(serviceRes.data.data)
-        setMenu(menuRes.data.data)
-        setEvents(eventRes.data.data)
-        setGallery(galleryRes.data.data)
-        setHours(hoursRes.data.data)
+        const [productRows, serviceRows, menuRows, eventRows, galleryRows, hourRows] =
+          await Promise.all([
+            enabled.has("products") ? listProducts(businessId) : Promise.resolve([] as Product[]),
+            enabled.has("services") ? listServices(businessId) : Promise.resolve([] as Service[]),
+            enabled.has("menu") ? listMenuItems(businessId) : Promise.resolve([] as MenuItem[]),
+            listBusinessEvents(businessId),
+            listGalleryImages(businessId),
+            getBusinessHours(businessId).catch(() => [] as BusinessHours[]),
+          ])
+        setProducts(productRows)
+        setServices(serviceRows)
+        setMenu(menuRows)
+        setEvents(eventRows)
+        setGallery(galleryRows)
+        setHours(hourRows)
       })
       .catch(() => setError("No encontramos ese comercio."))
   }, [id])
@@ -202,11 +214,15 @@ export function BusinessPage() {
                           </ul>
                         </InfoRow>
                       ) : null}
-                      {paymentSummary(business).length > 0 ? (
+                      {PAYMENT_METHOD_KEYS.some((key) => business[key]) ? (
                         <InfoRow label="Pagos">
-                          <p>{paymentSummary(business).join(" · ")}</p>
-                          {business.paymentSinpe && business.sinpePhone ? <p className="mt-1 text-sm">SINPE {business.sinpePhone}</p> : null}
-                          {business.paymentSinpe && business.sinpeHolder ? <p className="text-sm text-muted-foreground">{business.sinpeHolder}</p> : null}
+                          <PaymentMethodBadgeList business={business} />
+                          {business.paymentSinpe && business.sinpePhone ? (
+                            <p className="mt-2 text-sm">Transferencia móvil: {business.sinpePhone}</p>
+                          ) : null}
+                          {business.paymentSinpe && business.sinpeHolder ? (
+                            <p className="text-sm text-muted-foreground">{business.sinpeHolder}</p>
+                          ) : null}
                         </InfoRow>
                       ) : null}
                       {business.offersDelivery ? (
@@ -312,15 +328,6 @@ function formatDay(dayOfWeek: number | null) {
 function formatHours(row: BusinessHours) {
   if (row.isClosed) return "Cerrado"
   return `${row.openTime?.slice(0, 5) ?? "--:--"} – ${row.closeTime?.slice(0, 5) ?? "--:--"}`
-}
-
-function paymentSummary(business: Business) {
-  const items: string[] = []
-  if (business.paymentSinpe) items.push("SINPE Móvil")
-  if (business.paymentCash) items.push("Efectivo")
-  if (business.paymentCard) items.push("Tarjeta")
-  if (business.paymentIban) items.push("IBAN")
-  return items
 }
 
 function InfoCard({ title, detail, children }: { title: string; detail: string; children: ReactNode }) {

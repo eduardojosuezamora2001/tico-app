@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react"
 import { PERMISSION_DEFINITIONS, type PermissionName, type TeamMember } from "@workspace/shared"
 
-import { api } from "@/lib/api"
+import {
+  addTeamMember,
+  listTeamMembers,
+  removeTeamMember,
+  updateTeamMember,
+} from "@/services/team.service"
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
 import { Button } from "@workspace/ui/components/button"
 import { Checkbox } from "@workspace/ui/components/checkbox"
@@ -62,10 +67,9 @@ export function useBusinessTeam(businessId: string) {
 
   const reload = useCallback(() => {
     if (!businessId) return
-    void api
-      .get<{ data: TeamMember[] }>(`/businesses/${businessId}/team`)
-      .then((response) => {
-        setMembers(response.data.data)
+    void listTeamMembers(businessId)
+      .then((rows) => {
+        setMembers(rows)
         setError(null)
       })
       .catch(() => setError("No se pudo cargar el equipo."))
@@ -95,7 +99,7 @@ export function TeamRoster({
     event.preventDefault()
     team.setError(null)
     try {
-      await api.post(`/businesses/${businessId}/team`, { email, role, permissions: draft })
+      await addTeamMember(businessId, { email, role, permissions: draft })
       setEmail("")
       setDraft([])
       team.reload()
@@ -107,7 +111,7 @@ export function TeamRoster({
   async function setActive(member: TeamMember, isActive: boolean) {
     team.setError(null)
     try {
-      await api.patch(`/businesses/${businessId}/team/${member.id}`, { isActive })
+      await updateTeamMember(businessId, member.id, { isActive })
       team.reload()
     } catch {
       team.setError(isActive ? "No se pudo activar a esa persona." : "No se pudo desactivar a esa persona.")
@@ -117,7 +121,7 @@ export function TeamRoster({
   async function remove(member: TeamMember) {
     team.setError(null)
     try {
-      await api.delete(`/businesses/${businessId}/team/${member.id}`)
+      await removeTeamMember(businessId, member.id)
       team.reload()
     } catch {
       team.setError("No se pudo quitar a esa persona.")
@@ -219,7 +223,7 @@ export function TeamRoster({
             return
           }
           team.setError(null)
-          await api.patch(`/businesses/${businessId}/team/${editingMember.id}`, { permissions })
+          await updateTeamMember(businessId, editingMember.id, { permissions })
           team.reload()
           setPermissionsOpen(false)
         }}
@@ -273,7 +277,7 @@ export function TeamPermissions({
         onSave={async (permissions) => {
           if (!member) return
           team.setError(null)
-          await api.patch(`/businesses/${businessId}/team/${member.id}`, { permissions })
+          await updateTeamMember(businessId, member.id, { permissions })
           team.reload()
           setOpen(false)
         }}

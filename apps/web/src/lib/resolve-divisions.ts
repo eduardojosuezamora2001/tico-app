@@ -1,6 +1,6 @@
 import type { AdministrativeDivision } from "@workspace/shared"
 
-import { api } from "@/lib/api"
+import { listAdministrativeDivisions } from "@/services/countries.service"
 
 function normalizeName(value: string) {
   return value
@@ -30,16 +30,11 @@ export async function resolveDivisionIds(
 
   for (const name of adminNames) {
     if (!name.trim()) continue
-    const response = await api.get<{ data: AdministrativeDivision[] }>(
-      "/administrative-divisions",
-      {
-        params: {
-          country: countryCode,
-          ...(parentId ? { parentId } : {}),
-        },
-      },
-    )
-    const match = matchDivision(name, response.data.data)
+    const divisions = await listAdministrativeDivisions({
+      country: countryCode,
+      ...(parentId ? { parentId } : {}),
+    })
+    const match = matchDivision(name, divisions)
     if (!match) break
     ids.push(match.id)
     parentId = match.id
