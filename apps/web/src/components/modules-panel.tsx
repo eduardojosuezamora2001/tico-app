@@ -7,7 +7,7 @@ import {
   moduleCatalogEntry,
   type ModuleCatalogEntry,
 } from "@/lib/module-catalog"
-import { api } from "@/lib/api"
+import { listBusinessModules, setBusinessModule } from "@/services/modules.service"
 import { Button } from "@workspace/ui/components/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
 import { Input } from "@workspace/ui/components/input"
@@ -28,10 +28,9 @@ export function useBusinessModules(businessId: string) {
   const reload = useCallback(() => {
     if (!businessId) return Promise.resolve()
     setLoading(true)
-    return api
-      .get<{ data: BusinessModule[] }>(`/businesses/${businessId}/modules`)
-      .then((response) => {
-        setModules(modulesToState(response.data.data))
+    return listBusinessModules(businessId)
+      .then((rows) => {
+        setModules(modulesToState(rows))
         setError(null)
       })
       .catch(() => setError("No se pudieron cargar los módulos."))
@@ -97,7 +96,7 @@ function ModuleDetail({
     setPending(true)
     setError(null)
     try {
-      await api.put(`/businesses/${businessId}/modules/${entry.id}`, { enabled: nextEnabled })
+      await setBusinessModule(businessId, entry.id, nextEnabled)
       onChanged()
     } catch {
       setError(nextEnabled ? "No se pudo activar el módulo." : "No se pudo desactivar el módulo.")

@@ -5,7 +5,11 @@ import type {
 } from "@workspace/shared"
 import { useCallback, useEffect, useState } from "react"
 
-import { api } from "@/lib/api"
+import {
+  listAdministrativeDivisions,
+  listAdministrativeLevels,
+  listCountries,
+} from "@/services/countries.service"
 
 export function useCountries() {
   const [countries, setCountries] = useState<Country[]>([])
@@ -14,10 +18,9 @@ export function useCountries() {
 
   useEffect(() => {
     setLoading(true)
-    void api
-      .get<{ data: Country[] }>("/countries")
-      .then((response) => {
-        setCountries(response.data.data)
+    void listCountries()
+      .then((rows) => {
+        setCountries(rows)
         setError(null)
       })
       .catch((err: unknown) => {
@@ -41,12 +44,9 @@ export function useAdministrativeLevels(countryCode: string | null) {
       return
     }
     setLoading(true)
-    void api
-      .get<{ data: CountryAdministrativeLevel[] }>(
-        `/countries/${countryCode}/administrative-levels`,
-      )
-      .then((response) => {
-        setLevels(response.data.data)
+    void listAdministrativeLevels(countryCode)
+      .then((rows) => {
+        setLevels(rows)
         setError(null)
       })
       .catch(() => setError("No se pudieron cargar los niveles administrativos"))
@@ -67,15 +67,12 @@ export function useAdministrativeDivisions(countryCode: string | null, parentId:
       return Promise.resolve()
     }
     setLoading(true)
-    return api
-      .get<{ data: AdministrativeDivision[] }>("/administrative-divisions", {
-        params: {
-          country: countryCode,
-          ...(parentId ? { parentId } : {}),
-        },
-      })
-      .then((response) => {
-        setDivisions(response.data.data)
+    return listAdministrativeDivisions({
+      country: countryCode,
+      ...(parentId ? { parentId } : {}),
+    })
+      .then((rows) => {
+        setDivisions(rows)
         setError(null)
       })
       .catch(() => setError("No se pudieron cargar las divisiones"))

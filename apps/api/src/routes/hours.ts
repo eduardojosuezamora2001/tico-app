@@ -2,6 +2,7 @@ import { UpsertBusinessHoursSchema, toBusinessHours } from "@workspace/shared"
 import { Hono } from "hono"
 import { z } from "zod"
 
+import { requireEditableBusiness } from "../lib/business-access.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
 import { supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
@@ -36,6 +37,9 @@ hoursRoutes.put("/", requireAuth, async (c) => {
   if (!parsed.success) return validationError(c, parsed.error)
 
   const id = parsedId.data
+  const access = await requireEditableBusiness(c, id)
+  if ("error" in access && access.error) return access.error
+
   const rows = parsed.data.map((row) => ({
     business_id: id,
     day_of_week: row.dayOfWeek,
@@ -45,15 +49,14 @@ hoursRoutes.put("/", requireAuth, async (c) => {
     is_closed: row.isClosed,
   }))
 
-  const { error: deleteError } = await c
-    .get("db")
+  const { error: deleteError } = await supabaseAdmin
     .from("business_hours")
     .delete()
     .eq("business_id", id)
     .is("exception_date", null)
   if (deleteError) return dbFail(c, deleteError)
 
-  const { data, error } = await c.get("db").from("business_hours").insert(rows).select("*")
+  const { data, error } = await supabaseAdmin.from("business_hours").insert(rows).select("*")
   if (error) return dbFail(c, error)
 
   return c.json({ data: (data ?? []).map(toBusinessHours) })

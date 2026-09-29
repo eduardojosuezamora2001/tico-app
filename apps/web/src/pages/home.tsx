@@ -4,7 +4,9 @@ import { Link } from "react-router"
 
 import { FilterCombobox, ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
-import { api } from "@/lib/api"
+import { searchBusinesses } from "@/services/businesses.service"
+import { listAdministrativeDivisions } from "@/services/countries.service"
+import type { BusinessSummary } from "@/services/types"
 import { Button } from "@workspace/ui/components/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 
@@ -29,17 +31,6 @@ const provinceHints: Record<string, string[]> = {
   Limón: ["limon", "limón"],
 }
 
-type BusinessCard = {
-  id: string
-  name: string
-  description: string | null
-  category: string
-  address: string | null
-  whatsappNumber: string | null
-  bannerUrl: string | null
-  distanceKm: number | null
-}
-
 export function HomePage() {
   const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""))
   const [category, setCategory] = useQueryState("category", parseAsArrayOf(parseAsString).withDefault([]))
@@ -52,7 +43,7 @@ export function HomePage() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
-  const [items, setItems] = useState<BusinessCard[]>([])
+  const [items, setItems] = useState<BusinessSummary[]>([])
   const [page, setPage] = useState(0)
   const [hasNext, setHasNext] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -67,10 +58,9 @@ export function HomePage() {
   }, [query])
 
   useEffect(() => {
-    void api
-      .get<{ data: Array<{ name: string }> }>("/administrative-divisions", { params: { country: "CR" } })
-      .then((response) => {
-        const items = response.data.data.map((division) => ({
+    void listAdministrativeDivisions({ country: "CR" })
+      .then((divisions) => {
+        const items = divisions.map((division) => ({
           id: division.name,
           label: division.name,
         }))
@@ -114,14 +104,11 @@ export function HomePage() {
     if (page > 0 && !cursor) return
     const handle = window.setTimeout(() => {
       setLoading(true)
-      void api
-        .get<{ data: BusinessCard[]; nextCursor: string | null }>("/businesses", {
-          params: { ...searchParams, cursor: cursor ?? undefined },
-        })
+      void searchBusinesses({ ...searchParams, cursor: cursor ?? undefined })
         .then((response) => {
-          setItems(response.data.data)
-          setHasNext(Boolean(response.data.nextCursor))
-          if (response.data.nextCursor) cursors.current[page + 1] = response.data.nextCursor
+          setItems(response.data)
+          setHasNext(Boolean(response.nextCursor))
+          if (response.nextCursor) cursors.current[page + 1] = response.nextCursor
           setError(null)
         })
         .catch(() => setError("No se pudo cargar el directorio."))
@@ -290,7 +277,7 @@ export function HomePage() {
                 items,
                 text: () => "",
                 group: () => null,
-                render: (rows: BusinessCard[]) => <BusinessGrid items={rows} />,
+                render: (rows: BusinessSummary[]) => <BusinessGrid items={rows} />,
               })),
             ]}
           />
@@ -363,7 +350,7 @@ function actionLabel(category: string) {
   return "Contactar por WhatsApp"
 }
 
-function BusinessGrid({ items }: { items: BusinessCard[] }) {
+function BusinessGrid({ items }: { items: BusinessSummary[] }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => {

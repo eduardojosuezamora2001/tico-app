@@ -11,7 +11,17 @@ import { Skeleton } from "@workspace/ui/components/skeleton"
 
 import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
 import { SiteHeader } from "@/components/site-header"
-import { api } from "@/lib/api"
+import { getBusiness } from "@/services/businesses.service"
+import {
+  claimConversation,
+  findConversationByBusiness,
+  getConversation,
+  listConversations,
+  markConversationRead,
+  replyToConversation,
+  sendMessage,
+  takeConversation,
+} from "@/services/messages.service"
 import {
   canClaim,
   canCompose,
@@ -30,8 +40,6 @@ import { chatSocket } from "@/lib/socket"
 import { useAuthStore } from "@/stores/auth-store"
 
 type Filter = "all" | "unread"
-type ThreadPayload = { conversation: Conversation; messages: Message[] }
-
 function when(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
   const minutes = Math.max(0, Math.floor(diff / 60000))
@@ -79,9 +87,8 @@ function Inbox() {
   const role = listed?.viewerRole
 
   useEffect(() => {
-    void api
-      .get<{ data: Conversation[] }>("/messages/conversations")
-      .then((response) => setItems(response.data.data))
+    void listConversations()
+      .then(setItems)
       .catch(() => setError("No se pudieron cargar las conversaciones."))
       .finally(() => setListReady(true))
   }, [])
@@ -90,21 +97,19 @@ function Inbox() {
     if (!draftBusinessId) return
     let live = true
     setDraftReady(false)
-    void api
-      .get<{ data: { id: string } | null }>(`/messages/business/${draftBusinessId}`)
-      .then((response) => {
+    void findConversationByBusiness(draftBusinessId)
+      .then((existing) => {
         if (!live) return
-        const id = response.data.data?.id
+        const id = existing?.id
         if (id) navigate(`/mensajes/${id}`, { replace: true })
         else setDraftReady(true)
       })
       .catch(() => {
         if (live) setError("No se pudo abrir el chat del local.")
       })
-    void api
-      .get<{ data: { business: { name: string } } }>(`/businesses/${draftBusinessId}`)
-      .then((response) => {
-        if (live) setDraftName(response.data.data.business.name)
+    void getBusiness(draftBusinessId)
+      .then((detail) => {
+        if (live) setDraftName(detail.business.name)
       })
       .catch(() => undefined)
     return () => {
@@ -126,11 +131,9 @@ function Inbox() {
     }
     let live = true
     setThreadReady(false)
-    void api
-      .get<{ data: ThreadPayload }>(`/messages/conversations/${conversationId}`)
-      .then((response) => {
+    void getConversation(conversationId)
+      .then((payload) => {
         if (!live) return
-        const payload = response.data.data
         setMessages(payload.messages)
         setItems((current) =>
           foldConversation(current, payload.conversation).map((item) =>
@@ -168,7 +171,7 @@ function Inbox() {
         )
         const counts = event.conversation.viewerRole === "customer" || event.conversation.viewerRole === "assignee"
         if (counts && event.message.senderId !== userId) {
-          void api.get(`/messages/conversations/${conversationId}`)
+          void markConversationRead(conversationId)
         }
       }
       const onConversation = (conversation: Conversation) => {
@@ -191,8 +194,8 @@ function Inbox() {
   async function claim(id: string) {
     setError(null)
     try {
-      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/claim`)
-      setItems((current) => foldConversation(current, response.data.data))
+      const conversation = await claimConversation(id)
+      setItems((current) => foldConversation(current, conversation))
       navigate(`/mensajes/${id}`)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo atender."))
@@ -202,8 +205,8 @@ function Inbox() {
   async function take(id: string) {
     setError(null)
     try {
-      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/take`)
-      setItems((current) => foldConversation(current, response.data.data))
+      const conversation = await takeConversation(id)
+      setItems((current) => foldConversation(current, conversation))
       navigate(`/mensajes/${id}`)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo tomar el chat."))
@@ -217,20 +220,21 @@ function Inbox() {
     setText("")
     try {
       if (draftBusinessId) {
-        const response = await api.post<{ data: { conversation: Conversation } }>("/messages", {
+        const result = await sendMessage({
           businessId: draftBusinessId,
           text: body,
         })
-        navigate(`/mensajes/${response.data.data.conversation.id}`, { replace: true })
+        navigate(`/mensajes/${result.conversation.id}`, { replace: true })
         return
       }
       if (!listed || !canCompose(listed)) return
-      const path = listed.viewerRole === "customer" ? "/messages" : `/messages/conversations/${listed.id}/reply`
-      const payload = listed.viewerRole === "customer" ? { businessId: listed.businessId, text: body } : { text: body }
-      const response = await api.post<{ data: { message: Message; conversation: Conversation } }>(path, payload)
-      const message = response.data.data.message
+      const result =
+        listed.viewerRole === "customer"
+          ? await sendMessage({ businessId: listed.businessId, text: body })
+          : await replyToConversation(listed.id, body)
+      const message = result.message
       setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
-      setItems((current) => foldConversation(current, response.data.data.conversation))
+      setItems((current) => foldConversation(current, result.conversation))
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo enviar."))
       setText(body)

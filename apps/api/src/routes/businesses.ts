@@ -1,9 +1,11 @@
 import {
+  CreateAddressSchema,
   CreateBusinessSchema,
   NearbyBusinessesSchema,
   SearchBusinessesSchema,
   ToggleBusinessModuleSchema,
   UpdateBusinessSchema,
+  toAddress,
   toBusiness,
   toBusinessModule,
   toNearbyBusiness,
@@ -11,7 +13,16 @@ import {
 import { Hono } from "hono"
 import { z } from "zod"
 
+import {
+  addressInsertFromInput,
+  addressPatchFromInput,
+} from "../lib/address-input.js"
+import {
+  ensureCountryExists,
+  validateDivisionChain,
+} from "../lib/address-validation.js"
 import { env } from "../config/env.js"
+import { requireEditableBusiness } from "../lib/business-access.js"
 import { businessPatchFromInput } from "../lib/business-input.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
 import { createUserClient, supabaseAdmin } from "../lib/supabase.js"
@@ -186,14 +197,17 @@ businessRoutes.get("/:id", async (c) => {
 businessRoutes.post("/", requireAuth, async (c) => {
   const parsed = CreateBusinessSchema.safeParse(await c.req.json())
   if (!parsed.success) return validationError(c, parsed.error)
-  const input = parsed.data
 
+  const input = parsed.data
   const insert = businessPatchFromInput(input)
-  const { data, error } = await c
-    .get("db")
+  const ownerId = c.get("userId")
+
+  // Service role: el JWT del usuario no siempre propaga auth.uid() a PostgREST en el
+  // backend, y además INSERT+RETURNING choca con RLS/column grants en borradores.
+  const { data, error } = await supabaseAdmin
     .from("businesses")
     .insert({
-      owner_id: c.get("userId"),
+      owner_id: ownerId,
       name: input.name,
       category: input.category,
       ...insert,
@@ -206,16 +220,75 @@ businessRoutes.post("/", requireAuth, async (c) => {
   return c.json({ data: toBusiness(data) }, 201)
 })
 
+businessRoutes.put("/:id/address", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
+  const parsed = CreateAddressSchema.safeParse(await c.req.json())
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const access = await requireEditableBusiness(c, parsedId.data)
+  if ("error" in access && access.error) return access.error
+  const business = access.business!
+
+  const countryId = parsed.data.countryId
+  const countryExists = await ensureCountryExists(supabaseAdmin, countryId)
+  if (!countryExists) return fail(c, 404, "NOT_FOUND", "País no encontrado")
+
+  if (parsed.data.administrativeDivisionId) {
+    const valid = await validateDivisionChain(
+      supabaseAdmin,
+      parsed.data.administrativeDivisionId,
+      countryId,
+    )
+    if (!valid) {
+      return fail(c, 400, "VALIDATION", "División administrativa inválida para el país")
+    }
+  }
+
+  if (business.address_id) {
+    const { data, error } = await supabaseAdmin
+      .from("addresses")
+      .update(addressPatchFromInput(parsed.data))
+      .eq("id", business.address_id)
+      .select("*")
+      .maybeSingle()
+    if (error) return dbFail(c, error)
+    if (!data) return fail(c, 404, "NOT_FOUND", "Dirección no encontrada")
+    return c.json({ data: toAddress(data) })
+  }
+
+  const { data: created, error: insertError } = await supabaseAdmin
+    .from("addresses")
+    .insert(addressInsertFromInput(parsed.data))
+    .select("*")
+    .single()
+  if (insertError) return dbFail(c, insertError)
+
+  const { error: linkError } = await supabaseAdmin
+    .from("businesses")
+    .update({ address_id: created.id })
+    .eq("id", business.id)
+  if (linkError) return dbFail(c, linkError)
+
+  return c.json({ data: toAddress(created) })
+})
+
 businessRoutes.patch("/:id", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
   const parsed = UpdateBusinessSchema.safeParse(await c.req.json())
   if (!parsed.success) return validationError(c, parsed.error)
   const patch = businessPatchFromInput(parsed.data)
 
-  const { data, error } = await c
-    .get("db")
+  const access = await requireEditableBusiness(c, parsedId.data)
+  if ("error" in access && access.error) return access.error
+
+  const { data, error } = await supabaseAdmin
     .from("businesses")
     .update(patch)
-    .eq("id", c.req.param("id"))
+    .eq("id", parsedId.data)
     .select("*")
     .maybeSingle()
   if (error) return dbFail(c, error)
@@ -227,8 +300,10 @@ businessRoutes.post("/:id/publish", requireAuth, async (c) => {
   const parsedId = z.uuid().safeParse(c.req.param("id"))
   if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
 
-  const { data, error } = await c
-    .get("db")
+  const access = await requireEditableBusiness(c, parsedId.data)
+  if ("error" in access && access.error) return access.error
+
+  const { data, error } = await supabaseAdmin
     .from("businesses")
     .update({ is_draft: false, is_active: true })
     .eq("id", parsedId.data)
@@ -240,23 +315,27 @@ businessRoutes.post("/:id/publish", requireAuth, async (c) => {
 })
 
 businessRoutes.put("/:id/modules/:module", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
   const parsed = ToggleBusinessModuleSchema.safeParse({
     moduleName: c.req.param("module"),
     enabled: (await c.req.json()).enabled,
   })
   if (!parsed.success) return validationError(c, parsed.error)
-  const businessId = c.req.param("id")
 
-  const { data, error } = await c
-    .get("db")
+  const access = await requireEditableBusiness(c, parsedId.data)
+  if ("error" in access && access.error) return access.error
+
+  const { data, error } = await supabaseAdmin
     .from("business_modules")
     .upsert(
       {
-        business_id: businessId,
+        business_id: parsedId.data,
         module_name: parsed.data.moduleName,
         enabled: parsed.data.enabled,
       },
-      { onConflict: "business_id,module_name" }
+      { onConflict: "business_id,module_name" },
     )
     .select("*")
     .single()

@@ -70,12 +70,32 @@ describe("CreateBusinessSchema", () => {
     })
     expect(badLat.success).toBe(false)
 
+    const localPhone = CreateBusinessSchema.safeParse({
+      name: "X",
+      category: "y",
+      whatsappNumber: "88887777",
+    })
+    expect(localPhone.success).toBe(true)
+    if (localPhone.success) {
+      expect(localPhone.data.whatsappNumber).toBe("+50688887777")
+    }
+
     const badPhone = CreateBusinessSchema.safeParse({
       name: "X",
       category: "y",
-      whatsappNumber: "8888-7777",
+      whatsappNumber: "12",
     })
     expect(badPhone.success).toBe(false)
+
+    const social = CreateBusinessSchema.safeParse({
+      name: "X",
+      category: "y",
+      facebookUrl: "facebook.com/local",
+    })
+    expect(social.success).toBe(true)
+    if (social.success) {
+      expect(social.data.facebookUrl).toBe("https://facebook.com/local")
+    }
   })
 })
 

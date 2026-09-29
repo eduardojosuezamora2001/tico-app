@@ -2,7 +2,9 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router"
 import axios from "axios"
 import { SiteHeader } from "@/components/site-header"
-import { api } from "@/lib/api"
+import { getMe, updateProfile } from "@/services/me.service"
+import { listConversations } from "@/services/messages.service"
+import type { Membership } from "@/services/types"
 import { useAuthStore } from "@/stores/auth-store"
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar"
 import { Button } from "@workspace/ui/components/button"
@@ -11,24 +13,7 @@ import { Input } from "@workspace/ui/components/input"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import { cn } from "cn"
-
-type AccountBusiness = {
-  id: string
-  name: string
-  slug: string
-  category: string
-  address: string | null
-  isActive: boolean
-  logoUrl: string | null
-}
-
-type Membership = {
-  businessId: string
-  role: string
-  permissions: string[]
-  isActive: boolean
-  business: AccountBusiness | null
-}
+import { toast } from "sonner"
 
 type ListedThread = {
   id?: string
@@ -70,13 +55,10 @@ export function AccountPage() {
 
   useEffect(() => {
     let active = true
-    void Promise.allSettled([
-      api.get<{ data: { memberships: Membership[] } }>("/me"),
-      api.get<{ data: ListedThread[] }>("/messages/conversations"),
-    ]).then(([me, conversations]) => {
+    void Promise.allSettled([getMe(), listConversations()]).then(([me, conversations]) => {
       if (!active) return
-      if (me.status === "fulfilled") setMemberships(me.value.data.data.memberships)
-      if (conversations.status === "fulfilled") setThreads(conversations.value.data.data)
+      if (me.status === "fulfilled") setMemberships(me.value.memberships)
+      if (conversations.status === "fulfilled") setThreads(conversations.value)
       if (me.status === "rejected") setError(errorMessage(me.reason, "No se pudo cargar tu cuenta."))
       setLoading(false)
     })
@@ -107,8 +89,23 @@ export function AccountPage() {
     setNotice(null)
     setError(null)
     try {
-      await api.patch("/me", { fullName, preferredLanguage: language })
-      await refreshProfile()
+      await toast.promise(
+        (async () => {
+          await updateProfile({ fullName, preferredLanguage: language })
+          await refreshProfile()
+        })(),
+        {
+          loading: "Guardando cambios…",
+          success: {
+            message: "Datos actualizados",
+            description: "Tu perfil quedó guardado.",
+          },
+          error: (reason) => ({
+            message: "No se pudo guardar",
+            description: errorMessage(reason, "No se pudieron guardar los cambios."),
+          }),
+        },
+      )
       setNotice("Datos actualizados.")
     } catch (reason) {
       setError(errorMessage(reason, "No se pudieron guardar los cambios."))

@@ -15,7 +15,15 @@ import {
 } from "@workspace/ui/components/sheet"
 
 import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
-import { api } from "@/lib/api"
+import {
+  claimConversation,
+  getConversation,
+  listConversations,
+  markConversationRead,
+  replyToConversation,
+  sendMessage,
+  takeConversation,
+} from "@/services/messages.service"
 import {
   canClaim,
   canCompose,
@@ -54,9 +62,8 @@ export function FloatChat() {
   activeRef.current = active
 
   function loadConversations() {
-    return api
-      .get<{ data: Conversation[] }>("/messages/conversations")
-      .then((response) => setItems(response.data.data))
+    return listConversations()
+      .then(setItems)
       .catch(() => setError("No se pudieron cargar las conversaciones."))
   }
 
@@ -103,7 +110,7 @@ export function FloatChat() {
             current.some((item) => item.id === event.message.id) ? current : [...current, event.message],
           )
           const counts = event.conversation.viewerRole === "customer" || event.conversation.viewerRole === "assignee"
-          if (counts && event.message.senderId !== userId) void api.get(`/messages/conversations/${event.conversation.id}`)
+          if (counts && event.message.senderId !== userId) void markConversationRead(event.conversation.id)
           return
         }
         if (event.message.senderId === userId) return
@@ -144,17 +151,16 @@ export function FloatChat() {
     }
     let cancelled = false
     setThreadReady(false)
-    void api
-      .get<{ data: { conversation: Conversation; messages: Message[] } }>(`/messages/conversations/${active.id}`)
-      .then((response) => {
+    void getConversation(active.id)
+      .then((payload) => {
         if (cancelled) return
-        setMessages(response.data.data.messages)
+        setMessages(payload.messages)
         setItems((current) =>
-          foldConversation(current, response.data.data.conversation).map((item) =>
+          foldConversation(current, payload.conversation).map((item) =>
             item.id === active.id ? { ...item, unreadCount: 0 } : item,
           ),
         )
-        setActive((current) => (current?.id === active.id ? { ...response.data.data.conversation, unreadCount: 0 } : current))
+        setActive((current) => (current?.id === active.id ? { ...payload.conversation, unreadCount: 0 } : current))
         setNotice(null)
       })
       .catch((caught) => {
@@ -171,9 +177,9 @@ export function FloatChat() {
   async function claim(id: string) {
     setError(null)
     try {
-      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/claim`)
-      setItems((current) => foldConversation(current, response.data.data))
-      setActive(response.data.data)
+      const conversation = await claimConversation(id)
+      setItems((current) => foldConversation(current, conversation))
+      setActive(conversation)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo atender."))
     }
@@ -182,9 +188,9 @@ export function FloatChat() {
   async function take(id: string) {
     setError(null)
     try {
-      const response = await api.post<{ data: Conversation }>(`/messages/conversations/${id}/take`)
-      setItems((current) => foldConversation(current, response.data.data))
-      setActive(response.data.data)
+      const conversation = await takeConversation(id)
+      setItems((current) => foldConversation(current, conversation))
+      setActive(conversation)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo tomar el chat."))
     }
@@ -197,12 +203,13 @@ export function FloatChat() {
     if (!body) return
     setText("")
     try {
-      const path = active.viewerRole === "customer" ? "/messages" : `/messages/conversations/${active.id}/reply`
-      const payload = active.viewerRole === "customer" ? { businessId: active.businessId, text: body } : { text: body }
-      const response = await api.post<{ data: { message: Message; conversation: Conversation } }>(path, payload)
-      const message = response.data.data.message
+      const result =
+        active.viewerRole === "customer"
+          ? await sendMessage({ businessId: active.businessId, text: body })
+          : await replyToConversation(active.id, body)
+      const message = result.message
       setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
-      setItems((current) => foldConversation(current, response.data.data.conversation))
+      setItems((current) => foldConversation(current, result.conversation))
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo enviar."))
       setText(body)

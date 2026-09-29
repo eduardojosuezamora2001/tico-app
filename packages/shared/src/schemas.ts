@@ -17,6 +17,7 @@ import {
   PERMISSIONS,
   ROLES,
 } from "./constants.js"
+import { normalizeHttpUrl, normalizePhoneToE164 } from "./input-normalization.js"
 
 // --------------------------------------------------------------------------
 // Primitivas reutilizables
@@ -206,13 +207,29 @@ export const BusinessSchema = z.object({
   updatedAt: isoDateSchema,
 })
 
+const optionalNormalizedPhoneSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  return normalizePhoneToE164(trimmed)
+}, phoneE164Schema.optional())
+
 const businessSocialUrlSchema = z
   .string()
   .trim()
   .max(300)
+  .transform((value) => (value === "" ? "" : normalizeHttpUrl(value)))
   .refine((value) => value === "" || z.url().safeParse(value).success, {
     message: "URL invalida",
   })
+
+const optionalNormalizedUrlSchema = z.preprocess((value) => {
+  if (value === null || value === undefined) return value
+  if (typeof value !== "string") return value
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return normalizeHttpUrl(trimmed)
+}, urlSchema.nullable().optional())
 
 export const CreateBusinessSchema = z.object({
   name: z.string().trim().min(1, "Requerido").max(120),
@@ -225,7 +242,7 @@ export const CreateBusinessSchema = z.object({
   canton: z.string().trim().max(60).optional(),
   district: z.string().trim().max(60).optional(),
   address: z.string().trim().max(300).optional(),
-  whatsappNumber: phoneE164Schema.optional(),
+  whatsappNumber: optionalNormalizedPhoneSchema,
   website: businessSocialUrlSchema.optional(),
   email: emailSchema.optional(),
   phone: z.string().trim().max(30).optional(),
@@ -247,8 +264,8 @@ export const CreateBusinessSchema = z.object({
 })
 
 export const UpdateBusinessSchema = CreateBusinessSchema.partial().extend({
-  logoUrl: urlSchema.nullable().optional(),
-  bannerUrl: urlSchema.nullable().optional(),
+  logoUrl: optionalNormalizedUrlSchema,
+  bannerUrl: optionalNormalizedUrlSchema,
   isActive: z.boolean().optional(),
   isDraft: z.boolean().optional(),
   chatRetentionDays: z

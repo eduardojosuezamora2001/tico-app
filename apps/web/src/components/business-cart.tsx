@@ -7,7 +7,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/comp
 
 import { FilterCombobox } from "@/components/list-filter"
 
-import { api } from "@/lib/api"
+import { sendMessage } from "@/services/messages.service"
 import { cartMessage, cartTotal, useCartStore, type CartLine } from "@/stores/cart-store"
 import { useAuthStore } from "@/stores/auth-store"
 
@@ -206,7 +206,7 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
     setSending(true)
     setError(null)
     try {
-      await api.post("/messages", {
+      await sendMessage({
         businessId: business.id,
         text: cartMessage(business.name, lines),
       })

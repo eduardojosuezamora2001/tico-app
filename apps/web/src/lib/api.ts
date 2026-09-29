@@ -1,7 +1,13 @@
-import axios from "axios"
+import axios, { isAxiosError } from "axios"
 
 import { env } from "@/lib/env"
 import { supabase } from "@/lib/supabase"
+
+type ApiErrorBody = {
+  error?: {
+    message?: string
+  }
+}
 
 /**
  * Cliente HTTP hacia apps/api. Adjunta el access token de Supabase en cada
@@ -20,3 +26,14 @@ api.interceptors.request.use(async (config) => {
   }
   return config
 })
+
+export function getApiErrorMessage(error: unknown, fallback: string) {
+  if (isAxiosError<ApiErrorBody>(error)) {
+    const message = error.response?.data?.error?.message
+    const path = error.config?.url
+    if (typeof message === "string" && message.trim()) {
+      return path ? `${message} (${path})` : message
+    }
+  }
+  return fallback
+}

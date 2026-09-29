@@ -63,4 +63,19 @@ describe("API skeleton", () => {
     expect(res.status).toBe(401)
   })
 
+  it("rejects business address upsert without a session", async () => {
+    const res = await app.request(
+      "/api/businesses/00000000-0000-4000-8000-000000000001/address",
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          countryId: "c1111111-1111-4111-8111-111111111111",
+          addressLine1: "Centro",
+        }),
+      },
+    )
+    expect(res.status).toBe(401)
+  })
+
 })

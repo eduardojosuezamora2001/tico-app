@@ -224,3 +224,30 @@ export const MAX_SEARCH_RADIUS_KM = 50
 /** Rango valido de una resena. */
 export const MIN_RATING = 1
 export const MAX_RATING = 5
+
+// --------------------------------------------------------------------------
+// Metodos de pago (etiquetas de UI; las columnas en BD conservan nombres legacy)
+// --------------------------------------------------------------------------
+
+export const PAYMENT_METHOD_KEYS = [
+  "paymentSinpe",
+  "paymentCash",
+  "paymentCard",
+  "paymentIban",
+] as const
+
+export type PaymentMethodKey = (typeof PAYMENT_METHOD_KEYS)[number]
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethodKey, string> = {
+  paymentSinpe: "Transferencia móvil",
+  paymentCash: "Efectivo",
+  paymentCard: "Tarjeta y datáfono",
+  paymentIban: "Cuenta IBAN",
+}
+
+export const PAYMENT_METHOD_SHORT_LABELS: Record<PaymentMethodKey, string> = {
+  paymentSinpe: "Transferencia móvil",
+  paymentCash: "Efectivo",
+  paymentCard: "Tarjeta",
+  paymentIban: "IBAN",
+}
