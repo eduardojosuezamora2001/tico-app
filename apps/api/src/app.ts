@@ -12,6 +12,7 @@ import { env, isProduction } from "./config/env.js"
 import { addressRoutes } from "./routes/addresses.js"
 import { menuRoutes, productRoutes, serviceRoutes } from "./routes/catalog.js"
 import { businessRoutes } from "./routes/businesses.js"
+import { chainRoutes } from "./routes/chains.js"
 import { countryRoutes, divisionRoutes } from "./routes/countries.js"
 import { eventRoutes } from "./routes/events.js"
 import { galleryRoutes } from "./routes/gallery.js"
@@ -48,6 +49,7 @@ app.route("/countries", countryRoutes)
 app.route("/administrative-divisions", divisionRoutes)
 app.route("/addresses", addressRoutes)
 app.route("/businesses", businessRoutes)
+app.route("/chains", chainRoutes)
 app.route("/businesses/:id/team", teamRoutes)
 app.route("/businesses/:id/products", productRoutes)
 app.route("/businesses/:id/services", serviceRoutes)

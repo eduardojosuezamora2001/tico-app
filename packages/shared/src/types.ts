@@ -116,9 +116,34 @@ export interface NearbyBusiness {
   distanceM: number
 }
 
+export interface BusinessChain {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  logoUrl: string | null
+  createdBy: string
+  createdAt: ISODateString
+  updatedAt: ISODateString
+  locations: ChainLocation[]
+}
+
+export interface ChainLocation {
+  businessId: string
+  name: string
+  slug: string
+  category: string
+  address: string | null
+  isActive: boolean
+  isDraft: boolean
+  logoUrl: string | null
+  role: BusinessRole | string
+}
+
 export interface Business {
   id: string
   ownerId: string
+  chainId: string | null
   slug: string
   name: string
   tagline: string | null

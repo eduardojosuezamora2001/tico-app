@@ -22,6 +22,7 @@ import {
   validateDivisionChain,
 } from "../lib/address-validation.js"
 import { env } from "../config/env.js"
+import { isChainAdmin } from "../lib/chain-access.js"
 import { requireEditableBusiness } from "../lib/business-access.js"
 import { businessPatchFromInput } from "../lib/business-input.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
@@ -202,6 +203,13 @@ businessRoutes.post("/", requireAuth, async (c) => {
   const insert = businessPatchFromInput(input)
   const ownerId = c.get("userId")
 
+  if (input.chainId) {
+    const allowed = await isChainAdmin(supabaseAdmin, input.chainId, ownerId)
+    if (!allowed) {
+      return fail(c, 403, "FORBIDDEN", "No tienes permiso para crear sedes en esta cadena")
+    }
+  }
+
   // Service role: el JWT del usuario no siempre propaga auth.uid() a PostgREST en el
   // backend, y además INSERT+RETURNING choca con RLS/column grants en borradores.
   const { data, error } = await supabaseAdmin
@@ -210,6 +218,7 @@ businessRoutes.post("/", requireAuth, async (c) => {
       owner_id: ownerId,
       name: input.name,
       category: input.category,
+      chain_id: input.chainId ?? null,
       ...insert,
       is_draft: input.isDraft ?? false,
       is_active: input.isDraft ? false : true,

@@ -516,6 +516,80 @@ export type Database = {
           },
         ]
       }
+      business_chain_admins: {
+        Row: {
+          chain_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          chain_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          chain_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_chain_admins_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "business_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_chain_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_chains: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          slug?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_chains_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address: string | null
@@ -523,6 +597,7 @@ export type Database = {
           banner_url: string | null
           canton: string | null
           category: string
+          chain_id: string | null
           chat_retention_days: number
           created_at: string
           delivery_cost: number | null
@@ -564,6 +639,7 @@ export type Database = {
           banner_url?: string | null
           canton?: string | null
           category: string
+          chain_id?: string | null
           chat_retention_days?: number
           created_at?: string
           delivery_cost?: number | null
@@ -605,6 +681,7 @@ export type Database = {
           banner_url?: string | null
           canton?: string | null
           category?: string
+          chain_id?: string | null
           chat_retention_days?: number
           created_at?: string
           delivery_cost?: number | null
@@ -641,6 +718,13 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "businesses_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "business_chains"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "businesses_owner_id_fkey"
             columns: ["owner_id"]

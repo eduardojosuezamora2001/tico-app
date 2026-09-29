@@ -11,6 +11,7 @@ import type {
 } from "@workspace/shared"
 
 import { BusinessProfileWizard } from "@/components/business-profile-wizard"
+import { MerchantHomeDashboard } from "@/components/merchant-home-dashboard"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
@@ -27,7 +28,9 @@ import {
   listServices,
   updateCatalogItem,
 } from "@/services/catalog.service"
+import { listChains } from "@/services/chains.service"
 import { getMe } from "@/services/me.service"
+import type { BusinessChain } from "@workspace/shared"
 import type { CatalogKind, Membership } from "@/services/types"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -43,30 +46,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/componen
 
 export function MerchantHomePage() {
   const [rows, setRows] = useState<Membership[]>([])
+  const [chains, setChains] = useState<BusinessChain[]>([])
+  const [loading, setLoading] = useState(true)
+
+  function loadDashboard() {
+    setLoading(true)
+    void Promise.allSettled([getMe(), listChains()])
+      .then(([meResult, chainsResult]) => {
+        if (meResult.status === "fulfilled") {
+          setRows(meResult.value.memberships)
+        }
+        if (chainsResult.status === "fulfilled") {
+          setChains(chainsResult.value)
+        } else {
+          setChains([])
+        }
+      })
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    void getMe().then((payload) => {
-      setRows(payload.memberships)
-    })
+    loadDashboard()
   }, [])
 
   return (
     <div className="min-h-svh bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Mis negocios</h1>
-          <Button render={<Link to="/mi-negocio/nuevo" />}>Crear negocio</Button>
-        </div>
-        <ul className="mt-6 space-y-3">
-          {rows.map((row) => (
-            <li key={row.businessId}>
-              <Link className="block rounded-2xl border border-border bg-card px-4 py-3" to={`/mi-negocio/${row.businessId}`}>
-                {row.business?.name ?? "Negocio"}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <MerchantHomeDashboard
+          memberships={rows}
+          chains={chains}
+          loading={loading}
+          onRefresh={loadDashboard}
+        />
       </main>
     </div>
   )

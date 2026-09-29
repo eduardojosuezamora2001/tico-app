@@ -3,6 +3,7 @@ import type {
   Address,
   AdministrativeDivision,
   Business,
+  BusinessChain,
   BusinessEvent,
   BusinessHours,
   BusinessModule,
@@ -118,10 +119,24 @@ export function toUser(row: Tables<"users">): User {
   }
 }
 
+export function toBusinessChain(row: Tables<"business_chains">): Omit<BusinessChain, "locations"> {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    logoUrl: row.logo_url,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
 export function toBusiness(row: Tables<"businesses">): Business {
   return {
     id: row.id,
     ownerId: row.owner_id,
+    chainId: row.chain_id ?? null,
     slug: row.slug,
     name: row.name,
     tagline: row.tagline ?? null,

@@ -260,7 +260,18 @@ export const CreateBusinessSchema = z.object({
   sinpeHolder: z.string().trim().max(120).optional(),
   iban: z.string().trim().max(40).optional(),
   addressId: uuidSchema.optional(),
+  chainId: uuidSchema.optional(),
   isDraft: z.boolean().optional(),
+})
+
+export const CreateBusinessChainSchema = z.object({
+  name: z.string().trim().min(1, "Requerido").max(120),
+  description: z.string().trim().max(500).optional(),
+  logoUrl: optionalNormalizedUrlSchema,
+})
+
+export const AttachChainLocationSchema = z.object({
+  businessId: uuidSchema,
 })
 
 export const UpdateBusinessSchema = CreateBusinessSchema.partial().extend({
@@ -523,6 +534,8 @@ export type SignUpInput = z.infer<typeof SignUpSchema>
 export type SignInInput = z.infer<typeof SignInSchema>
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>
 export type CreateBusinessInput = z.infer<typeof CreateBusinessSchema>
+export type CreateBusinessChainInput = z.infer<typeof CreateBusinessChainSchema>
+export type AttachChainLocationInput = z.infer<typeof AttachChainLocationSchema>
 export type UpdateBusinessInput = z.infer<typeof UpdateBusinessSchema>
 export type SearchBusinessesInput = z.infer<typeof SearchBusinessesSchema>
 export type ToggleBusinessModuleInput = z.infer<typeof ToggleBusinessModuleSchema>
