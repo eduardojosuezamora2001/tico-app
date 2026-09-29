@@ -1,0 +1,191 @@
+import { useState } from "react"
+import { Link } from "react-router"
+import {
+  nextFulfillmentStage,
+  orderStageLabel,
+  type OrderListItem,
+} from "@workspace/shared"
+import { Message01Icon, ShoppingBag01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+
+import {
+  formatColones,
+  formatRelativeTime,
+  orderShortId,
+  orderStatusLabel,
+  orderStepsFromOrder,
+} from "@/lib/messages-ui"
+import { decideChatOrder } from "@/services/messages.service"
+import { advanceOrderStage } from "@/services/orders.service"
+import { Button } from "@workspace/ui/components/button"
+
+export function OrderListItemCard({
+  order,
+  mode,
+  onUpdated,
+}: {
+  order: OrderListItem
+  mode: "customer" | "staff"
+  onUpdated: (order: OrderListItem) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const shortId = orderShortId(order.id)
+  const steps = orderStepsFromOrder(order)
+  const currentStep = steps.find((step) => step.state === "current")
+  const nextStage =
+    order.status === "accepted" && order.fulfillmentStage
+      ? nextFulfillmentStage(order.fulfillmentStage)
+      : null
+  const canDecide = mode === "staff" && order.status === "pending"
+  const canAdvance = mode === "staff" && Boolean(nextStage)
+
+  async function decide(decision: "accept" | "deny") {
+    setPending(true)
+    setError(null)
+    try {
+      const result = await decideChatOrder(order.messageId, decision)
+      onUpdated({ ...order, ...result.order, businessSlug: order.businessSlug, customerName: order.customerName })
+    } catch {
+      setError("No se pudo actualizar el pedido.")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function advance() {
+    if (!nextStage) return
+    setPending(true)
+    setError(null)
+    try {
+      const updated = await advanceOrderStage(order.id, nextStage)
+      onUpdated({ ...order, ...updated, businessSlug: order.businessSlug, customerName: order.customerName })
+    } catch {
+      setError("No se pudo avanzar el pedido.")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex flex-wrap items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold">Pedido #{shortId}</h3>
+            <StatusBadge order={order} label={currentStep?.label ?? orderStatusLabel(order)} />
+          </div>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {mode === "customer" ? (
+              order.businessName
+            ) : (
+              <>
+                {order.customerName ?? "Cliente"} · {order.businessName}
+              </>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {order.lines.length} ítem{order.lines.length === 1 ? "" : "s"} · {formatColones(order.total)} ·{" "}
+            {formatRelativeTime(order.createdAt)}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setOpen((v) => !v)}>
+            {open ? "Ocultar" : "Detalle"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            render={<Link to={`/mensajes/${order.conversationId}`} />}
+          >
+            <HugeiconsIcon icon={Message01Icon} strokeWidth={2} data-icon="inline-start" />
+            Chat
+          </Button>
+        </div>
+      </div>
+
+      {open ? (
+        <div className="mt-4 border-t border-border pt-4">
+          <ol className="flex flex-col gap-2">
+            {steps.map((step) => (
+              <li key={step.id} className="flex items-center gap-2 text-sm">
+                <span
+                  className={
+                    step.state === "done"
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : step.state === "current"
+                        ? "font-medium text-primary"
+                        : "text-muted-foreground"
+                  }
+                >
+                  {step.label}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            {order.lines.map((line) => (
+              <li key={line.productId} className="flex justify-between gap-3 text-sm">
+                <span>
+                  {line.quantity}x {line.name}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatColones(line.price * line.quantity)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm font-semibold">Total: {formatColones(order.total)}</p>
+
+          {canDecide ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button type="button" size="sm" className="rounded-full" disabled={pending} onClick={() => void decide("accept")}>
+                Aceptar pedido
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                disabled={pending}
+                onClick={() => void decide("deny")}
+              >
+                Denegar
+              </Button>
+            </div>
+          ) : null}
+
+          {canAdvance && nextStage ? (
+            <div className="mt-4">
+              <Button type="button" size="sm" className="rounded-full" disabled={pending} onClick={() => void advance()}>
+                {nextStage === "ready" ? "Marcar listo para retiro" : "Marcar entregado"}
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Etapa actual: {orderStageLabel(order.fulfillmentStage) ?? "—"}
+              </p>
+            </div>
+          ) : null}
+
+          {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+        </div>
+      ) : null}
+    </article>
+  )
+}
+
+function StatusBadge({ order, label }: { order: OrderListItem; label: string }) {
+  const tone =
+    order.status === "accepted"
+      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+      : order.status === "pending"
+        ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
+        : "bg-destructive/15 text-destructive"
+  return <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${tone}`}>{label}</span>
+}

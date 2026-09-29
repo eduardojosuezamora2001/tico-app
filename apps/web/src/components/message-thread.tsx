@@ -1,5 +1,11 @@
 import type { SubmitEventHandler } from "react"
-import type { Message as ChatMessage } from "@workspace/shared"
+import {
+  encodeChatOrderMessage,
+  parseMessageContent,
+  type ChatOrder,
+  type ConversationRole,
+  type Message as ChatMessage,
+} from "@workspace/shared"
 import { SentIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar"
@@ -26,6 +32,8 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@workspace/ui/components/message-scroller"
+
+import { OrderMessageCard } from "@/components/order-message-card"
 
 export function initials(name: string | null) {
   const parts = (name ?? "C").trim().split(/\s+/).slice(0, 2)
@@ -98,6 +106,11 @@ export function MessageThread({
   selfName,
   selfAvatar,
   nameFor,
+  variant = "default",
+  viewerRole,
+  ordersByMessageId,
+  onOrderUpdated,
+  onOrderRecordUpdated,
 }: {
   threadKey: string
   messages: ChatMessage[]
@@ -106,6 +119,11 @@ export function MessageThread({
   selfName: string | null
   selfAvatar?: string | null
   nameFor?: (message: ChatMessage) => string | null
+  variant?: "default" | "customer"
+  viewerRole?: ConversationRole
+  ordersByMessageId?: Record<string, ChatOrder>
+  onOrderUpdated?: (messageId: string, text: string) => void
+  onOrderRecordUpdated?: (order: ChatOrder) => void
 }) {
   if (messages.length === 0) {
     return (
@@ -139,6 +157,11 @@ export function MessageThread({
                   peerName={nameFor?.(entry.message) ?? peerName}
                   selfName={selfName}
                   selfAvatar={selfAvatar}
+                  variant={variant}
+                  viewerRole={viewerRole}
+                  ordersByMessageId={ordersByMessageId}
+                  onOrderUpdated={onOrderUpdated}
+                  onOrderRecordUpdated={onOrderRecordUpdated}
                 />
               ),
             )}
@@ -157,6 +180,11 @@ function ThreadMessage({
   peerName,
   selfName,
   selfAvatar,
+  variant,
+  viewerRole,
+  ordersByMessageId,
+  onOrderUpdated,
+  onOrderRecordUpdated,
 }: {
   message: ChatMessage
   showAvatar: boolean
@@ -164,8 +192,21 @@ function ThreadMessage({
   peerName: string | null
   selfName: string | null
   selfAvatar?: string | null
+  variant: "default" | "customer"
+  viewerRole?: ConversationRole
+  ordersByMessageId?: Record<string, ChatOrder>
+  onOrderUpdated?: (messageId: string, text: string) => void
+  onOrderRecordUpdated?: (order: ChatOrder) => void
 }) {
   const align = mine ? "end" : "start"
+  const content = parseMessageContent(message.text)
+  const mineBubbleClass =
+    variant === "customer"
+      ? "border-primary/20 bg-primary text-primary-foreground"
+      : undefined
+  const peerBubbleClass =
+    variant === "customer" ? "border-border bg-card text-foreground shadow-sm" : undefined
+
   return (
     <MessageScrollerItem messageId={message.id}>
       <Message align={align}>
@@ -181,13 +222,34 @@ function ThreadMessage({
           <MessageAvatar />
         )}
         <MessageContent>
-          <Bubble variant={mine ? "default" : "muted"} align={align}>
-            <BubbleContent className="whitespace-pre-wrap">{message.text}</BubbleContent>
-          </Bubble>
+          {!mine && showAvatar && peerName ? (
+            <p className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">{peerName}</p>
+          ) : null}
+          {content.kind === "order" ? (
+            <OrderMessageCard
+              messageId={message.id}
+              order={content.order}
+              dbOrder={ordersByMessageId?.[message.id]}
+              viewerRole={viewerRole}
+              mine={mine}
+              onUpdated={(messageId, nextOrder) => {
+                onOrderUpdated?.(messageId, encodeChatOrderMessage(nextOrder))
+              }}
+              onOrderUpdated={onOrderRecordUpdated}
+            />
+          ) : (
+            <Bubble
+              variant={mine ? "default" : "muted"}
+              align={align}
+              className={mine ? mineBubbleClass : peerBubbleClass}
+            >
+              <BubbleContent className="whitespace-pre-wrap">{content.text}</BubbleContent>
+            </Bubble>
+          )}
           {showAvatar ? (
             <MessageFooter>
               {clock(message.createdAt)}
-              {mine && message.isRead ? " · Leído" : ""}
+              {mine && message.isRead ? " · ✓✓" : mine ? " · ✓" : ""}
             </MessageFooter>
           ) : null}
         </MessageContent>

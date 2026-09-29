@@ -4,7 +4,9 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router"
 import { Menu01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { OrderTabBadge } from "@/components/orders/order-tab-badge"
 import { useTheme } from "@/components/theme-provider"
+import { useOrdersInboxStore } from "@/stores/orders-inbox-store"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@workspace/ui/components/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
@@ -22,6 +24,7 @@ const links = [
   { to: "/", label: "Inicio", icon: HomeIcon, match: (path: string) => path === "/" },
   { to: "/mi-negocio", label: "Para negocios", icon: StoreIcon, match: (path: string) => path.startsWith("/mi-negocio") },
   { to: "/mensajes", label: "Mensajes", icon: MessageIcon, match: (path: string) => path.startsWith("/mensajes") },
+  { to: "/pedidos", label: "Pedidos", icon: BagIcon, match: (path: string) => path.startsWith("/pedidos") },
 ] as const
 
 export function SiteHeader() {
@@ -29,6 +32,8 @@ export function SiteHeader() {
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const signedIn = status === "authenticated"
+  const userId = useAuthStore((s) => s.session?.user.id)
+  const ordersNavCount = useOrdersInboxStore((s) => s.navBadgeCount(userId))
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -76,7 +81,7 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map((item) => {
             const active = item.match(pathname)
-            const href = item.to === "/mensajes" && !signedIn ? "/login" : item.to
+            const href = authHref(item.to, signedIn)
             return (
               <Link
                 key={item.to}
@@ -88,6 +93,9 @@ export function SiteHeader() {
               >
                 <item.icon />
                 {item.label}
+                {item.to === "/pedidos" && signedIn ? (
+                  <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
+                ) : null}
               </Link>
             )
           })}
@@ -107,11 +115,14 @@ export function SiteHeader() {
             </SheetHeader>
             <nav className="flex flex-col gap-1 px-4">
               {links.map((item) => {
-                const href = item.to === "/mensajes" && !signedIn ? "/login" : item.to
+                const href = authHref(item.to, signedIn)
                 return (
                   <Button key={item.to} variant="ghost" className="justify-start" render={<Link to={href} />}>
                     <item.icon />
                     {item.label}
+                    {item.to === "/pedidos" && signedIn ? (
+                      <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
+                    ) : null}
                   </Button>
                 )
               })}
@@ -207,6 +218,11 @@ export function SiteHeader() {
   )
 }
 
+function authHref(to: string, signedIn: boolean) {
+  if (!signedIn && (to === "/mensajes" || to === "/pedidos")) return "/login"
+  return to
+}
+
 function initials(name: string | null, email: string | undefined) {
   const source = (name?.trim() || email?.split("@")[0] || "C").replace(/[._-]+/g, " ")
   const parts = source.split(/\s+/).slice(0, 2)
@@ -244,6 +260,15 @@ function MessageIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
       <path d="M5 6.5h14v9H8l-3 2.5z" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function BagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M7 8V6.5A2.5 2.5 0 0 1 9.5 4h5A2.5 2.5 0 0 1 17 6.5V8" strokeLinecap="round" />
+      <path d="M6 8h12l-1 13H7z" strokeLinejoin="round" />
     </svg>
   )
 }

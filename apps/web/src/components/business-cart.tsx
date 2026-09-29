@@ -2,13 +2,21 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router"
 import type { Business } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
 import { Empty, EmptyDescription, EmptyHeader } from "@workspace/ui/components/empty"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 
 import { FilterCombobox } from "@/components/list-filter"
 
 import { sendMessage } from "@/services/messages.service"
-import { cartMessage, cartTotal, useCartStore, type CartLine } from "@/stores/cart-store"
+import { cartTotal, useCartStore, type CartLine } from "@/stores/cart-store"
 import { useAuthStore } from "@/stores/auth-store"
 
 const emptyLines: CartLine[] = []
@@ -196,10 +204,12 @@ export function OrderBoard({
 function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }) {
   const clear = useCartStore((s) => s.clear)
   const signedIn = useAuthStore((s) => s.status) === "authenticated"
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const count = lines.reduce((sum, line) => sum + line.quantity, 0)
+  const total = cartTotal(lines)
 
   async function send() {
     if (lines.length === 0) return
@@ -208,10 +218,19 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
     try {
       await sendMessage({
         businessId: business.id,
-        text: cartMessage(business.name, lines),
+        order: {
+          businessName: business.name,
+          lines: lines.map((line) => ({
+            productId: line.productId,
+            name: line.name,
+            quantity: line.quantity,
+            price: line.price,
+          })),
+        },
       })
       clear(business.id)
       setSent(true)
+      setConfirmOpen(false)
     } catch {
       setError("No se pudo enviar el pedido. Entra con tu cuenta e inténtalo de nuevo.")
     } finally {
@@ -220,31 +239,87 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
   }
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-accent px-4 py-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Mi pedido en {business.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {sent
-              ? "Pedido enviado. El negocio lo ve en su chat."
-              : count > 0
-                ? `${count} ${count === 1 ? "producto" : "productos"} · ${colones(cartTotal(lines))}`
-                : "Todavía no agregaste nada de este local."}
-          </p>
+    <>
+      <div className="rounded-2xl border border-primary/30 bg-accent px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Mi pedido en {business.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {sent
+                ? "Pedido enviado. El negocio lo ve en su chat."
+                : count > 0
+                  ? `${count} ${count === 1 ? "producto" : "productos"} · ${colones(total)}`
+                  : "Todavía no agregaste nada de este local."}
+            </p>
+          </div>
+          {count > 0 && signedIn ? (
+            <Button
+              type="button"
+              className="rounded-full bg-[#128C7E] px-4 text-white hover:bg-[#0f7a6e]"
+              disabled={sending}
+              onClick={() => {
+                setError(null)
+                setConfirmOpen(true)
+              }}
+            >
+              Enviar pedido
+            </Button>
+          ) : null}
+          {count > 0 && !signedIn ? (
+            <Button className="rounded-full px-4" render={<Link to={`/login?next=/n/${business.id}`} />}>
+              Entra para enviar
+            </Button>
+          ) : null}
         </div>
-        {count > 0 && signedIn ? (
-          <Button type="button" className="rounded-full bg-[#128C7E] px-4 text-white hover:bg-[#0f7a6e]" disabled={sending} onClick={() => void send()}>
-            {sending ? "Enviando…" : "Enviar pedido"}
-          </Button>
-        ) : null}
-        {count > 0 && !signedIn ? (
-          <Button className="rounded-full px-4" render={<Link to={`/login?next=/n/${business.id}`} />}>
-            Entra para enviar
-          </Button>
-        ) : null}
+        {error && !confirmOpen ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
       </div>
-      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-    </div>
+
+      <Dialog open={confirmOpen} onOpenChange={(open) => !sending && setConfirmOpen(open)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar pedido</DialogTitle>
+            <DialogDescription>
+              Revisa los productos y precios antes de enviar el pedido al chat de {business.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ul className="flex max-h-60 flex-col gap-3 overflow-y-auto border-y border-border py-4">
+            {lines.map((line) => (
+              <li key={line.productId} className="flex items-start justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {line.quantity}x {line.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{colones(line.price)} c/u</p>
+                </div>
+                <span className="shrink-0 tabular-nums font-medium">{colones(line.price * line.quantity)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Total del pedido</span>
+            <span className="text-lg font-semibold tabular-nums">{colones(total)}</span>
+          </div>
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" className="rounded-full" disabled={sending} onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="rounded-full bg-[#128C7E] text-white hover:bg-[#0f7a6e]"
+              disabled={sending}
+              onClick={() => void send()}
+            >
+              {sending ? "Enviando…" : "Confirmar y enviar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

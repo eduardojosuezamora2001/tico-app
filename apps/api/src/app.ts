@@ -19,6 +19,7 @@ import { galleryRoutes } from "./routes/gallery.js"
 import { hoursRoutes } from "./routes/hours.js"
 import { meRoutes } from "./routes/me.js"
 import { messageRoutes } from "./routes/messages.js"
+import { orderRoutes } from "./routes/orders.js"
 import { teamRoutes } from "./routes/team.js"
 import type { AppEnv } from "./types.js"
 
@@ -45,6 +46,7 @@ app.get("/health", (c) =>
 
 app.route("/me", meRoutes)
 app.route("/messages", messageRoutes)
+app.route("/orders", orderRoutes)
 app.route("/countries", countryRoutes)
 app.route("/administrative-divisions", divisionRoutes)
 app.route("/addresses", addressRoutes)

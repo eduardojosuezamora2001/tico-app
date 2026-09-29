@@ -503,9 +503,34 @@ export const MessageSchema = z.object({
   updatedAt: isoDateSchema,
 })
 
-export const SendMessageSchema = z.object({
-  businessId: uuidSchema,
-  text: z.string().trim().min(1, "El mensaje no puede estar vacio").max(4000),
+export const SendMessageSchema = z
+  .object({
+    businessId: uuidSchema,
+    text: z.string().trim().max(4000).optional(),
+    order: z
+      .object({
+        businessName: z.string().trim().min(1).max(120),
+        lines: z
+          .array(
+            z.object({
+              productId: z.string().min(1),
+              name: z.string().trim().min(1).max(160),
+              quantity: z.number().int().positive().max(99),
+              price: z.number().nonnegative(),
+            }),
+          )
+          .min(1)
+          .max(40),
+      })
+      .optional(),
+  })
+  .refine((value) => Boolean(value.text?.trim()) || value.order, {
+    message: "El mensaje no puede estar vacío",
+    path: ["text"],
+  })
+
+export const ChatOrderDecisionSchema = z.object({
+  decision: z.enum(["accept", "deny"]),
 })
 
 export const ReplyMessageSchema = z.object({
@@ -555,3 +580,4 @@ export type CreateReviewInput = z.infer<typeof CreateReviewSchema>
 export type UpdateReviewInput = z.infer<typeof UpdateReviewSchema>
 export type CreateEventInput = z.infer<typeof CreateEventSchema>
 export type SendMessageInput = z.infer<typeof SendMessageSchema>
+export type ChatOrderDecisionInput = z.infer<typeof ChatOrderDecisionSchema>

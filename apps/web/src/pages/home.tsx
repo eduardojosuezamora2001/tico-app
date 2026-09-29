@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react"
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs"
 import { Link } from "react-router"
 
-import { FilterCombobox, ListFilter } from "@/components/list-filter"
+import { ListFilter } from "@/components/list-filter"
+import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { searchBusinesses } from "@/services/businesses.service"
 import { listAdministrativeDivisions } from "@/services/countries.service"
 import type { BusinessSummary } from "@/services/types"
 import { Button } from "@workspace/ui/components/button"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 
 const categories = [
   { id: "sodas", label: "Sodas", hint: "Casados y frescos", tint: "bg-orange-500/15 text-orange-700 dark:text-orange-200" },
@@ -40,9 +40,6 @@ export function HomePage() {
     ...fallbackProvinces.map((item) => ({ id: item, label: item })),
   ])
   const [selectedProvinces, setSelectedProvinces] = useState<string[]>([])
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
-  const [locating, setLocating] = useState(false)
-  const [locationError, setLocationError] = useState<string | null>(null)
   const [items, setItems] = useState<BusinessSummary[]>([])
   const [page, setPage] = useState(0)
   const [hasNext, setHasNext] = useState(false)
@@ -85,13 +82,10 @@ export function HomePage() {
     q: query || undefined,
     category: category.length > 0 ? category.join(",") : undefined,
     province: selectedProvinces.length > 0 ? selectedProvinces.join(",") : undefined,
-    latitude: coords?.latitude,
-    longitude: coords?.longitude,
-    radiusKm: coords ? 50 : undefined,
     limit: 6,
   }
 
-  const filterKey = `${query}|${category.join(",")}|${selectedProvinces.join(",")}|${coords?.latitude ?? ""}|${coords?.longitude ?? ""}`
+  const filterKey = `${query}|${category.join(",")}|${selectedProvinces.join(",")}`
   const [seenFilter, setSeenFilter] = useState(filterKey)
   if (seenFilter !== filterKey) {
     cursors.current = [null]
@@ -117,26 +111,6 @@ export function HomePage() {
     return () => window.clearTimeout(handle)
   }, [filterKey, page])
 
-  function locate() {
-    if (!navigator.geolocation) {
-      setLocationError("Este navegador no comparte la ubicación.")
-      return
-    }
-    setLocating(true)
-    setLocationError(null)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude })
-        setLocating(false)
-      },
-      () => {
-        setLocationError("No se pudo usar la ubicación. Revisá el permiso del navegador.")
-        setLocating(false)
-      },
-      { enableHighAccuracy: false, timeout: 8000 },
-    )
-  }
-
   return (
     <div className="min-h-svh bg-background text-foreground">
       <SiteHeader />
@@ -151,44 +125,6 @@ export function HomePage() {
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
             Descubrí el menú, los productos y los servicios de cada local. El pedido se coordina con ese negocio, por WhatsApp o por el chat.
           </p>
-
-          <form
-            className="mx-auto mt-8 max-w-3xl rounded-2xl border border-border bg-card p-3 text-left shadow-[0_16px_40px_-28px_oklch(0.2_0.04_275)]"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void setQuery(draft.trim() || null)
-            }}
-          >
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_14rem]">
-              <InputGroup className="h-11 rounded-xl bg-background">
-                <InputGroupAddon>
-                  <SearchIcon />
-                  <span className="sr-only">Qué buscás</span>
-                </InputGroupAddon>
-                <InputGroupInput
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder="¿Qué buscás? (ej. casados, farmacia, ferretería, panadería...)"
-                />
-              </InputGroup>
-              <FilterCombobox
-                label="Provincia"
-                items={provinceOptions}
-                value={selectedProvinces}
-                emptyLabel="Todas"
-                onChange={setSelectedProvinces}
-              />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <button type="button" className="text-sm text-primary" onClick={locate}>
-                {locating ? "Buscando ubicación…" : coords ? "Ubicación activa" : "Usar mi ubicación actual"}
-              </button>
-              <Button type="submit" className="rounded-full px-5">
-                Explorar ofertas
-              </Button>
-            </div>
-            {locationError ? <p className="mt-2 text-sm text-destructive">{locationError}</p> : null}
-          </form>
         </section>
 
         <section aria-label="Categorías">
@@ -323,14 +259,7 @@ export function HomePage() {
           </Button>
         </section>
       </main>
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted-foreground">
-          <p>TicoApp · Directorio de comercios locales</p>
-          <Link className="hover:text-foreground" to="/registro">
-            Registrar un negocio
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter variant="full" />
     </div>
   )
 }
@@ -392,15 +321,6 @@ function BusinessGrid({ items }: { items: BusinessSummary[] }) {
         )
       })}
     </ul>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none text-muted-foreground">
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
-      <path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    </svg>
   )
 }
 

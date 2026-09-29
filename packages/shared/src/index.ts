@@ -4,6 +4,8 @@ export * from "./types.js"
 export * from "./schemas.js"
 export * from "./mappers.js"
 export * from "./geocoding.js"
+export * from "./chat-orders.js"
+export * from "./orders.js"
 export type {
   Database,
   Json,
