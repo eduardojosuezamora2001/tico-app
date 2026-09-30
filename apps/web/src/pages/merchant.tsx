@@ -301,6 +301,7 @@ export function MerchantBusinessPage() {
               <ModulesPanel
                 businessId={id}
                 modules={businessModules.modules}
+                moduleSettings={businessModules.moduleSettings}
                 loading={businessModules.loading}
                 error={businessModules.error}
                 onReload={() => void businessModules.reload()}

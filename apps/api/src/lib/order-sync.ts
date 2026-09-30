@@ -35,19 +35,23 @@ export async function syncOrderMessage(db: Db, order: ChatOrder) {
   if (error) throw error
 }
 
-export async function loadConversationOrders(db: Db, conversationId: string) {
+export async function loadConversationOrders(db: Db, conversationId: string, viewerUserId?: string) {
   const { data, error } = await db
     .from("orders")
     .select("*")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
   if (error) throw error
-  return (data ?? []).map(toChatOrder)
+  return (data ?? []).map((row) =>
+    toChatOrder(row, {
+      includePickupCode: viewerUserId != null && row.customer_id === viewerUserId,
+    }),
+  )
 }
 
 export async function fanOutOrderUpdate(
   row: ConversationRow,
-  order: ChatOrder,
+  orderRow: Database["public"]["Tables"]["orders"]["Row"],
   roleOf: (userId: string, row: ConversationRow, ownerId: string) => Conversation["viewerRole"],
 ) {
   const { data: business } = await supabaseAdmin
@@ -84,12 +88,15 @@ export async function fanOutOrderUpdate(
   const { data: messageRow } = await supabaseAdmin
     .from("messages")
     .select("*")
-    .eq("id", order.messageId)
+    .eq("id", orderRow.message_id)
     .maybeSingle()
   const message: Message | null = messageRow ? toMessage(messageRow) : null
 
   for (const userId of targets) {
     const conversation: Conversation = { ...base, viewerRole: roleOf(userId, row, ownerId) }
+    const order: ChatOrder = toChatOrder(orderRow, {
+      includePickupCode: userId === row.customer_id,
+    })
     emitToUser(userId, "order:updated", { order, message, conversation })
     if (message) emitToUser(userId, "message:updated", { message, conversation })
   }

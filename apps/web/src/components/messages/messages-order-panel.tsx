@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import type { Business, ChatOrder, Conversation } from "@workspace/shared"
-import {
-  CheckmarkCircle02Icon,
-  Download01Icon,
-  Location01Icon,
-  ShoppingBag01Icon,
-} from "@hugeicons/core-free-icons"
+import { Download01Icon, Location01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { OrderPickupCodeDisplay, OrderPickupCodePending } from "@/components/orders/order-pickup-code-display"
+import { OrderStepTimeline } from "@/components/orders/order-step-timeline"
 import {
   cartBreakdown,
+  filterUndeliveredConversationOrders,
   formatColones,
   orderBreakdown,
   orderProgress,
@@ -29,6 +27,7 @@ export type MessagesOrderPanelProps = {
   orders: ChatOrder[]
   cartLines: CartLine[]
   loading: boolean
+  pickupOtpEnabled?: boolean
 }
 
 export function MessagesOrderPanel({
@@ -37,9 +36,10 @@ export function MessagesOrderPanel({
   orders,
   cartLines,
   loading,
+  pickupOtpEnabled = false,
 }: MessagesOrderPanelProps) {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  const mergedOrders = useMemo(() => orders, [orders])
+  const mergedOrders = useMemo(() => filterUndeliveredConversationOrders(orders), [orders])
   const acceptedOrders = useMemo(
     () => mergedOrders.filter((item) => item.status === "accepted"),
     [mergedOrders],
@@ -180,6 +180,19 @@ export function MessagesOrderPanel({
 
       {showOrder && selected && breakdown ? (
         <>
+          {selected.fulfillmentStage === "ready" && selected.pickupCode ? (
+            <section className="border-b border-border px-4 py-4 sm:px-5">
+              <OrderPickupCodeDisplay code={selected.pickupCode} />
+            </section>
+          ) : null}
+          {pickupOtpEnabled &&
+          selected.status === "accepted" &&
+          selected.fulfillmentStage === "preparing" ? (
+            <section className="border-b border-border px-4 py-4 sm:px-5">
+              <OrderPickupCodePending />
+            </section>
+          ) : null}
+
           <section className="border-b border-border px-4 py-4 sm:px-5">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>Progreso de tu orden</span>
@@ -188,21 +201,9 @@ export function MessagesOrderPanel({
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
             </div>
-            <ol className="mt-4 flex flex-col gap-3">
-              {steps.map((step) => (
-                <li key={step.id} className="flex gap-3">
-                  <StepIcon state={step.state} />
-                  <div className="min-w-0">
-                    <p
-                      className={`text-sm ${step.state === "current" ? "font-semibold text-primary" : "text-foreground"}`}
-                    >
-                      {step.label}
-                    </p>
-                    {step.detail ? <p className="text-xs text-muted-foreground">{step.detail}</p> : null}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <div className="mt-4">
+              <OrderStepTimeline steps={steps} variant="detailed" />
+            </div>
           </section>
 
           <section className="border-b border-border px-4 py-4 sm:px-5">
@@ -326,24 +327,6 @@ function OrderStatusBadge({
         ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
         : "bg-destructive/15 text-destructive"
   return <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${tone}`}>{label}</span>
-}
-
-function StepIcon({ state }: { state: "done" | "current" | "pending" }) {
-  if (state === "done") {
-    return (
-      <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-        <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3.5" />
-      </span>
-    )
-  }
-  if (state === "current") {
-    return (
-      <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-        <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} className="size-3.5" />
-      </span>
-    )
-  }
-  return <span className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-muted" />
 }
 
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {

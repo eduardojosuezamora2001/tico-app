@@ -11,6 +11,7 @@ import {
 import { ShoppingBag01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { OrderPickupVerify } from "@/components/orders/order-pickup-verify"
 import { formatColones } from "@/lib/messages-ui"
 import { decideChatOrder } from "@/services/messages.service"
 import { advanceOrderStage } from "@/services/orders.service"
@@ -24,6 +25,7 @@ export function OrderMessageCard({
   mine,
   onUpdated,
   onOrderUpdated,
+  pickupOtpEnabled,
 }: {
   messageId: string
   order: ChatOrderPayload
@@ -32,6 +34,7 @@ export function OrderMessageCard({
   mine: boolean
   onUpdated: (messageId: string, next: ChatOrderPayload) => void
   onOrderUpdated?: (order: ChatOrder) => void
+  pickupOtpEnabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
@@ -44,8 +47,13 @@ export function OrderMessageCard({
     resolved.status === "accepted" && resolved.fulfillmentStage
       ? nextFulfillmentStage(resolved.fulfillmentStage)
       : null
+  const showPickupVerify =
+    pickupOtpEnabled &&
+    resolved.fulfillmentStage === "ready" &&
+    nextStage === "delivered" &&
+    (viewerRole === "assignee" || viewerRole === "owner")
   const canAdvance =
-    Boolean(nextStage) && (viewerRole === "assignee" || viewerRole === "owner")
+    Boolean(nextStage) && (viewerRole === "assignee" || viewerRole === "owner") && !showPickupVerify
   const shortId = resolved.id.slice(-4).padStart(4, "0")
 
   async function decide(decision: "accept" | "deny") {
@@ -152,6 +160,19 @@ export function OrderMessageCard({
               >
                 Denegar
               </Button>
+            </div>
+          ) : null}
+
+          {showPickupVerify ? (
+            <div className="mt-4">
+              <OrderPickupVerify
+                orderId={resolved.id}
+                disabled={pending}
+                onVerified={(updated) => {
+                  onUpdated(messageId, toChatOrderPayload(updated))
+                  onOrderUpdated?.(updated)
+                }}
+              />
             </div>
           ) : null}
 

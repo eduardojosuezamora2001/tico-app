@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState, type SubmitEvent } from "react"
 import { useNavigate, useParams } from "react-router"
-import { parseMessageContent, type Business, type ChatOrder, type Conversation, type Message } from "@workspace/shared"
+import {
+  isPickupOtpEnabled,
+  MODULES,
+  parseMessageContent,
+  type Business,
+  type ChatOrder,
+  type Conversation,
+  type Message,
+} from "@workspace/shared"
 
 import { MessagesChatPanel } from "@/components/messages/messages-chat-panel"
 import { MessagesConversationSidebar } from "@/components/messages/messages-conversation-sidebar"
@@ -18,6 +26,7 @@ import {
   sendMessage,
   takeConversation,
 } from "@/services/messages.service"
+import { listBusinessModules } from "@/services/modules.service"
 import { listConversationOrders } from "@/services/orders.service"
 import {
   canCompose,
@@ -27,7 +36,11 @@ import {
   type IncomingMessage,
   type IncomingOrder,
 } from "@/lib/chat-events"
-import { mergeConversationOrders, type ConversationTab } from "@/lib/messages-ui"
+import {
+  filterUndeliveredConversationOrders,
+  mergeConversationOrders,
+  type ConversationTab,
+} from "@/lib/messages-ui"
 import { useOnlineUsers } from "@/lib/presence"
 import { chatSocket } from "@/lib/socket"
 import { useAuthStore } from "@/stores/auth-store"
@@ -65,6 +78,7 @@ function Inbox() {
   const [tab, setTab] = useState<ConversationTab>("active")
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [pickupOtpEnabled, setPickupOtpEnabled] = useState(false)
 
   const open = Boolean(conversationId || draftBusinessId)
   const listed = items.find((item) => item.id === conversationId)
@@ -72,6 +86,19 @@ function Inbox() {
   const activeBusinessId = draftBusinessId || listed?.businessId || ""
   const cartLines = activeBusinessId ? (carts[activeBusinessId] ?? []) : []
   const isCustomerView = listed?.viewerRole === "customer" || Boolean(draftBusinessId)
+
+  useEffect(() => {
+    if (!activeBusinessId) {
+      setPickupOtpEnabled(false)
+      return
+    }
+    void listBusinessModules(activeBusinessId)
+      .then((rows) => {
+        const products = rows.find((row) => row.moduleName === MODULES.PRODUCTS)
+        setPickupOtpEnabled(isPickupOtpEnabled(products))
+      })
+      .catch(() => setPickupOtpEnabled(false))
+  }, [activeBusinessId])
 
   useEffect(() => {
     void listConversations()
@@ -257,7 +284,7 @@ function Inbox() {
     }
   }
 
-  async function send(event: FormEvent) {
+  async function send(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const body = text.trim()
     if (!body) return
@@ -299,10 +326,14 @@ function Inbox() {
     })
   }
 
-  const displayOrders = useMemo(() => mergeConversationOrders(orders, messages), [orders, messages])
+  const conversationOrders = useMemo(() => mergeConversationOrders(orders, messages), [orders, messages])
+  const activeConversationOrders = useMemo(
+    () => filterUndeliveredConversationOrders(conversationOrders),
+    [conversationOrders],
+  )
   const ordersByMessageId = useMemo(
-    () => Object.fromEntries(displayOrders.map((order) => [order.messageId, order])),
-    [displayOrders],
+    () => Object.fromEntries(conversationOrders.map((order) => [order.messageId, order])),
+    [conversationOrders],
   )
 
   const orderPanelProps =
@@ -310,9 +341,10 @@ function Inbox() {
       ? {
           conversation: listed ?? null,
           business,
-          orders: displayOrders,
+          orders: activeConversationOrders,
           cartLines,
           loading: !businessReady || (!!conversationId && !threadReady),
+          pickupOtpEnabled,
         }
       : null
 
@@ -366,6 +398,7 @@ function Inbox() {
             onOrderUpdated={handleOrderUpdated}
             onOrderRecordUpdated={handleOrderRecordUpdated}
             orderPanel={orderPanelProps}
+            pickupOtpEnabled={pickupOtpEnabled}
           />
         </div>
 

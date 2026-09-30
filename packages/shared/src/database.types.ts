@@ -305,6 +305,7 @@ export type Database = {
           enabled: boolean
           id: string
           module_name: string
+          settings: Json
         }
         Insert: {
           business_id: string
@@ -312,6 +313,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           module_name: string
+          settings?: Json
         }
         Update: {
           business_id?: string
@@ -319,6 +321,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           module_name?: string
+          settings?: Json
         }
         Relationships: [
           {
@@ -992,6 +995,10 @@ export type Database = {
           id: string
           lines: Json
           message_id: string
+          pickup_code: string | null
+          pickup_code_hash: string | null
+          pickup_code_issued_at: string | null
+          pickup_verify_attempts: number
           stage_updated_at: string | null
           status: string
           subtotal: number
@@ -1009,6 +1016,10 @@ export type Database = {
           id?: string
           lines: Json
           message_id: string
+          pickup_code?: string | null
+          pickup_code_hash?: string | null
+          pickup_code_issued_at?: string | null
+          pickup_verify_attempts?: number
           stage_updated_at?: string | null
           status?: string
           subtotal: number
@@ -1026,6 +1037,10 @@ export type Database = {
           id?: string
           lines?: Json
           message_id?: string
+          pickup_code?: string | null
+          pickup_code_hash?: string | null
+          pickup_code_issued_at?: string | null
+          pickup_verify_attempts?: number
           stage_updated_at?: string | null
           status?: string
           subtotal?: number

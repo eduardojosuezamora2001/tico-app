@@ -111,6 +111,7 @@ export function MessageThread({
   ordersByMessageId,
   onOrderUpdated,
   onOrderRecordUpdated,
+  pickupOtpEnabled,
 }: {
   threadKey: string
   messages: ChatMessage[]
@@ -124,6 +125,7 @@ export function MessageThread({
   ordersByMessageId?: Record<string, ChatOrder>
   onOrderUpdated?: (messageId: string, text: string) => void
   onOrderRecordUpdated?: (order: ChatOrder) => void
+  pickupOtpEnabled?: boolean
 }) {
   if (messages.length === 0) {
     return (
@@ -162,6 +164,7 @@ export function MessageThread({
                   ordersByMessageId={ordersByMessageId}
                   onOrderUpdated={onOrderUpdated}
                   onOrderRecordUpdated={onOrderRecordUpdated}
+                  pickupOtpEnabled={pickupOtpEnabled}
                 />
               ),
             )}
@@ -185,6 +188,7 @@ function ThreadMessage({
   ordersByMessageId,
   onOrderUpdated,
   onOrderRecordUpdated,
+  pickupOtpEnabled,
 }: {
   message: ChatMessage
   showAvatar: boolean
@@ -197,6 +201,7 @@ function ThreadMessage({
   ordersByMessageId?: Record<string, ChatOrder>
   onOrderUpdated?: (messageId: string, text: string) => void
   onOrderRecordUpdated?: (order: ChatOrder) => void
+  pickupOtpEnabled?: boolean
 }) {
   const align = mine ? "end" : "start"
   const content = parseMessageContent(message.text)
@@ -236,6 +241,7 @@ function ThreadMessage({
                 onOrderUpdated?.(messageId, encodeChatOrderMessage(nextOrder))
               }}
               onOrderUpdated={onOrderRecordUpdated}
+              pickupOtpEnabled={pickupOtpEnabled}
             />
           ) : (
             <Bubble

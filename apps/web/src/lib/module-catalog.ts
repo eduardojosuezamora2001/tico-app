@@ -1,5 +1,12 @@
 import { MODULES, type ModuleName } from "@workspace/shared"
 
+export type ModuleFeatureCatalogEntry = {
+  id: string
+  title: string
+  description: string
+  settingsKey: string
+}
+
 export type ModuleCatalogEntry = {
   id: ModuleName
   title: string
@@ -7,6 +14,7 @@ export type ModuleCatalogEntry = {
   description: string
   categories: string[]
   keywords: string[]
+  features: ModuleFeatureCatalogEntry[]
 }
 
 export const MODULE_CATALOG: ModuleCatalogEntry[] = [
@@ -18,6 +26,15 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       "Lista artículos con nombre y precio para que los clientes los vean en tu página. Cada local controla su propio catálogo; no hay comparación entre comercios.",
     categories: ["Sodas", "Pulperías", "Farmacias", "Ferreterías", "Belleza"],
     keywords: ["producto", "venta", "precio", "inventario", "artículo"],
+    features: [
+      {
+        id: "pickup_otp",
+        settingsKey: "pickup_otp",
+        title: "Código de retiro (OTP)",
+        description:
+          "Al marcar un pedido listo para retiro se genera un código de 4 dígitos para el cliente. Solo con ese código puedes marcarlo entregado.",
+      },
+    ],
   },
   {
     id: MODULES.SERVICES,
@@ -27,6 +44,7 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       "Ideal para cortes, reparaciones, consultas u otros trabajos que cobras por servicio. Los clientes ven qué ofreces antes de escribirte por WhatsApp.",
     categories: ["Belleza", "Servicios", "Ferreterías"],
     keywords: ["servicio", "corte", "reparación", "consulta", "trabajo"],
+    features: [],
   },
   {
     id: MODULES.MENU,
@@ -36,6 +54,7 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       "Organiza tu oferta por secciones como bebidas, casados o postres. Pensado para sodas, cafeterías y restaurantes de barrio.",
     categories: ["Sodas", "Restaurantes", "Cafeterías"],
     keywords: ["menú", "plato", "comida", "bebida", "casado", "soda"],
+    features: [],
   },
   {
     id: MODULES.APPOINTMENTS,
@@ -45,6 +64,7 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       "Permite que los clientes soliciten una cita en horarios que definas. Funciona bien con salones, consultorios y negocios que trabajan con cita previa.",
     categories: ["Belleza", "Servicios", "Consultorios"],
     keywords: ["cita", "reserva", "agenda", "horario", "turno"],
+    features: [],
   },
 ]
 

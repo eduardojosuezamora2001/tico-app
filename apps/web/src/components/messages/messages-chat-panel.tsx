@@ -1,9 +1,8 @@
-import { useState, type FormEvent } from "react"
+import { useState, type SubmitEventHandler } from "react"
 import { Link } from "react-router"
 import type { Business, ChatOrder, Conversation, Message } from "@workspace/shared"
 import {
   Attachment01Icon,
-  Call02Icon,
   Location01Icon,
   Mic01Icon,
   SentIcon,
@@ -13,7 +12,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { MessagesOrderPanel, type MessagesOrderPanelProps } from "@/components/messages/messages-order-panel"
-import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
+import { MessageThread, PersonAvatar } from "@/components/message-thread"
 import { orderNumberFromConversation, whatsappUrl } from "@/lib/messages-ui"
 import {
   canClaim,
@@ -61,6 +60,7 @@ export function MessagesChatPanel({
   onOrderUpdated,
   onOrderRecordUpdated,
   orderPanel,
+  pickupOtpEnabled,
 }: {
   conversationId: string
   draftBusinessId: string
@@ -78,13 +78,14 @@ export function MessagesChatPanel({
   error: string | null
   online: boolean
   onTextChange: (value: string) => void
-  onSend: (event: FormEvent) => void
+  onSend: SubmitEventHandler<HTMLFormElement>
   onClaim: (id: string) => void
   onTake: (id: string) => void
   ordersByMessageId: Record<string, ChatOrder>
   onOrderUpdated: (messageId: string, text: string) => void
   onOrderRecordUpdated: (order: ChatOrder) => void
   orderPanel?: MessagesOrderPanelProps | null
+  pickupOtpEnabled?: boolean
 }) {
   const [orderSheetOpen, setOrderSheetOpen] = useState(false)
   const open = Boolean(conversationId || draftBusinessId)
@@ -272,6 +273,7 @@ export function MessagesChatPanel({
                 ordersByMessageId={ordersByMessageId}
                 onOrderUpdated={onOrderUpdated}
                 onOrderRecordUpdated={onOrderRecordUpdated}
+                pickupOtpEnabled={pickupOtpEnabled}
               />
             </>
           ) : (
@@ -353,14 +355,14 @@ function ChatHeader({
       <div className="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none sm:gap-2">
         {actions}
         {wa ? (
-          <Button type="button" size="sm" variant="outline" className="hidden rounded-full border-emerald-500/40 text-emerald-700 sm:inline-flex dark:text-emerald-300" render={<a href={wa} target="_blank" rel="noreferrer" />}>
-            <HugeiconsIcon icon={WhatsappIcon} strokeWidth={2} data-icon="inline-start" />
-            WhatsApp
-          </Button>
-        ) : null}
-        {wa ? (
-          <Button type="button" size="icon-sm" variant="outline" className="rounded-full" render={<a href={wa} target="_blank" rel="noreferrer" aria-label="Llamar por WhatsApp" />}>
-            <HugeiconsIcon icon={Call02Icon} strokeWidth={2} />
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="outline"
+            className="rounded-full border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+            render={<a href={wa} target="_blank" rel="noreferrer" aria-label="Abrir WhatsApp" />}
+          >
+            <HugeiconsIcon icon={WhatsappIcon} strokeWidth={2} />
           </Button>
         ) : null}
       </div>
@@ -393,7 +395,7 @@ function RichComposer({
 }: {
   value: string
   onChange: (value: string) => void
-  onSubmit: (event: FormEvent) => void
+  onSubmit: SubmitEventHandler<HTMLFormElement>
   placeholder: string
 }) {
   return (

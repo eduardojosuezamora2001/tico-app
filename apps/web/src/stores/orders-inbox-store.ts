@@ -55,11 +55,38 @@ function mergeOrder(current: OrderListItem[], event: IncomingOrder) {
     ...event.order,
     businessSlug: prev?.businessSlug ?? event.conversation.businessSlug ?? "",
     customerName: prev?.customerName ?? event.conversation.customerName ?? null,
+    pickupOtpEnabled: prev?.pickupOtpEnabled,
+    pickupCode:
+      event.order.pickupCode !== undefined ? event.order.pickupCode : prev?.pickupCode,
   }
   const index = current.findIndex((item) => item.id === next.id)
   if (index === -1) return [next, ...current]
   return current.map((item) => (item.id === next.id ? { ...item, ...next } : item))
 }
+
+function mergeOrderLists(current: OrderListItem[], incoming: OrderListItem[]) {
+  const previous = new Map(current.map((item) => [item.id, item]))
+  return incoming.map((row) => {
+    const prev = previous.get(row.id)
+    if (!prev) return row
+    const prevTime = Date.parse(prev.updatedAt)
+    const nextTime = Date.parse(row.updatedAt)
+    if (Number.isFinite(prevTime) && Number.isFinite(nextTime) && prevTime > nextTime) {
+      return prev
+    }
+    return {
+      ...prev,
+      ...row,
+      pickupCode: row.pickupCode ?? prev.pickupCode,
+      pickupCodeIssuedAt: row.pickupCodeIssuedAt ?? prev.pickupCodeIssuedAt,
+      pickupOtpEnabled: row.pickupOtpEnabled ?? prev.pickupOtpEnabled,
+      businessSlug: row.businessSlug || prev.businessSlug,
+      customerName: row.customerName ?? prev.customerName,
+    }
+  })
+}
+
+let refreshGeneration = 0
 
 function scheduleOrdersRefresh(get: () => OrdersInboxState, delayMs = 350) {
   if (scheduleOrdersRefresh.timer !== undefined) {
@@ -83,12 +110,15 @@ export const useOrdersInboxStore = create<OrdersInboxState>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   refresh: async () => {
-    set({ loading: true })
+    const hasRows = get().orders.length > 0
+    const generation = ++refreshGeneration
+    if (!hasRows) set({ loading: true })
     try {
       const rows = await listOrders()
-      set({ orders: rows })
-    } finally {
-      set({ loading: false })
+      if (generation !== refreshGeneration) return
+      set({ orders: mergeOrderLists(get().orders, rows), loading: false })
+    } catch {
+      if (generation === refreshGeneration && !hasRows) set({ loading: false })
     }
   },
 

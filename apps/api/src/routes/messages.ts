@@ -78,7 +78,7 @@ messageRoutes.get("/conversations/:id", async (c) => {
   const conversation = await present(loaded.row, c.get("userId"))
   let orders: Awaited<ReturnType<typeof loadConversationOrders>> = []
   try {
-    orders = await loadConversationOrders(c.get("db"), id)
+    orders = await loadConversationOrders(c.get("db"), id, c.get("userId"))
   } catch (orderError) {
     return dbFail(c, orderError as { message: string })
   }
@@ -149,7 +149,7 @@ messageRoutes.post("/", async (c) => {
       .eq("id", orderId)
       .maybeSingle()
     if (!orderLoadError && orderRow) {
-      await fanOutOrderUpdate(fresh, toChatOrder(orderRow), roleOf)
+      await fanOutOrderUpdate(fresh, orderRow, roleOf)
     }
   }
   return c.json({ data: { message: sent.message, conversation } }, 201)
@@ -276,7 +276,7 @@ messageRoutes.post("/:messageId/order-decision", async (c) => {
   const fresh = (await reload(supabaseAdmin, row.conversation_id)) ?? loaded.row
   const message = toMessage(updated)
   const conversation = await present(fresh, userId)
-  await fanOutOrderUpdate(fresh, order, roleOf)
+  await fanOutOrderUpdate(fresh, updatedOrderRow, roleOf)
   return c.json({ data: { message, conversation, order } })
 })
 

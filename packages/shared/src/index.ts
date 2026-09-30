@@ -6,6 +6,7 @@ export * from "./mappers.js"
 export * from "./geocoding.js"
 export * from "./chat-orders.js"
 export * from "./orders.js"
+export * from "./module-features.js"
 export type {
   Database,
   Json,

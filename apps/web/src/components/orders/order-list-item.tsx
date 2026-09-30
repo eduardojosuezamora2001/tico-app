@@ -8,6 +8,9 @@ import {
 import { Message01Icon, ShoppingBag01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { OrderPickupCodeDisplay, OrderPickupCodePending } from "@/components/orders/order-pickup-code-display"
+import { OrderPickupVerify } from "@/components/orders/order-pickup-verify"
+import { OrderStepTimeline } from "@/components/orders/order-step-timeline"
 import {
   formatColones,
   formatRelativeTime,
@@ -44,7 +47,17 @@ export function OrderListItemCard({
       ? nextFulfillmentStage(order.fulfillmentStage)
       : null
   const canDecide = mode === "staff" && order.status === "pending"
-  const canAdvance = mode === "staff" && Boolean(nextStage)
+  const pickupOtp = mode === "staff" && order.pickupOtpEnabled === true
+  const showPickupVerify =
+    pickupOtp && order.fulfillmentStage === "ready" && nextStage === "delivered"
+  const canAdvance = mode === "staff" && Boolean(nextStage) && !showPickupVerify
+  const showCustomerPickupCode =
+    mode === "customer" && order.fulfillmentStage === "ready" && order.pickupCode
+  const showCustomerPickupPending =
+    mode === "customer" &&
+    order.status === "accepted" &&
+    order.fulfillmentStage === "preparing" &&
+    order.pickupOtpEnabled === true
 
   async function decide(decision: "accept" | "deny") {
     setPending(true)
@@ -150,23 +163,17 @@ export function OrderListItemCard({
 
       {open ? (
         <div className="mt-4 border-t border-border pt-4">
-          <ol className="flex flex-col gap-2">
-            {steps.map((step) => (
-              <li key={step.id} className="flex items-center gap-2 text-sm">
-                <span
-                  className={
-                    step.state === "done"
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : step.state === "current"
-                        ? "font-medium text-primary"
-                        : "text-muted-foreground"
-                  }
-                >
-                  {step.label}
-                </span>
-              </li>
-            ))}
-          </ol>
+          {showCustomerPickupCode ? (
+            <div className="mb-4">
+              <OrderPickupCodeDisplay code={order.pickupCode!} />
+            </div>
+          ) : null}
+          {showCustomerPickupPending ? (
+            <div className="mb-4">
+              <OrderPickupCodePending />
+            </div>
+          ) : null}
+          <OrderStepTimeline steps={steps} variant="compact" />
           <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
             {order.lines.map((line) => (
               <li key={line.productId} className="flex justify-between gap-3 text-sm">
@@ -196,6 +203,26 @@ export function OrderListItemCard({
               >
                 Denegar
               </Button>
+            </div>
+          ) : null}
+
+          {showPickupVerify ? (
+            <div className="mt-4 border-t border-border pt-4">
+              <OrderPickupVerify
+                orderId={order.id}
+                disabled={pending}
+                onVerified={(updated) => {
+                  const merged = {
+                    ...order,
+                    ...updated,
+                    businessSlug: order.businessSlug,
+                    customerName: order.customerName,
+                    pickupOtpEnabled: order.pickupOtpEnabled,
+                  }
+                  onUpdated(merged)
+                  onAcknowledge?.(merged)
+                }}
+              />
             </div>
           ) : null}
 
