@@ -55,6 +55,13 @@ export function OrderMessageCard({
   const canAdvance =
     Boolean(nextStage) && (viewerRole === "assignee" || viewerRole === "owner") && !showPickupVerify
   const shortId = resolved.id.slice(-4).padStart(4, "0")
+  const pickupCode =
+    viewerRole !== "assignee" &&
+    viewerRole !== "owner" &&
+    resolved.fulfillmentStage === "ready" &&
+    resolved.pickupCode
+      ? resolved.pickupCode
+      : null
 
   async function decide(decision: "accept" | "deny") {
     setPending(true)
@@ -105,6 +112,14 @@ export function OrderMessageCard({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {resolved.lines.length} ítem{resolved.lines.length === 1 ? "" : "s"} · {formatColones(resolved.total)}
           </p>
+          {pickupCode ? (
+            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Código de retiro
+              </p>
+              <p className="font-mono text-2xl font-bold tracking-[0.28em] text-foreground">{pickupCode}</p>
+            </div>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button
               type="button"
