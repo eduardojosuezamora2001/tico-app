@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useLocation } from "react-router"
-import type { Conversation, Message } from "@workspace/shared"
+import type { ChatOrder, Conversation, Message } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
@@ -36,6 +36,7 @@ import {
   senderName,
   statusLine,
   type IncomingMessage,
+  type IncomingOrder,
 } from "@/lib/chat-events"
 import { OnlineDot, useOnlineUsers } from "@/lib/presence"
 import { chatSocket } from "@/lib/socket"
@@ -52,6 +53,7 @@ export function FloatChat() {
   const [items, setItems] = useState<Conversation[]>([])
   const [active, setActive] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [orders, setOrders] = useState<ChatOrder[]>([])
   const [threadReady, setThreadReady] = useState(false)
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -130,11 +132,26 @@ export function FloatChat() {
           current?.id === conversation.id ? { ...conversation, unreadCount: current.unreadCount } : current,
         )
       }
+      const onOrderUpdated = (event: IncomingOrder) => {
+        if (activeRef.current?.id !== event.conversation.id) return
+        setOrders((current) => {
+          const index = current.findIndex((item) => item.id === event.order.id)
+          const merge = (prev: ChatOrder, next: ChatOrder): ChatOrder => ({
+            ...prev,
+            ...next,
+            pickupCode: next.pickupCode ?? prev.pickupCode,
+          })
+          if (index === -1) return [...current, event.order]
+          return current.map((item) => (item.id === event.order.id ? merge(item, event.order) : item))
+        })
+      }
       socket.on("message:new", onMessage)
       socket.on("conversation:updated", onConversation)
+      socket.on("order:updated", onOrderUpdated)
       detach = () => {
         socket.off("message:new", onMessage)
         socket.off("conversation:updated", onConversation)
+        socket.off("order:updated", onOrderUpdated)
       }
     })
     return () => {
@@ -146,6 +163,7 @@ export function FloatChat() {
   useEffect(() => {
     if (!active || active.viewerRole === "member") {
       setMessages([])
+      setOrders([])
       setThreadReady(Boolean(active))
       return
     }
@@ -155,6 +173,7 @@ export function FloatChat() {
       .then((payload) => {
         if (cancelled) return
         setMessages(payload.messages)
+        setOrders(payload.orders ?? [])
         setItems((current) =>
           foldConversation(current, payload.conversation).map((item) =>
             item.id === active.id ? { ...item, unreadCount: 0 } : item,
@@ -307,6 +326,8 @@ export function FloatChat() {
                   selfName={profile?.fullName ?? null}
                   selfAvatar={profile?.avatarUrl}
                   nameFor={(message) => senderName(active, message.senderId)}
+                  viewerRole={active.viewerRole}
+                  ordersByMessageId={Object.fromEntries(orders.map((order) => [order.messageId, order]))}
                 />
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
