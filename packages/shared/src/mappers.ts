@@ -195,6 +195,7 @@ export function toBusinessModule(row: Tables<"business_modules">): BusinessModul
     businessId: row.business_id,
     moduleName: row.module_name as BusinessModule["moduleName"],
     enabled: row.enabled,
+    settings: (row.settings ?? {}) as Record<string, unknown>,
     createdAt: row.created_at,
   }
 }

@@ -16,4 +16,8 @@ export async function advanceOrderStage(orderId: string, stage: Extract<OrderFul
   return postData<ChatOrder>(`/orders/${orderId}/stage`, { stage })
 }
 
+export async function verifyOrderPickup(orderId: string, code: string) {
+  return postData<ChatOrder>(`/orders/${orderId}/verify-pickup`, { code })
+}
+
 export type OrderUpdateResult = SendMessageResult & { order: ChatOrder }

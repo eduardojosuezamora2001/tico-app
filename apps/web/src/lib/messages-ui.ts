@@ -39,6 +39,15 @@ export function formatRelativeTime(iso: string) {
   return formatMessageTime(iso)
 }
 
+/** Fecha y hora fija para hitos del pedido (zona Costa Rica). */
+export function formatOrderStepTimestamp(iso: string) {
+  return new Intl.DateTimeFormat("es-CR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Costa_Rica",
+  }).format(new Date(iso))
+}
+
 export function orderNumberFromConversation(conversationId: string) {
   const digits = conversationId.replace(/\D/g, "").slice(-4)
   return digits.padStart(4, "0")
@@ -63,6 +72,15 @@ export function trackedOrdersFromMessages(messages: Message[]): TrackedChatOrder
     }
   }
   return orders
+}
+
+/** Pedidos que siguen abiertos en el panel del chat (excluye entregados y denegados). */
+export function filterUndeliveredConversationOrders(orders: ChatOrder[]) {
+  return orders.filter((order) => {
+    if (order.status === "pending") return true
+    if (order.status === "accepted" && order.fulfillmentStage !== "delivered") return true
+    return false
+  })
 }
 
 export function mergeConversationOrders(orders: ChatOrder[], messages: Message[]): ChatOrder[] {
@@ -134,6 +152,8 @@ export type OrderStep = {
   id: string
   label: string
   detail?: string
+  /** ISO de cuándo ocurrió o inició este hito (si se conoce). */
+  at?: string | null
   state: "done" | "current" | "pending"
 }
 
@@ -145,18 +165,31 @@ function orderDecidedAt(order: ChatOrder | ChatOrderPayload) {
   return "decidedAt" in order ? order.decidedAt : order.decidedAt
 }
 
+function orderCreatedAt(order: ChatOrder | ChatOrderPayload) {
+  return "createdAt" in order ? order.createdAt : null
+}
+
+function orderStageUpdatedAt(order: ChatOrder | ChatOrderPayload) {
+  const value = "stageUpdatedAt" in order ? order.stageUpdatedAt : order.stageUpdatedAt
+  return value ?? null
+}
+
 export function orderStepsFromOrder(order: ChatOrder | ChatOrderPayload): OrderStep[] {
+  const createdAt = orderCreatedAt(order)
+  const decidedAt = orderDecidedAt(order) ?? null
+  const stageUpdatedAt = orderStageUpdatedAt(order)
+
   if (order.status === "denied") {
     return [
-      { id: "requested", label: "Solicitado", state: "done" },
-      { id: "denied", label: "Denegado por el comercio", state: "current" },
+      { id: "requested", label: "Solicitado", state: "done", at: createdAt },
+      { id: "denied", label: "Denegado por el comercio", state: "current", at: decidedAt },
     ]
   }
 
   if (order.status === "pending") {
     return [
-      { id: "requested", label: "Solicitado", state: "done" },
-      { id: "waiting", label: "Esperando confirmación", state: "current" },
+      { id: "requested", label: "Solicitado", state: "done", at: createdAt },
+      { id: "waiting", label: "Esperando confirmación", state: "current", at: createdAt },
       { id: "prep", label: "En preparación", state: "pending" },
       { id: "ready", label: "Listo para retiro", state: "pending" },
       { id: "done", label: "Entregado", state: "pending" },
@@ -164,29 +197,37 @@ export function orderStepsFromOrder(order: ChatOrder | ChatOrderPayload): OrderS
   }
 
   const stage = orderFulfillmentStage(order) ?? "preparing"
-  const decidedAt = orderDecidedAt(order)
+  const prepState = stage === "preparing" ? "current" : "done"
+  const readyState = stage === "ready" ? "current" : stage === "delivered" ? "done" : "pending"
+  const deliveredState = stage === "delivered" ? "done" : "pending"
+
   return [
-    { id: "requested", label: "Solicitado", state: "done" },
-    {
-      id: "accepted",
-      label: "Aceptado",
-      detail: decidedAt ? `Confirmado ${formatRelativeTime(decidedAt)}` : undefined,
-      state: "done",
-    },
+    { id: "requested", label: "Solicitado", state: "done", at: createdAt },
+    { id: "accepted", label: "Aceptado", state: "done", at: decidedAt },
     {
       id: "prep",
       label: "En preparación",
-      state: stage === "preparing" ? "current" : "done",
+      state: prepState,
+      at: prepState === "pending" ? null : (decidedAt ?? createdAt),
     },
     {
       id: "ready",
       label: "Listo para retiro",
-      state: stage === "ready" ? "current" : stage === "delivered" ? "done" : "pending",
+      state: readyState,
+      at:
+        readyState === "pending"
+          ? null
+          : stage === "ready" || stage === "delivered"
+            ? ("pickupCodeIssuedAt" in order && order.pickupCodeIssuedAt) ||
+              stageUpdatedAt ||
+              decidedAt
+            : null,
     },
     {
       id: "done",
       label: "Entregado",
-      state: stage === "delivered" ? "done" : "pending",
+      state: deliveredState,
+      at: deliveredState === "done" ? stageUpdatedAt : null,
     },
   ]
 }

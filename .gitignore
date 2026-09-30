@@ -19,6 +19,9 @@ dist-ssr
 # turbo
 .turbo
 
+# SQL batches generados (scripts/split-mx-jal-colonies-batches.mjs)
+tmp-mx-jal-colony-batches/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

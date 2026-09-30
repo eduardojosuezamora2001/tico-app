@@ -40,6 +40,8 @@ export type ChatOrder = {
   total: number
   decidedAt: ISODateString | null
   stageUpdatedAt: ISODateString | null
+  pickupCode?: string | null
+  pickupCodeIssuedAt?: ISODateString | null
   createdAt: ISODateString
   updatedAt: ISODateString
 }
@@ -47,6 +49,8 @@ export type ChatOrder = {
 export type OrderListItem = ChatOrder & {
   businessSlug: string
   customerName: string | null
+  /** Si el negocio usa código OTP al retirar (configuración del módulo Productos). */
+  pickupOtpEnabled?: boolean
 }
 
 export const OrderStageSchema = z.object({
@@ -66,17 +70,27 @@ export function toOrderListItem(
     businesses?: { slug: string } | { slug: string }[] | null
     users?: { full_name: string | null } | { full_name: string | null }[] | null
   },
+  options?: { includePickupCode?: boolean; pickupOtpEnabled?: boolean },
 ): OrderListItem {
   const business = Array.isArray(row.businesses) ? row.businesses[0] : row.businesses
   const customer = Array.isArray(row.users) ? row.users[0] : row.users
   return {
-    ...toChatOrder(row),
+    ...toChatOrder(row, options),
     businessSlug: business?.slug ?? "",
     customerName: customer?.full_name ?? null,
+    ...(options?.pickupOtpEnabled !== undefined ? { pickupOtpEnabled: options.pickupOtpEnabled } : {}),
   }
 }
 
-export function toChatOrder(row: Tables<"orders">): ChatOrder {
+export function toChatOrder(
+  row: Tables<"orders">,
+  options?: { includePickupCode?: boolean },
+): ChatOrder {
+  const includePickup =
+    options?.includePickupCode === true &&
+    row.fulfillment_stage === "ready" &&
+    row.pickup_code != null
+
   return {
     id: row.id,
     businessId: row.business_id,
@@ -91,6 +105,8 @@ export function toChatOrder(row: Tables<"orders">): ChatOrder {
     total: Number(row.total),
     decidedAt: row.decided_at,
     stageUpdatedAt: row.stage_updated_at,
+    pickupCode: includePickup ? row.pickup_code : undefined,
+    pickupCodeIssuedAt: includePickup ? row.pickup_code_issued_at : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

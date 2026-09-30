@@ -31,6 +31,9 @@ const envSchema = z.object({
   REDIS_URL: z.string().optional(),
   DEEPSEEK_API_KEY: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
+
+  /** Secreto para hashear códigos de retiro (mín. 16 caracteres en producción). */
+  PICKUP_CODE_PEPPER: z.string().min(8).default("dev-pickup-pepper-change-me"),
 })
 
 export type Env = z.infer<typeof envSchema>

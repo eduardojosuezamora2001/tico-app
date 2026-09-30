@@ -7,21 +7,27 @@ import {
   moduleCatalogEntry,
   type ModuleCatalogEntry,
 } from "@/lib/module-catalog"
-import { listBusinessModules, setBusinessModule } from "@/services/modules.service"
+import { listBusinessModules, patchBusinessModule, setBusinessModule } from "@/services/modules.service"
 import { Button } from "@workspace/ui/components/button"
+import { Checkbox } from "@workspace/ui/components/checkbox"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
 import { Input } from "@workspace/ui/components/input"
 
 function modulesToState(rows: BusinessModule[]) {
-  const next = emptyModuleState()
+  const enabled = emptyModuleState()
+  const settings: Partial<Record<ModuleName, Record<string, unknown>>> = {}
   for (const row of rows) {
-    next[row.moduleName] = row.enabled
+    enabled[row.moduleName] = row.enabled
+    settings[row.moduleName] = row.settings
   }
-  return next
+  return { enabled, settings }
 }
 
 export function useBusinessModules(businessId: string) {
   const [modules, setModules] = useState<Record<ModuleName, boolean>>(emptyModuleState)
+  const [moduleSettings, setModuleSettings] = useState<
+    Partial<Record<ModuleName, Record<string, unknown>>>
+  >({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,7 +36,9 @@ export function useBusinessModules(businessId: string) {
     setLoading(true)
     return listBusinessModules(businessId)
       .then((rows) => {
-        setModules(modulesToState(rows))
+        const next = modulesToState(rows)
+        setModules(next.enabled)
+        setModuleSettings(next.settings)
         setError(null)
       })
       .catch(() => setError("No se pudieron cargar los módulos."))
@@ -41,7 +49,7 @@ export function useBusinessModules(businessId: string) {
     void reload()
   }, [reload])
 
-  return { modules, loading, error, reload, isEnabled: (name: ModuleName) => modules[name] }
+  return { modules, moduleSettings, loading, error, reload, isEnabled: (name: ModuleName) => modules[name] }
 }
 
 function ModuleCard({
@@ -80,16 +88,19 @@ function ModuleDetail({
   businessId,
   entry,
   enabled,
+  settings,
   onBack,
   onChanged,
 }: {
   businessId: string
   entry: ModuleCatalogEntry
   enabled: boolean
+  settings: Record<string, unknown>
   onBack: () => void
   onChanged: () => void
 }) {
   const [pending, setPending] = useState(false)
+  const [featurePending, setFeaturePending] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function toggle(nextEnabled: boolean) {
@@ -102,6 +113,21 @@ function ModuleDetail({
       setError(nextEnabled ? "No se pudo activar el módulo." : "No se pudo desactivar el módulo.")
     } finally {
       setPending(false)
+    }
+  }
+
+  async function toggleFeature(featureKey: string, next: boolean) {
+    setFeaturePending(featureKey)
+    setError(null)
+    try {
+      await patchBusinessModule(businessId, entry.id, {
+        settings: { [featureKey]: next },
+      })
+      onChanged()
+    } catch {
+      setError("No se pudo guardar la funcionalidad.")
+    } finally {
+      setFeaturePending(null)
     }
   }
 
@@ -145,6 +171,37 @@ function ModuleDetail({
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <h3 className="text-sm font-medium">Funcionalidades extra</h3>
+        {entry.features.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Próximamente habrá más opciones para este módulo.</p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {entry.features.map((feature) => {
+              const on = settings[feature.settingsKey] === true
+              return (
+                <li key={feature.id} className="flex gap-3">
+                  <Checkbox
+                    checked={on}
+                    disabled={!enabled || featurePending === feature.settingsKey}
+                    onCheckedChange={(checked) => void toggleFeature(feature.settingsKey, checked === true)}
+                    aria-label={feature.title}
+                    className="mt-0.5"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{feature.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{feature.description}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {!enabled && entry.features.length > 0 ? (
+          <p className="text-xs text-muted-foreground">Activa el módulo para configurar estas opciones.</p>
+        ) : null}
+      </div>
+
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       <div className="flex flex-wrap gap-2">
@@ -165,12 +222,14 @@ function ModuleDetail({
 export function ModulesPanel({
   businessId,
   modules,
+  moduleSettings,
   loading,
   error,
   onReload,
 }: {
   businessId: string
   modules: Record<ModuleName, boolean>
+  moduleSettings: Partial<Record<ModuleName, Record<string, unknown>>>
   loading: boolean
   error: string | null
   onReload: () => void
@@ -187,6 +246,7 @@ export function ModulesPanel({
         businessId={businessId}
         entry={selectedEntry}
         enabled={modules[selectedEntry.id]}
+        settings={moduleSettings[selectedEntry.id] ?? {}}
         onBack={() => setSelected(null)}
         onChanged={onReload}
       />

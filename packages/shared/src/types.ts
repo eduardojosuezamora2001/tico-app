@@ -187,6 +187,7 @@ export interface BusinessModule {
   businessId: string
   moduleName: ModuleName
   enabled: boolean
+  settings: Record<string, unknown>
   createdAt: ISODateString
 }
 

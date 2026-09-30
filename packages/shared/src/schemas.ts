@@ -303,12 +303,18 @@ export const BusinessModuleSchema = z.object({
   businessId: uuidSchema,
   moduleName: moduleNameSchema,
   enabled: z.boolean(),
+  settings: z.record(z.string(), z.unknown()).default({}),
   createdAt: isoDateSchema,
 })
 
 export const ToggleBusinessModuleSchema = z.object({
   moduleName: moduleNameSchema,
-  enabled: z.boolean(),
+  enabled: z.boolean().optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+})
+
+export const VerifyOrderPickupSchema = z.object({
+  code: z.string().regex(/^\d{4}$/, "Ingresa 4 dígitos"),
 })
 
 export const BusinessHoursSchema = z

@@ -5,6 +5,10 @@ import {
   SearchBusinessesSchema,
   ToggleBusinessModuleSchema,
   UpdateBusinessSchema,
+  mergeModuleSettings,
+  type Database,
+  type Json,
+  type ModuleName,
   toAddress,
   toBusiness,
   toBusinessModule,
@@ -327,25 +331,44 @@ businessRoutes.put("/:id/modules/:module", requireAuth, async (c) => {
   const parsedId = z.uuid().safeParse(c.req.param("id"))
   if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
 
+  const body = await c.req.json().catch(() => ({}))
   const parsed = ToggleBusinessModuleSchema.safeParse({
     moduleName: c.req.param("module"),
-    enabled: (await c.req.json()).enabled,
+    ...body,
   })
   if (!parsed.success) return validationError(c, parsed.error)
+  if (parsed.data.enabled === undefined && parsed.data.settings === undefined) {
+    return fail(c, 400, "VALIDATION_ERROR", "Indica enabled o settings")
+  }
 
   const access = await requireEditableBusiness(c, parsedId.data)
   if ("error" in access && access.error) return access.error
 
+  const moduleName = parsed.data.moduleName as ModuleName
+  let enabled = parsed.data.enabled
+  let settings: Record<string, unknown> | undefined
+
+  if (parsed.data.settings !== undefined) {
+    const { data: existing } = await supabaseAdmin
+      .from("business_modules")
+      .select("settings, enabled")
+      .eq("business_id", parsedId.data)
+      .eq("module_name", moduleName)
+      .maybeSingle()
+    settings = mergeModuleSettings(moduleName, existing?.settings ?? {}, parsed.data.settings)
+    if (enabled === undefined) enabled = existing?.enabled ?? false
+  }
+
+  const upsertRow: Database["public"]["Tables"]["business_modules"]["Insert"] = {
+    business_id: parsedId.data,
+    module_name: moduleName,
+    enabled: enabled ?? false,
+  }
+  if (settings !== undefined) upsertRow.settings = settings as Json
+
   const { data, error } = await supabaseAdmin
     .from("business_modules")
-    .upsert(
-      {
-        business_id: parsedId.data,
-        module_name: parsed.data.moduleName,
-        enabled: parsed.data.enabled,
-      },
-      { onConflict: "business_id,module_name" },
-    )
+    .upsert(upsertRow, { onConflict: "business_id,module_name" })
     .select("*")
     .single()
   if (error) return dbFail(c, error)

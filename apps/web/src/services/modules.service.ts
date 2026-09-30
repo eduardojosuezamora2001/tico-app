@@ -14,6 +14,14 @@ export async function setBusinessModule(
   return putData<BusinessModule>(`/businesses/${businessId}/modules/${moduleName}`, { enabled })
 }
 
+export async function patchBusinessModule(
+  businessId: string,
+  moduleName: ModuleName,
+  patch: { enabled?: boolean; settings?: Record<string, unknown> },
+) {
+  return putData<BusinessModule>(`/businesses/${businessId}/modules/${moduleName}`, patch)
+}
+
 export async function syncBusinessModules(
   businessId: string,
   modules: Record<ModuleName, boolean>,

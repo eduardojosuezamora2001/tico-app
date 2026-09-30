@@ -20,7 +20,12 @@ import {
 import { Hono } from "hono"
 import { z } from "zod"
 
-import { fanOutOrderUpdate, loadConversationOrders, syncOrderMessage } from "../lib/order-sync.js"
+import {
+  conversationFanOutTargets,
+  fanOutOrderUpdate,
+  loadConversationOrders,
+  syncOrderMessage,
+} from "../lib/order-sync.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
 import { emitToUser } from "../lib/realtime.js"
 import { supabaseAdmin } from "../lib/supabase.js"
@@ -73,7 +78,7 @@ messageRoutes.get("/conversations/:id", async (c) => {
   const conversation = await present(loaded.row, c.get("userId"))
   let orders: Awaited<ReturnType<typeof loadConversationOrders>> = []
   try {
-    orders = await loadConversationOrders(c.get("db"), id)
+    orders = await loadConversationOrders(c.get("db"), id, c.get("userId"))
   } catch (orderError) {
     return dbFail(c, orderError as { message: string })
   }
@@ -137,6 +142,16 @@ messageRoutes.post("/", async (c) => {
   const fresh = (await reload(c.get("db"), opened.row.id)) ?? opened.row
   const conversation = await present(fresh, userId)
   await fanOut(fresh, sent.message)
+  if (parsed.data.order) {
+    const { data: orderRow, error: orderLoadError } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .maybeSingle()
+    if (!orderLoadError && orderRow) {
+      await fanOutOrderUpdate(fresh, orderRow, roleOf)
+    }
+  }
   return c.json({ data: { message: sent.message, conversation } }, 201)
 })
 
@@ -261,7 +276,7 @@ messageRoutes.post("/:messageId/order-decision", async (c) => {
   const fresh = (await reload(supabaseAdmin, row.conversation_id)) ?? loaded.row
   const message = toMessage(updated)
   const conversation = await present(fresh, userId)
-  await fanOutOrderUpdate(fresh, order, roleOf)
+  await fanOutOrderUpdate(fresh, updatedOrderRow, roleOf)
   return c.json({ data: { message, conversation, order } })
 })
 
@@ -387,7 +402,7 @@ async function snapshot(row: ConversationRow) {
     .eq("is_active", true)
   return {
     ownerId: business?.owner_id ?? "",
-    targets: new Set<string>([row.customer_id, ...(members ?? []).map((member) => member.user_id)]),
+    targets: conversationFanOutTargets(row, business?.owner_id ?? "", (members ?? []).map((member) => member.user_id)),
     base: {
       id: row.id,
       businessId: row.business_id,
