@@ -15,6 +15,18 @@ import { supabaseAdmin } from "./supabase.js"
 type Db = SupabaseClient<Database>
 type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"]
 
+/** Quién debe recibir eventos de chat/pedidos de una conversación. */
+export function conversationFanOutTargets(
+  row: { customer_id: string; assignee_id: string | null },
+  ownerId: string,
+  memberUserIds: string[],
+) {
+  const targets = new Set<string>([row.customer_id, ...memberUserIds])
+  if (ownerId) targets.add(ownerId)
+  if (row.assignee_id) targets.add(row.assignee_id)
+  return targets
+}
+
 export async function syncOrderMessage(db: Db, order: ChatOrder) {
   const { error } = await db
     .from("messages")
@@ -53,7 +65,7 @@ export async function fanOutOrderUpdate(
     .eq("is_active", true)
 
   const ownerId = business?.owner_id ?? ""
-  const targets = new Set<string>([row.customer_id, ...(members ?? []).map((member) => member.user_id)])
+  const targets = conversationFanOutTargets(row, ownerId, (members ?? []).map((member) => member.user_id))
   const base = {
     id: row.id,
     businessId: row.business_id,

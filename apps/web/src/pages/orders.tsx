@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import { OrderListItemCard } from "@/components/orders/order-list-item"
 import { OrderTabBadge } from "@/components/orders/order-tab-badge"
 import { SiteHeader } from "@/components/site-header"
+import { countCustomerUpdates, countStaffUpdates, sortOrdersInbox } from "@/lib/orders-inbox"
 import { useOrdersInboxStore } from "@/stores/orders-inbox-store"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@workspace/ui/components/button"
@@ -20,9 +21,15 @@ export function OrdersPage() {
   const loading = useOrdersInboxStore((s) => s.loading)
   const patchOrder = useOrdersInboxStore((s) => s.patchOrder)
   const setActiveTab = useOrdersInboxStore((s) => s.setActiveTab)
+  const customerSeen = useOrdersInboxStore((s) => s.customerSeen)
+  const staffSeen = useOrdersInboxStore((s) => s.staffSeen)
   const markMineSeen = useOrdersInboxStore((s) => s.markMineSeen)
+  const markStaffSeen = useOrdersInboxStore((s) => s.markStaffSeen)
+  const markOrderSeen = useOrdersInboxStore((s) => s.markOrderSeen)
+  const customerOrderNotice = useOrdersInboxStore((s) => s.customerOrderNotice)
+  const staffOrderNotice = useOrdersInboxStore((s) => s.staffOrderNotice)
   const mineUpdateCount = useOrdersInboxStore((s) => s.mineUpdateCount(userId))
-  const staffOpenCount = useOrdersInboxStore((s) => s.staffOpenCount())
+  const staffUpdateCount = useOrdersInboxStore((s) => s.staffUpdateCount())
 
   const [error] = useState<string | null>(null)
   const [tab, setTab] = useState<OrdersTab>("mine")
@@ -43,15 +50,20 @@ export function OrdersPage() {
     setActiveTab(tab)
   }, [tab, setActiveTab])
 
-  const myOrders = useMemo(
-    () => orders.filter((item) => item.customerId === userId).sort(sortByNewest),
+  const myOrdersRaw = useMemo(
+    () => orders.filter((item) => item.customerId === userId),
     [orders, userId],
   )
 
-  useEffect(() => {
-    if (tab !== "mine" || !userId) return
-    markMineSeen(userId, myOrders)
-  }, [tab, userId, myOrders, markMineSeen])
+  const myOrders = useMemo(
+    () => sortOrdersInbox(myOrdersRaw, customerSeen),
+    [myOrdersRaw, customerSeen],
+  )
+
+  const myUnreadCount = useMemo(
+    () => countCustomerUpdates(myOrdersRaw, customerSeen),
+    [myOrdersRaw, customerSeen],
+  )
 
   const staffOrders = useMemo(() => {
     let rows = orders.filter((item) => staffBusinessIds.has(item.businessId))
@@ -67,8 +79,13 @@ export function OrdersPage() {
         (item) => item.status === "denied" || item.fulfillmentStage === "delivered",
       )
     }
-    return rows.sort(sortByNewest)
-  }, [orders, staffBusinessIds, businessId, staffFilter])
+    return sortOrdersInbox(rows, staffSeen)
+  }, [orders, staffBusinessIds, businessId, staffFilter, staffSeen])
+
+  const staffUnreadCount = useMemo(
+    () => countStaffUpdates(staffOrders, staffBusinessIds, staffSeen),
+    [staffOrders, staffBusinessIds, staffSeen],
+  )
 
   const staffBusinesses = useMemo(
     () => memberships.filter((item) => item.isActive && item.business).map((item) => item.business!),
@@ -99,12 +116,18 @@ export function OrdersPage() {
             {canManage ? (
               <TabsTrigger value="staff" className="gap-2">
                 Gestión del local
-                <OrderTabBadge count={staffOpenCount} active={tab === "staff"} highlight />
+                <OrderTabBadge count={staffUpdateCount} active={tab === "staff"} highlight />
               </TabsTrigger>
             ) : null}
           </TabsList>
 
           <TabsContent value="mine" className="flex flex-col gap-3">
+            {myUnreadCount > 0 ? (
+              <InboxHint
+                count={myUnreadCount}
+                onMarkAll={() => userId && markMineSeen(userId, myOrdersRaw)}
+              />
+            ) : null}
             {loading ? (
               <OrdersSkeleton />
             ) : error ? (
@@ -120,7 +143,14 @@ export function OrdersPage() {
               </Empty>
             ) : (
               myOrders.map((order) => (
-                <OrderListItemCard key={order.id} order={order} mode="customer" onUpdated={patchOrder} />
+                <OrderListItemCard
+                  key={order.id}
+                  order={order}
+                  mode="customer"
+                  notice={customerOrderNotice(order)}
+                  onUpdated={patchOrder}
+                  onAcknowledge={(row) => userId && markOrderSeen(userId, row ?? order, "customer")}
+                />
               ))
             )}
           </TabsContent>
@@ -166,6 +196,13 @@ export function OrdersPage() {
                 </div>
               </div>
 
+              {staffUnreadCount > 0 ? (
+                <InboxHint
+                  count={staffUnreadCount}
+                  onMarkAll={() => userId && markStaffSeen(userId, staffOrders)}
+                />
+              ) : null}
+
               {loading ? (
                 <OrdersSkeleton />
               ) : error ? (
@@ -181,7 +218,14 @@ export function OrdersPage() {
                 </Empty>
               ) : (
                 staffOrders.map((order) => (
-                  <OrderListItemCard key={order.id} order={order} mode="staff" onUpdated={patchOrder} />
+                  <OrderListItemCard
+                    key={order.id}
+                    order={order}
+                    mode="staff"
+                    notice={staffOrderNotice(order)}
+                    onUpdated={patchOrder}
+                    onAcknowledge={(row) => userId && markOrderSeen(userId, row ?? order, "staff")}
+                  />
                 ))
               )}
             </TabsContent>
@@ -201,6 +245,15 @@ function OrdersSkeleton() {
   )
 }
 
-function sortByNewest(a: { createdAt: string }, b: { createdAt: string }) {
-  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+function InboxHint({ count, onMarkAll }: { count: number; onMarkAll: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-sm">
+      <span className="text-foreground">
+        {count === 1 ? "1 pedido con novedades" : `${count} pedidos con novedades`}
+      </span>
+      <button type="button" className="font-medium text-primary hover:underline" onClick={onMarkAll}>
+        Marcar todo como visto
+      </button>
+    </div>
+  )
 }
