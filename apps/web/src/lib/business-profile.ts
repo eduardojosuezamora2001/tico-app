@@ -11,9 +11,11 @@ import {
 import type { InternationalAddressValue } from "@/components/international-address-form"
 import { emptyInternationalAddress } from "@/components/international-address-form"
 import {
+  createScheduleGroup,
   defaultModuleSelection,
   defaultScheduleGroups,
   ONBOARDING_CATEGORIES,
+  weekIndex,
   type ScheduleGroup,
 } from "@/lib/business-onboarding"
 import { getAddress } from "@/services/addresses.service"
@@ -55,6 +57,7 @@ export type BusinessProfileFormState = {
   sinpeHolder: string
   iban: string
   bannerUrl: string
+  logoUrl: string
   modules: Record<ModuleName, boolean>
   isDraft: boolean
 }
@@ -86,6 +89,7 @@ export function initialBusinessProfileForm(): BusinessProfileFormState {
     sinpeHolder: "",
     iban: "",
     bannerUrl: "",
+    logoUrl: "",
     modules: defaultModuleSelection(),
     isDraft: true,
   }
@@ -97,20 +101,39 @@ function formatTimeForInput(time: string | null): string {
 }
 
 export function hoursToScheduleGroups(hours: BusinessHours[]): ScheduleGroup[] {
-  const defaults = defaultScheduleGroups()
-  const weekly = hours.filter((row) => row.dayOfWeek !== null && row.exceptionDate === null)
-  if (weekly.length === 0) return defaults
+  const weekly = hours
+    .filter((row) => row.dayOfWeek !== null && row.exceptionDate === null)
+    .slice()
+    .sort((a, b) => weekIndex(a.dayOfWeek ?? -1) - weekIndex(b.dayOfWeek ?? -1))
+  if (weekly.length === 0) return defaultScheduleGroups()
 
-  return defaults.map((group) => {
-    const sample = weekly.find((row) => group.days.includes(row.dayOfWeek ?? -1))
-    if (!sample) return group
-    return {
-      ...group,
-      open: formatTimeForInput(sample.openTime),
-      close: formatTimeForInput(sample.closeTime),
-      closed: sample.isClosed,
+  const groups: ScheduleGroup[] = []
+  for (const row of weekly) {
+    const day = row.dayOfWeek ?? 0
+    const open = formatTimeForInput(row.openTime)
+    const close = formatTimeForInput(row.closeTime)
+    const last = groups.at(-1)
+    const continues =
+      last != null &&
+      weekIndex(day) === weekIndex(last.toDay) + 1 &&
+      last.closed === row.isClosed &&
+      (row.isClosed || (last.open === open && last.close === close))
+    if (continues && last) {
+      last.toDay = day
+      continue
     }
-  })
+    groups.push(
+      createScheduleGroup({
+        id: row.id,
+        fromDay: day,
+        toDay: day,
+        open,
+        close,
+        closed: row.isClosed,
+      }),
+    )
+  }
+  return groups
 }
 
 export function businessToProfileForm(business: Business): BusinessProfileFormState {
@@ -145,6 +168,7 @@ export function businessToProfileForm(business: Business): BusinessProfileFormSt
     sinpeHolder: business.sinpeHolder ?? "",
     iban: business.iban ?? "",
     bannerUrl: business.bannerUrl ?? "",
+    logoUrl: business.logoUrl ?? "",
     isDraft: business.isDraft,
   }
 }
@@ -185,7 +209,8 @@ export function payloadFromProfileForm(
     sinpePhone: form.sinpePhone.trim() || undefined,
     sinpeHolder: form.sinpeHolder.trim() || undefined,
     iban: form.iban.trim() || undefined,
-    bannerUrl: form.bannerUrl.trim() ? normalizeHttpUrl(form.bannerUrl) : undefined,
+    bannerUrl: form.bannerUrl.trim() ? normalizeHttpUrl(form.bannerUrl) : null,
+    logoUrl: form.logoUrl.trim() ? normalizeHttpUrl(form.logoUrl) : null,
   }
 
   if (options?.preserveDraftStatus) {
