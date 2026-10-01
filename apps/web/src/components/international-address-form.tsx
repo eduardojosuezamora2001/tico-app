@@ -19,6 +19,11 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@workspace/ui/components/combobox"
+import {
+  alpha3ForAlpha2,
+  CountryDropdown,
+  countryOptionsForAlpha2Codes,
+} from "@workspace/ui/components/country-dropdown"
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
 
@@ -175,6 +180,13 @@ export function InternationalAddressForm({ value, onChange, mapSearchPlaceholder
     [levels],
   )
 
+  const countryDropdownOptions = useMemo(
+    () => countryOptionsForAlpha2Codes(countries.map((country) => country.code)),
+    [countries],
+  )
+
+  const countryDropdownDefault = alpha3ForAlpha2(value.countryCode)
+
   function patch(partial: Partial<InternationalAddressValue>) {
     onChange({ ...value, ...partial })
   }
@@ -235,17 +247,20 @@ export function InternationalAddressForm({ value, onChange, mapSearchPlaceholder
       />
 
       <Field label="País">
-        <SearchCombobox
-          label="País"
-          items={countries.map((country) => ({
-            id: country.id,
-            label: country.nativeName,
-          }))}
-          value={value.countryId}
-          onChange={handleCountryChange}
-          loading={countriesLoading}
-          placeholder="Seleccionar país"
-          loadingPlaceholder="Cargando países…"
+        <CountryDropdown
+          options={countryDropdownOptions}
+          defaultValue={countryDropdownDefault}
+          onChange={(country) => {
+            const match = countries.find(
+              (item) => item.code.toUpperCase() === country.alpha2.toUpperCase()
+            )
+            handleCountryChange(match?.id ?? null)
+          }}
+          disabled={countriesLoading || countryDropdownOptions.length === 0}
+          placeholder={
+            countriesLoading ? "Cargando países…" : "Seleccionar país"
+          }
+          className="h-11 rounded-xl"
         />
         {countriesError ? (
           <span className="text-xs text-destructive">{countriesError}</span>

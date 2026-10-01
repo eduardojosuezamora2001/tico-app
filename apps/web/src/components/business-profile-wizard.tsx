@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router"
-import { MODULES, type CreateBusinessInput, type UpdateBusinessInput } from "@workspace/shared"
+import { type CreateBusinessInput, type UpdateBusinessInput } from "@workspace/shared"
 
 import {
   deepestDivisionId,
@@ -16,11 +16,11 @@ import {
 } from "@/lib/business-profile"
 import {
   ONBOARDING_CATEGORIES,
-  ONBOARDING_MODULE_LABELS,
   scheduleOverlapMessage,
   schedulesToHours,
 } from "@/lib/business-onboarding"
 import { ScheduleRangeEditor } from "@/components/schedule-range-editor"
+import { MODULE_CATALOG } from "@/lib/module-catalog"
 import { BusinessMediaFields } from "@/components/business-media-fields"
 import { getApiErrorMessage } from "@/lib/api"
 import { toast } from "sonner"
@@ -36,6 +36,7 @@ import { PaymentMethodOptions } from "@/components/payment-methods"
 import { Button } from "@workspace/ui/components/button"
 import { Checkbox } from "@workspace/ui/components/checkbox"
 import { Input } from "@workspace/ui/components/input"
+import { PhoneInput } from "@workspace/ui/components/phone-input"
 import { Textarea } from "@workspace/ui/components/textarea"
 
 type Props = {
@@ -234,7 +235,7 @@ export function BusinessProfileWizard({
 
           await syncAddressForBusiness(id)
           await updateBusinessHours(id, schedulesToHours(form.schedules))
-          await syncModulesForBusiness(id, form.modules)
+          await syncModulesForBusiness(id, form.modules, form.moduleSettings)
 
           if (publishing) {
             for (const email of form.coOwnerEmails.map((item) => item.trim()).filter(Boolean)) {
@@ -360,7 +361,7 @@ export function BusinessProfileWizard({
         </div>
       </header>
 
-      <ol className="grid gap-2 sm:grid-cols-4">
+      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {PROFILE_STEPS.map((item) => (
           <li key={item.id}>
             <button
@@ -500,17 +501,21 @@ export function BusinessProfileWizard({
             description="WhatsApp, teléfono y redes donde te encuentran."
           >
             <Field label="WhatsApp para pedidos">
-              <Input
+              <PhoneInput
                 value={form.whatsappNumber}
                 onChange={(e) => patchForm("whatsappNumber", e.target.value)}
+                defaultCountry={form.address.countryCode ?? "CR"}
+                prefillCallingCode
                 placeholder="+50688887777"
                 className="h-11 rounded-xl"
               />
             </Field>
             <Field label="Teléfono fijo">
-              <Input
+              <PhoneInput
                 value={form.phone}
                 onChange={(e) => patchForm("phone", e.target.value)}
+                defaultCountry={form.address.countryCode ?? "CR"}
+                placeholder="+50622223333"
                 className="h-11 rounded-xl"
               />
             </Field>
@@ -550,7 +555,7 @@ export function BusinessProfileWizard({
             </div>
           </StepCard>
 
-          <StepCard title="Horarios de atención y servicio express">
+          <StepCard title="Servicio express">
             <label className="flex items-center gap-3 text-sm">
               <Checkbox
                 checked={form.offersDelivery}
@@ -558,10 +563,6 @@ export function BusinessProfileWizard({
               />
               Ofrecemos servicio express o domicilio por nuestra cuenta
             </label>
-            <ScheduleRangeEditor
-              groups={form.schedules}
-              onChange={(schedules) => patchForm("schedules", schedules)}
-            />
             {form.offersDelivery ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Costo servicio express (₡)">
@@ -592,9 +593,10 @@ export function BusinessProfileWizard({
             {form.paymentSinpe ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Número de transferencia móvil">
-                  <Input
+                  <PhoneInput
                     value={form.sinpePhone}
                     onChange={(e) => patchForm("sinpePhone", e.target.value)}
+                    defaultCountry={form.address.countryCode ?? "CR"}
                     placeholder="+50688887777"
                     className="h-11 rounded-xl"
                   />
@@ -622,6 +624,18 @@ export function BusinessProfileWizard({
       ) : null}
 
       {!loading && step === 4 ? (
+        <StepCard
+          title="Horarios de atención"
+          description="Cada rango se puede abrir para editarlo. El resto queda plegado."
+        >
+          <ScheduleRangeEditor
+            groups={form.schedules}
+            onChange={(schedules) => patchForm("schedules", schedules)}
+          />
+        </StepCard>
+      ) : null}
+
+      {!loading && step === 5 ? (
         <>
           <StepCard
             title="Fotos del local"
@@ -641,22 +655,66 @@ export function BusinessProfileWizard({
             description="Activa solo lo que vas a usar. Puedes cambiarlos después en el panel."
           >
             <ul className="flex flex-col gap-3">
-              {Object.values(MODULES).map((moduleName) => (
-                <li key={moduleName}>
-                  <label className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-sm">
-                    <span>{ONBOARDING_MODULE_LABELS[moduleName]}</span>
-                    <Checkbox
-                      checked={form.modules[moduleName]}
-                      onCheckedChange={(checked) =>
-                        patchForm("modules", {
-                          ...form.modules,
-                          [moduleName]: Boolean(checked),
-                        })
-                      }
-                    />
-                  </label>
-                </li>
-              ))}
+              {MODULE_CATALOG.map((entry) => {
+                const enabled = form.modules[entry.id]
+                const settings = form.moduleSettings[entry.id] ?? {}
+                return (
+                  <li key={entry.id} className="rounded-xl border border-border px-4 py-3">
+                    <label className="flex items-center justify-between gap-3 text-sm">
+                      <span>
+                        <span className="block font-medium">{entry.title}</span>
+                        <span className="mt-0.5 block text-muted-foreground">{entry.summary}</span>
+                      </span>
+                      <Checkbox
+                        checked={enabled}
+                        onCheckedChange={(checked) =>
+                          patchForm("modules", {
+                            ...form.modules,
+                            [entry.id]: Boolean(checked),
+                          })
+                        }
+                      />
+                    </label>
+                    {entry.features.length > 0 ? (
+                      <ul className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
+                        {entry.features.map((feature) => (
+                          <li key={feature.id}>
+                            <label className="flex items-start gap-3 text-sm">
+                              <Checkbox
+                                className="mt-0.5"
+                                checked={settings[feature.settingsKey] === true}
+                                disabled={!enabled}
+                                onCheckedChange={(checked) =>
+                                  patchForm("moduleSettings", {
+                                    ...form.moduleSettings,
+                                    [entry.id]: {
+                                      ...settings,
+                                      [feature.settingsKey]: Boolean(checked),
+                                    },
+                                  })
+                                }
+                              />
+                              <span>
+                                <span className="block font-medium">{feature.title}</span>
+                                <span className="mt-0.5 block text-muted-foreground">{feature.description}</span>
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                        {!enabled ? (
+                          <li className="text-xs text-muted-foreground">
+                            Activa el módulo para usar estas opciones.
+                          </li>
+                        ) : null}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
+                        Sin funcionalidades extra por ahora.
+                      </p>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </StepCard>
         </>
@@ -664,7 +722,7 @@ export function BusinessProfileWizard({
 
       <footer className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {step < 4
+          {step < PROFILE_STEPS.length
             ? mode === "edit"
               ? "Avanza por pasos o guarda los cambios cuando quieras."
               : "Puedes avanzar paso a paso o guardar borrador."
@@ -683,7 +741,7 @@ export function BusinessProfileWizard({
               Anterior
             </Button>
           ) : null}
-          {step < 4 ? (
+          {step < PROFILE_STEPS.length ? (
             <Button type="button" className="rounded-full" onClick={() => setStep(step + 1)}>
               Siguiente
             </Button>

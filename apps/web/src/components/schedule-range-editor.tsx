@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   createScheduleGroup,
   DAY_LABELS,
@@ -14,6 +15,11 @@ import { Checkbox } from "@workspace/ui/components/checkbox"
 
 const selectClass = "h-11 rounded-xl border border-border bg-background px-3 text-sm"
 
+function scheduleHoursLabel(group: ScheduleGroup) {
+  if (group.closed) return "Cerrado"
+  return `${group.open} – ${group.close}`
+}
+
 export function ScheduleRangeEditor({
   groups,
   onChange,
@@ -21,6 +27,7 @@ export function ScheduleRangeEditor({
   groups: ScheduleGroup[]
   onChange: (groups: ScheduleGroup[]) => void
 }) {
+  const [openId, setOpenId] = useState<string | null>(groups[0]?.id ?? null)
   const overlap = scheduleOverlapMessage(groups)
 
   function update(id: string, patch: Partial<ScheduleGroup>) {
@@ -41,21 +48,44 @@ export function ScheduleRangeEditor({
         const fromIndex = Math.max(0, weekIndex(group.fromDay))
         const toOptions = WEEK_ORDER.slice(fromIndex)
         const dayCount = daysInRange(group.fromDay, group.toDay).length
+        const open = openId === group.id
         return (
-          <div key={group.id} className="flex flex-col gap-3 rounded-xl border border-border p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-medium">{scheduleRangeLabel(group.fromDay, group.toDay)}</p>
+          <div key={group.id} className="rounded-xl border border-border">
+            <div className="flex items-center gap-2 px-3 py-2">
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                aria-expanded={open}
+                onClick={() => setOpenId(open ? null : group.id)}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">{scheduleRangeLabel(group.fromDay, group.toDay)}</span>
+                  <span className="block text-xs text-muted-foreground">{scheduleHoursLabel(group)}</span>
+                </span>
+                <span
+                  aria-hidden
+                  className={`text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+                >
+                  ▾
+                </span>
+              </button>
               {groups.length > 1 ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => onChange(groups.filter((item) => item.id !== group.id))}
+                  onClick={() => {
+                    const next = groups.filter((item) => item.id !== group.id)
+                    onChange(next)
+                    if (open) setOpenId(next[0]?.id ?? null)
+                  }}
                 >
                   Quitar
                 </Button>
               ) : null}
             </div>
+            {open ? (
+            <div className="flex flex-col gap-3 border-t border-border p-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm">
                 <span className="text-muted-foreground">Desde</span>
@@ -119,6 +149,8 @@ export function ScheduleRangeEditor({
                 />
               </label>
             </div>
+            </div>
+            ) : null}
           </div>
         )
       })}
@@ -129,7 +161,9 @@ export function ScheduleRangeEditor({
         className="w-fit rounded-full"
         onClick={() => {
           const day = firstUnusedDay(groups)
-          onChange([...groups, createScheduleGroup({ fromDay: day, toDay: day })])
+          const next = createScheduleGroup({ fromDay: day, toDay: day })
+          onChange([...groups, next])
+          setOpenId(next.id)
         }}
       >
         Agregar horario

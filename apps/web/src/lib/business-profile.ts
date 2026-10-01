@@ -1,5 +1,6 @@
 import {
   COUNTRY_PHONE_CODES,
+  MODULES,
   normalizeHttpUrl,
   normalizePhoneToE164,
   type Business,
@@ -22,13 +23,14 @@ import { getAddress } from "@/services/addresses.service"
 import { getBusiness } from "@/services/businesses.service"
 import { getDivisionChain, listCountries } from "@/services/countries.service"
 import { getBusinessHours } from "@/services/hours.service"
-import { listBusinessModules, syncBusinessModules } from "@/services/modules.service"
+import { listBusinessModules, patchBusinessModule } from "@/services/modules.service"
 
 export const PROFILE_STEPS = [
   { id: 1, label: "Identidad y propuesta" },
   { id: 2, label: "Ubicación y señas" },
   { id: 3, label: "Contacto y pagos" },
-  { id: 4, label: "Fotos y módulos" },
+  { id: 4, label: "Horarios" },
+  { id: 5, label: "Fotos y módulos" },
 ] as const
 
 export type BusinessProfileFormState = {
@@ -59,6 +61,7 @@ export type BusinessProfileFormState = {
   bannerUrl: string
   logoUrl: string
   modules: Record<ModuleName, boolean>
+  moduleSettings: Partial<Record<ModuleName, Record<string, unknown>>>
   isDraft: boolean
 }
 
@@ -91,6 +94,7 @@ export function initialBusinessProfileForm(): BusinessProfileFormState {
     bannerUrl: "",
     logoUrl: "",
     modules: defaultModuleSelection(),
+    moduleSettings: {},
     isDraft: true,
   }
 }
@@ -235,10 +239,13 @@ export async function loadBusinessProfileForm(businessId: string) {
   form.schedules = hoursToScheduleGroups(hours)
 
   const modules = defaultModuleSelection()
+  const moduleSettings: BusinessProfileFormState["moduleSettings"] = {}
   for (const row of moduleRows) {
     modules[row.moduleName] = row.enabled
+    moduleSettings[row.moduleName] = row.settings ?? {}
   }
   form.modules = modules
+  form.moduleSettings = moduleSettings
 
   if (business.addressId) {
     try {
@@ -276,6 +283,12 @@ export async function loadBusinessProfileForm(businessId: string) {
 export async function syncModulesForBusiness(
   businessId: string,
   modules: Record<ModuleName, boolean>,
+  moduleSettings: Partial<Record<ModuleName, Record<string, unknown>>> = {},
 ) {
-  await syncBusinessModules(businessId, modules)
+  for (const moduleName of Object.values(MODULES)) {
+    await patchBusinessModule(businessId, moduleName, {
+      enabled: modules[moduleName],
+      settings: moduleSettings[moduleName] ?? {},
+    })
+  }
 }
