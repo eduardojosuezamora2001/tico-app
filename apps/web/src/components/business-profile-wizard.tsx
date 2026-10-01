@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router"
 import { MODULES, type CreateBusinessInput, type UpdateBusinessInput } from "@workspace/shared"
 
@@ -17,8 +17,11 @@ import {
 import {
   ONBOARDING_CATEGORIES,
   ONBOARDING_MODULE_LABELS,
+  scheduleOverlapMessage,
   schedulesToHours,
 } from "@/lib/business-onboarding"
+import { ScheduleRangeEditor } from "@/components/schedule-range-editor"
+import { BusinessMediaFields } from "@/components/business-media-fields"
 import { getApiErrorMessage } from "@/lib/api"
 import { toast } from "sonner"
 import {
@@ -90,6 +93,9 @@ export function BusinessProfileWizard({
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<BusinessProfileFormState>(initialBusinessProfileForm)
   const [businessId, setBusinessId] = useState<string | null>(initialBusinessId)
+  const businessIdRef = useRef<string | null>(initialBusinessId)
+  const draftPromise = useRef<Promise<string> | null>(null)
+  businessIdRef.current = businessId
   const [loading, setLoading] = useState(mode === "edit" || Boolean(initialBusinessId))
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -118,6 +124,31 @@ export function BusinessProfileWizard({
     value: BusinessProfileFormState[K],
   ) {
     setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  async function ensureBusinessId() {
+    if (businessIdRef.current) return businessIdRef.current
+    if (draftPromise.current) return draftPromise.current
+    if (!form.name.trim() || !form.category) {
+      throw new Error("Escribe el nombre y la categoría en el primer paso antes de subir fotos.")
+    }
+    const pendingCreate = (async () => {
+      const body = payloadFromProfileForm(form, { preserveDraftStatus: mode === "edit" })
+      const created = await createBusiness({
+        ...(body as CreateBusinessInput),
+        ...(chainId ? { chainId } : {}),
+      })
+      businessIdRef.current = created.id
+      setBusinessId(created.id)
+      onDraftCreated?.(created.id)
+      return created.id
+    })()
+    draftPromise.current = pendingCreate
+    try {
+      return await pendingCreate
+    } finally {
+      draftPromise.current = null
+    }
   }
 
   async function syncAddressForBusiness(id: string) {
@@ -159,6 +190,13 @@ export function BusinessProfileWizard({
       return
     }
 
+    const scheduleError = scheduleOverlapMessage(form.schedules)
+    if (scheduleError) {
+      setError(scheduleError)
+      toast.error("Revisa los horarios", { description: scheduleError })
+      return
+    }
+
     const loadingMessage = publishing
       ? "Publicando negocio…"
       : mode === "edit"
@@ -177,7 +215,8 @@ export function BusinessProfileWizard({
             preserveDraftStatus: mode === "edit",
           })
 
-          let id = businessId
+          if (draftPromise.current) await draftPromise.current
+          let id = businessIdRef.current
           const wasCreating = !id
 
           if (!id) {
@@ -186,6 +225,7 @@ export function BusinessProfileWizard({
               ...(chainId ? { chainId } : {}),
             })
             id = created.id
+            businessIdRef.current = id
             setBusinessId(id)
             onDraftCreated?.(id)
           } else {
@@ -518,62 +558,10 @@ export function BusinessProfileWizard({
               />
               Ofrecemos servicio express o domicilio por nuestra cuenta
             </label>
-            <div className="flex flex-col gap-3">
-              {form.schedules.map((group) => (
-                <div
-                  key={group.id}
-                  className="grid gap-3 rounded-xl border border-border p-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center"
-                >
-                  <div>
-                    <p className="font-medium">{group.label}</p>
-                    <label className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                      <Checkbox
-                        checked={group.closed}
-                        onCheckedChange={(checked) =>
-                          patchForm(
-                            "schedules",
-                            form.schedules.map((item) =>
-                              item.id === group.id ? { ...item, closed: Boolean(checked) } : item,
-                            ),
-                          )
-                        }
-                      />
-                      Cerrado
-                    </label>
-                  </div>
-                  <Input
-                    type="time"
-                    value={group.open}
-                    disabled={group.closed}
-                    onChange={(e) =>
-                      patchForm(
-                        "schedules",
-                        form.schedules.map((item) =>
-                          item.id === group.id ? { ...item, open: e.target.value } : item,
-                        ),
-                      )
-                    }
-                    aria-label={`Apertura ${group.label}`}
-                    className="h-11 rounded-xl"
-                  />
-                  <Input
-                    type="time"
-                    value={group.close}
-                    disabled={group.closed}
-                    onChange={(e) =>
-                      patchForm(
-                        "schedules",
-                        form.schedules.map((item) =>
-                          item.id === group.id ? { ...item, close: e.target.value } : item,
-                        ),
-                      )
-                    }
-                    aria-label={`Cierre ${group.label}`}
-                    className="h-11 rounded-xl"
-                  />
-                </div>
-              ))}
-            </div>
+            <ScheduleRangeEditor
+              groups={form.schedules}
+              onChange={(schedules) => patchForm("schedules", schedules)}
+            />
             {form.offersDelivery ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Costo servicio express (₡)">
@@ -635,26 +623,18 @@ export function BusinessProfileWizard({
 
       {!loading && step === 4 ? (
         <>
-          <StepCard title="Fotos de portada y fachada">
-            <Field label="URL de portada">
-              <Input
-                value={form.bannerUrl}
-                onChange={(e) => patchForm("bannerUrl", e.target.value)}
-                placeholder="https://..."
-                className="h-11 rounded-xl"
-              />
-            </Field>
-            {form.bannerUrl ? (
-              <img
-                src={form.bannerUrl}
-                alt=""
-                className="aspect-[21/9] w-full rounded-2xl border border-border object-cover"
-              />
-            ) : (
-              <div className="flex aspect-[21/9] items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
-                También puedes subir fotos desde la pestaña Galería.
-              </div>
-            )}
+          <StepCard
+            title="Fotos del local"
+            description="Portada, perfil y galería. Arrastra las imágenes o elige archivos."
+          >
+            <BusinessMediaFields
+              businessId={businessId}
+              bannerUrl={form.bannerUrl}
+              logoUrl={form.logoUrl}
+              onBannerUrl={(url) => patchForm("bannerUrl", url)}
+              onLogoUrl={(url) => patchForm("logoUrl", url)}
+              ensureBusinessId={ensureBusinessId}
+            />
           </StepCard>
           <StepCard
             title="Módulos y herramientas para tu local"
