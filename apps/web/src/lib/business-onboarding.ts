@@ -1,14 +1,5 @@
 import { MODULES, type ModuleName } from "@workspace/shared"
 
-export const ONBOARDING_CATEGORIES = [
-  "Restauración",
-  "Cafetería",
-  "Servicios",
-  "Pulpería",
-  "Salud y Belleza",
-  "Venta Retail",
-] as const
-
 export const COSTA_RICA_PROVINCES = [
   "San José",
   "Alajuela",

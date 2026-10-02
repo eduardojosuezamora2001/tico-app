@@ -12,10 +12,14 @@ import {
 import type { InternationalAddressValue } from "@/components/international-address-form"
 import { emptyInternationalAddress } from "@/components/international-address-form"
 import {
+  parseBusinessCategories,
+  serializeBusinessCategories,
+} from "@workspace/shared"
+
+import {
   createScheduleGroup,
   defaultModuleSelection,
   defaultScheduleGroups,
-  ONBOARDING_CATEGORIES,
   weekIndex,
   type ScheduleGroup,
 } from "@/lib/business-onboarding"
@@ -36,7 +40,7 @@ export const PROFILE_STEPS = [
 export type BusinessProfileFormState = {
   name: string
   tagline: string
-  category: string
+  categories: string[]
   description: string
   coOwnerEmails: string[]
   addressId: string | null
@@ -69,7 +73,7 @@ export function initialBusinessProfileForm(): BusinessProfileFormState {
   return {
     name: "",
     tagline: "",
-    category: ONBOARDING_CATEGORIES[0],
+    categories: [],
     description: "",
     coOwnerEmails: [""],
     addressId: null,
@@ -146,7 +150,7 @@ export function businessToProfileForm(business: Business): BusinessProfileFormSt
     ...base,
     name: business.name,
     tagline: business.tagline ?? "",
-    category: business.category,
+    categories: parseBusinessCategories(business.category),
     description: business.description ?? "",
     addressId: business.addressId,
     address: {
@@ -188,7 +192,7 @@ export function payloadFromProfileForm(
   const body: Record<string, unknown> = {
     name: form.name.trim(),
     tagline: form.tagline.trim() || undefined,
-    category: form.category,
+    category: serializeBusinessCategories(form.categories) ?? "",
     description: form.description.trim() || undefined,
     latitude: form.address.latitude ?? undefined,
     longitude: form.address.longitude ?? undefined,

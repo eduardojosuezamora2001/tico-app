@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router"
 import { RootLayout } from "@/routes/root-layout"
 import { ProtectedRoute } from "@/routes/protected-route"
 import { HomePage } from "@/pages/home"
+import { BuscarPage } from "@/pages/buscar"
 import { LoginPage } from "@/pages/login"
 import { RegisterPage } from "@/pages/register"
 import { AuthCallbackPage } from "@/pages/auth-callback"
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: "buscar", element: <BuscarPage /> },
       { path: "login", element: <LoginPage /> },
       { path: "registro", element: <RegisterPage /> },
       { path: "auth/callback", element: <AuthCallbackPage /> },

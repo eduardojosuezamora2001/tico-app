@@ -1,6 +1,7 @@
 import {
   CreateAddressSchema,
   CreateBusinessSchema,
+  DiscoverMatchSchema,
   NearbyBusinessesSchema,
   SearchBusinessesSchema,
   ToggleBusinessModuleSchema,
@@ -94,24 +95,36 @@ businessRoutes.get("/nearby", async (c) => {
   return c.json({ data: (data ?? []).map(toNearbyBusiness) })
 })
 
+function parseMatches(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    const parsed = DiscoverMatchSchema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
+}
+
 businessRoutes.get("/", async (c) => {
   const parsed = SearchBusinessesSchema.safeParse({
     q: c.req.query("q") || undefined,
     categories: csv(c.req.query("category"), 60, 12),
+    marketplaceTagSlugs: csv(c.req.query("tag"), 80, 12),
     latitude: c.req.query("latitude") ? Number(c.req.query("latitude")) : undefined,
     longitude: c.req.query("longitude") ? Number(c.req.query("longitude")) : undefined,
     radiusKm: c.req.query("radiusKm") ? Number(c.req.query("radiusKm")) : undefined,
     limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
     cursor: c.req.query("cursor") || undefined,
     provinces: csv(c.req.query("province"), 40, 8),
+    catalogKind: c.req.query("catalogKind") || undefined,
+    catalogLabel: c.req.query("catalogLabel") || undefined,
   })
   if (!parsed.success) return validationError(c, parsed.error)
 
   const cursor = decodeCursor(parsed.data.cursor)
   if (cursor === null) return fail(c, 400, "VALIDATION", "Cursor inválido")
 
-  const { data, error } = await supabaseAdmin.rpc("search_businesses", {
+  const { data, error } = await supabaseAdmin.rpc("discover_businesses", {
     q: parsed.data.q ?? null,
+    marketplace_tag_slugs: parsed.data.marketplaceTagSlugs ?? null,
     categories: parsed.data.categories ?? null,
     lat: parsed.data.latitude ?? null,
     lng: parsed.data.longitude ?? null,
@@ -121,6 +134,8 @@ businessRoutes.get("/", async (c) => {
     cursor_name: cursor.name,
     cursor_id: cursor.id,
     provinces: parsed.data.provinces ?? null,
+    catalog_kind: parsed.data.catalogKind ?? null,
+    catalog_label: parsed.data.catalogLabel ?? null,
   })
   if (error) return dbFail(c, error)
 
@@ -147,6 +162,7 @@ businessRoutes.get("/", async (c) => {
       latitude: row.latitude,
       longitude: row.longitude,
       distanceKm: row.distance_m === null ? null : Math.round((row.distance_m / 1000) * 10) / 10,
+      matches: parseMatches(row.matches),
     })),
   })
 })

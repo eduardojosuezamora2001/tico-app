@@ -1,5 +1,6 @@
 import type {
   Business,
+  CatalogSuggestion,
   CreateAddressInput,
   CreateBusinessInput,
   UpdateBusinessInput,
@@ -10,6 +11,10 @@ import type { BusinessDetail, BusinessSummary, MediaUploadUrl } from "@/services
 
 export async function searchBusinesses(params: Record<string, unknown>) {
   return getPage<BusinessSummary[]>("/businesses", params)
+}
+
+export async function suggestCatalog(q: string) {
+  return getData<CatalogSuggestion[]>("/discover/suggestions", { q, limit: 8 })
 }
 
 export async function getBusiness(businessId: string) {

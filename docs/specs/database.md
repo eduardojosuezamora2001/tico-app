@@ -9,6 +9,10 @@ Proyecto Supabase `tico-app` (Postgres 17 + PostGIS). Fuente de verdad: `supabas
 | `20260924200003_rls_policies`               | RLS en las 16 tablas + privilegios de columna                 |
 | `20260924200004_seed_permissions`           | Catalogo de 32 permisos                                       |
 | `20260924210230_rls_consolidate_policies`   | Una sola politica SELECT por rol (advisor de performance)     |
+| `20261001220000_catalog_tags_discovery`   | Taxonomia de productos, N:M, RPC `discover_businesses`        |
+| `20261002100000_discover_catalog_full`    | Busqueda de servicios/menu y `matches` en discover            |
+
+Detalle de taxonomia y descubrimiento: [catalog-discovery.md](./catalog-discovery.md).
 
 ## Diagrama
 
@@ -79,7 +83,15 @@ Catalogo `name` (`modulo:accion`, unique), `module`, `action`, `description`. 32
 Trigger `on_business_user_change` valida cada permiso contra el catalogo y promueve el rol global del usuario.
 
 ### 6. `products`
-`business_id`, `name`, `description`, `price numeric(12,2)`, `stock int`, `image_url`, `category`, `is_available`, `created_by`.
+`business_id`, `name`, `description`, `price numeric(12,2)` (cache variante default), `stock int`, `image_url`, `category` (legado), `search_vector` (tsvector generado), `is_available`, `created_by`, `product_kind` (`simple|variant|bundle`), `option_groups jsonb`, `spec_schema jsonb`, `specifications jsonb`, `bundle_config jsonb`.
+
+Etiquetas N:M: `catalog_tags` + `product_catalog_tags` (ver [catalog-discovery.md](./catalog-discovery.md)).
+
+### 6b. `product_variants`
+SKU por producto: `product_id`, `price`, `stock`, `image_url`, `options jsonb`, `sku`, `sort_order`, `is_default`, `is_available`.
+
+### 6c. `product_bundle_items`
+Componentes de combo: `bundle_product_id`, `component_variant_id`, `default_qty`, `min_qty`, `max_qty`, `sort_order`.
 
 ### 7. `product_translations`
 `product_id`, `language_code`, `name`, `description`. Unique (product, language).
@@ -96,10 +108,10 @@ Horario semanal (`day_of_week` 0=domingo..6) **o** excepcion por fecha (`excepti
 `open_time`/`close_time` requeridos salvo `is_closed`. Unicos parciales por (negocio, dia) y (negocio, fecha).
 
 ### 11. `services`
-`business_id`, `name`, `description`, `price` (nullable), `duration_minutes`, `category`, `image_url`, `is_active`, `created_by`.
+`business_id`, `name`, `description`, `price` (nullable), `duration_minutes`, `category`, `image_url`, `is_active`, `created_by`, `search_vector` (tsvector generado).
 
 ### 12. `menus`
-Una fila por item del menu digital: `business_id`, `section`, `name`, `description`, `price`, `image_url`, `is_available`, `sort_order`, `created_by`.
+Una fila por item del menu digital: `business_id`, `section`, `name`, `description`, `price`, `image_url`, `is_available`, `sort_order`, `created_by`, `search_vector` (tsvector generado).
 
 ### 13. `appointments`
 `business_id`, `client_id`, `service_id` (nullable), `employee_id` (nullable), `scheduled_at`, `duration_minutes`, `status` (`pending|confirmed|cancelled|completed`), `notes`.

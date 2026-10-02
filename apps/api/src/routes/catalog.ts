@@ -1,12 +1,9 @@
 import {
   CreateMenuItemSchema,
-  CreateProductSchema,
   CreateServiceSchema,
   UpdateMenuItemSchema,
-  UpdateProductSchema,
   UpdateServiceSchema,
   toMenuItem,
-  toProduct,
   toService,
 } from "@workspace/shared"
 import { Hono } from "hono"
@@ -106,35 +103,6 @@ function catalogRoutes(options: {
 
   return routes
 }
-
-const optional = (value: unknown) => (value === undefined ? undefined : value)
-
-export const productRoutes = catalogRoutes({
-  table: "products",
-  moduleName: "products",
-  createSchema: CreateProductSchema,
-  updateSchema: UpdateProductSchema,
-  toRow: toProduct,
-  toInsert: (input, businessId) => ({
-    business_id: businessId,
-    name: input.name,
-    description: input.description ?? null,
-    price: input.price,
-    stock: input.stock ?? null,
-    image_url: input.imageUrl ?? null,
-    category: input.category ?? null,
-    is_available: input.isAvailable ?? true,
-  }),
-  toPatch: (input) => ({
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(optional(input.description) !== undefined ? { description: input.description } : {}),
-    ...(input.price !== undefined ? { price: input.price } : {}),
-    ...(input.stock !== undefined ? { stock: input.stock } : {}),
-    ...(input.imageUrl !== undefined ? { image_url: input.imageUrl } : {}),
-    ...(input.category !== undefined ? { category: input.category } : {}),
-    ...(input.isAvailable !== undefined ? { is_available: input.isAvailable } : {}),
-  }),
-})
 
 export const serviceRoutes = catalogRoutes({
   table: "services",

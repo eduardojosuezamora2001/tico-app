@@ -6,6 +6,10 @@
 import { z } from "zod"
 
 import {
+  MAX_BUSINESS_CATEGORIES,
+  parseBusinessCategories,
+} from "./business-categories.js"
+import {
   APPOINTMENT_STATUS,
   BUSINESS_ROLES,
   LANGUAGES,
@@ -18,6 +22,17 @@ import {
   ROLES,
 } from "./constants.js"
 import { normalizeHttpUrl, normalizePhoneToE164 } from "./input-normalization.js"
+import {
+  BundleConfigSchema,
+  MAX_BUNDLE_ITEMS,
+  MAX_PRODUCT_VARIANTS,
+  ProductBundleItemInputSchema,
+  ProductKindSchema,
+  ProductOptionGroupSchema,
+  ProductVariantInputSchema,
+  SpecFieldSchema,
+  VariantOptionsSchema,
+} from "./product-catalog.js"
 
 // --------------------------------------------------------------------------
 // Primitivas reutilizables
@@ -235,7 +250,24 @@ export const CreateBusinessSchema = z.object({
   name: z.string().trim().min(1, "Requerido").max(120),
   tagline: z.string().trim().max(160).optional(),
   description: z.string().trim().max(2000).optional(),
-  category: z.string().trim().min(1, "Requerido").max(60),
+  category: z
+    .string()
+    .trim()
+    .min(1, "Requerido")
+    .max(2000)
+    .superRefine((value, ctx) => {
+      const parts = parseBusinessCategories(value)
+      if (parts.length === 0) {
+        ctx.addIssue({ code: "custom", message: "Requerido" })
+        return
+      }
+      if (parts.length > MAX_BUSINESS_CATEGORIES) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Máximo ${MAX_BUSINESS_CATEGORIES} categorías`,
+        })
+      }
+    }),
   latitude: latitudeSchema.optional(),
   longitude: longitudeSchema.optional(),
   province: z.string().trim().max(60).optional(),
@@ -287,16 +319,49 @@ export const UpdateBusinessSchema = CreateBusinessSchema.partial().extend({
     .optional(),
 })
 
+export const DiscoverMatchSchema = z.object({
+  kind: z.enum(["business", "product", "service", "menu"]),
+  id: z.string().uuid(),
+  label: z.string().trim().min(1).max(120),
+})
+
+export type DiscoverMatch = z.infer<typeof DiscoverMatchSchema>
+
+const marketplaceSlugSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+  .max(80)
+
+export const CatalogOfferKindSchema = z.enum(["product", "service", "menu"])
+
 export const SearchBusinessesSchema = z.object({
   q: z.string().trim().max(120).optional(),
   categories: z.array(z.string().trim().min(1).max(60)).max(12).optional(),
+  marketplaceTagSlugs: z.array(marketplaceSlugSchema).max(12).optional(),
   latitude: latitudeSchema.optional(),
   longitude: longitudeSchema.optional(),
   radiusKm: z.number().positive().max(MAX_SEARCH_RADIUS_KM).default(10),
   limit: z.number().int().min(1).max(50).default(20),
   cursor: z.string().max(400).optional(),
   provinces: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+  catalogKind: CatalogOfferKindSchema.optional(),
+  catalogLabel: z.string().trim().min(1).max(120).optional(),
 })
+
+export const SuggestCatalogSchema = z.object({
+  q: z.string().trim().min(1).max(120),
+  limit: z.number().int().min(1).max(12).default(8),
+})
+
+export const CatalogSuggestionSchema = z.object({
+  kind: z.enum(["business", "product", "service", "menu"]),
+  id: z.string().uuid(),
+  label: z.string().trim().min(1).max(120),
+  hint: z.string().trim().max(80).nullable(),
+})
+
+export type CatalogSuggestion = z.infer<typeof CatalogSuggestionSchema>
 
 export const BusinessModuleSchema = z.object({
   id: uuidSchema,
@@ -377,6 +442,32 @@ export const UpdateBusinessUserSchema = z.object({
 // Productos
 // --------------------------------------------------------------------------
 
+export const ProductVariantSchema = z.object({
+  id: uuidSchema,
+  productId: uuidSchema,
+  price: priceSchema,
+  stock: z.number().int().min(0).nullable(),
+  imageUrl: urlSchema.nullable(),
+  options: VariantOptionsSchema,
+  sku: z.string().nullable(),
+  sortOrder: z.number().int().min(0),
+  isDefault: z.boolean(),
+  isAvailable: z.boolean(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+})
+
+export const ProductBundleItemSchema = z.object({
+  id: uuidSchema,
+  bundleProductId: uuidSchema,
+  componentVariantId: uuidSchema,
+  defaultQty: z.number().int().min(0),
+  minQty: z.number().int().min(0),
+  maxQty: z.number().int().min(1),
+  sortOrder: z.number().int().min(0),
+  createdAt: isoDateSchema,
+})
+
 export const ProductSchema = z.object({
   id: uuidSchema,
   businessId: uuidSchema,
@@ -387,22 +478,62 @@ export const ProductSchema = z.object({
   imageUrl: urlSchema.nullable(),
   category: z.string().nullable(),
   isAvailable: z.boolean(),
+  productKind: ProductKindSchema,
+  optionGroups: z.array(ProductOptionGroupSchema),
+  specSchema: z.array(SpecFieldSchema),
+  specifications: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+  bundleConfig: BundleConfigSchema,
+  variants: z.array(ProductVariantSchema).optional(),
+  bundleItems: z.array(ProductBundleItemSchema).optional(),
   createdBy: uuidSchema.nullable(),
   createdAt: isoDateSchema,
   updatedAt: isoDateSchema,
 })
 
-export const CreateProductSchema = z.object({
+const CreateProductBodySchema = z.object({
   name: z.string().trim().min(1, "Requerido").max(120),
   description: z.string().trim().max(2000).optional(),
-  price: z.number().positive("Debe ser mayor a 0").multipleOf(0.01),
+  price: z.number().positive("Debe ser mayor a 0").multipleOf(0.01).optional(),
   stock: z.number().int().min(0).optional(),
   imageUrl: urlSchema.optional(),
-  category: z.string().trim().max(60).optional(),
+  category: z.string().trim().max(200).optional(),
+  marketplaceTagIds: z.array(z.string().uuid()).max(12).optional(),
   isAvailable: z.boolean().default(true),
+  productKind: ProductKindSchema.default("simple"),
+  optionGroups: z.array(ProductOptionGroupSchema).max(10).default([]),
+  specSchema: z.array(SpecFieldSchema).max(30).default([]),
+  specifications: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).default({}),
+  bundleConfig: BundleConfigSchema.default({ pricingMode: "fixed" }),
+  variants: z.array(ProductVariantInputSchema).max(MAX_PRODUCT_VARIANTS).optional(),
+  bundleItems: z.array(ProductBundleItemInputSchema).max(MAX_BUNDLE_ITEMS).optional(),
 })
 
-export const UpdateProductSchema = CreateProductSchema.partial()
+function refineProductCreateInput(
+  data: z.infer<typeof CreateProductBodySchema>,
+  ctx: z.RefinementCtx,
+) {
+  if (data.productKind === "variant" && (!data.variants || data.variants.length === 0)) {
+    if (data.price === undefined) {
+      ctx.addIssue({ code: "custom", message: "Indica precio o al menos una variante.", path: ["price"] })
+    }
+  }
+  if (data.productKind === "bundle" && (!data.bundleItems || data.bundleItems.length === 0)) {
+    ctx.addIssue({ code: "custom", message: "Un combo necesita al menos un componente.", path: ["bundleItems"] })
+  }
+  if (data.productKind === "simple" && data.price === undefined && !data.variants?.length) {
+    ctx.addIssue({ code: "custom", message: "El precio es requerido.", path: ["price"] })
+  }
+}
+
+export const CreateProductSchema = CreateProductBodySchema.superRefine(refineProductCreateInput)
+
+/** PATCH: campos opcionales; reglas de negocio extra en la API al combinar con el producto existente. */
+export const UpdateProductSchema = CreateProductBodySchema.partial()
+
+export const ValidateProductSelectionSchema = z.object({
+  options: VariantOptionsSchema.optional(),
+  bundleQuantities: z.record(z.string().uuid(), z.number().int().min(0).max(99)).optional(),
+})
 
 export const TranslationSchema = z.object({
   languageCode: languageCodeSchema,
@@ -419,7 +550,21 @@ export const CreateServiceSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   price: priceSchema.optional(),
   durationMinutes: z.number().int().positive().max(24 * 60).optional(),
-  category: z.string().trim().max(60).optional(),
+  category: z
+    .string()
+    .trim()
+    .max(2000)
+    .superRefine((value, ctx) => {
+      if (!value) return
+      const parts = parseBusinessCategories(value)
+      if (parts.length > MAX_BUSINESS_CATEGORIES) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Máximo ${MAX_BUSINESS_CATEGORIES} categorías`,
+        })
+      }
+    })
+    .optional(),
   imageUrl: urlSchema.optional(),
   isActive: z.boolean().default(true),
 })

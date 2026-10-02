@@ -27,6 +27,7 @@ import {
   syncOrderMessage,
 } from "../lib/order-sync.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
+import { validateChatOrderLines } from "../lib/validate-order-lines.js"
 import { emitToUser } from "../lib/realtime.js"
 import { supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
@@ -122,6 +123,10 @@ messageRoutes.post("/", async (c) => {
   if (sent.error || !sent.message) return dbFail(c, sent.error ?? { message: "No se pudo enviar" })
 
   if (parsed.data.order) {
+    const lineCheck = await validateChatOrderLines(opened.row.business_id, parsed.data.order.lines)
+    if (!lineCheck.ok) {
+      return fail(c, 400, "INVALID_ORDER", lineCheck.message)
+    }
     const { error: orderError } = await supabaseAdmin.from("orders").insert(
       buildOrderInsert({
         id: orderId,

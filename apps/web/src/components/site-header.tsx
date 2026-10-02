@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react"
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router"
+import { Link, useLocation } from "react-router"
+
+import { HeaderSearch } from "@/components/header-search"
 
 import { Menu01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -9,7 +10,6 @@ import { useTheme } from "@/components/theme-provider"
 import { useOrdersInboxStore } from "@/stores/orders-inbox-store"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@workspace/ui/components/button"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 import {
   Sheet,
   SheetContent,
@@ -35,24 +35,10 @@ export function SiteHeader() {
   const userId = useAuthStore((s) => s.session?.user.id)
   const ordersNavCount = useOrdersInboxStore((s) => s.navBadgeCount(userId))
   const { pathname } = useLocation()
-  const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const urlQuery = params.get("q") ?? ""
-  const [term, setTerm] = useState(urlQuery)
   const { theme, setTheme } = useTheme()
   const isDark =
     theme === "dark" ||
     (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
-
-  useEffect(() => {
-    setTerm(pathname === "/" ? urlQuery : "")
-  }, [pathname, urlQuery])
-
-  function search(event: FormEvent) {
-    event.preventDefault()
-    const next = term.trim()
-    navigate(next ? `/?q=${encodeURIComponent(next)}` : "/")
-  }
 
   const mark = initials(profile?.fullName ?? null, profile?.email)
 
@@ -64,19 +50,7 @@ export function SiteHeader() {
           <span className="hidden sm:inline">TicoApp</span>
         </Link>
 
-        <form onSubmit={search} className="min-w-0 flex-1 sm:max-w-md">
-          <InputGroup className="h-10 rounded-full">
-            <InputGroupAddon>
-              <SearchIcon />
-              <span className="sr-only">Buscar comercios</span>
-            </InputGroupAddon>
-            <InputGroupInput
-              value={term}
-              onChange={(event) => setTerm(event.target.value)}
-              placeholder="Buscar sodas, comida típica, comercios..."
-            />
-          </InputGroup>
-        </form>
+        <HeaderSearch />
 
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map((item) => {
@@ -227,15 +201,6 @@ function initials(name: string | null, email: string | undefined) {
   const source = (name?.trim() || email?.split("@")[0] || "C").replace(/[._-]+/g, " ")
   const parts = source.split(/\s+/).slice(0, 2)
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "C"
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none text-muted-foreground">
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
-      <path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 function HomeIcon() {

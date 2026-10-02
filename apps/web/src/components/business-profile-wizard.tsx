@@ -14,8 +14,10 @@ import {
   syncModulesForBusiness,
   type BusinessProfileFormState,
 } from "@/lib/business-profile"
+import { BUSINESS_CATEGORY_COMBO_OPTIONS, MAX_BUSINESS_CATEGORIES } from "@workspace/shared"
+
+import { CategoryMultiCombobox } from "@/components/category-multi-combobox"
 import {
-  ONBOARDING_CATEGORIES,
   scheduleOverlapMessage,
   schedulesToHours,
 } from "@/lib/business-onboarding"
@@ -130,8 +132,8 @@ export function BusinessProfileWizard({
   async function ensureBusinessId() {
     if (businessIdRef.current) return businessIdRef.current
     if (draftPromise.current) return draftPromise.current
-    if (!form.name.trim() || !form.category) {
-      throw new Error("Escribe el nombre y la categoría en el primer paso antes de subir fotos.")
+    if (!form.name.trim() || form.categories.length === 0) {
+      throw new Error("Escribe el nombre y al menos una categoría en el primer paso antes de subir fotos.")
     }
     const pendingCreate = (async () => {
       const body = payloadFromProfileForm(form, { preserveDraftStatus: mode === "edit" })
@@ -177,8 +179,8 @@ export function BusinessProfileWizard({
     const publishing = options?.publish ?? false
     const creating = !businessId
 
-    if (creating && (!form.name.trim() || !form.category)) {
-      const message = "Escribe al menos el nombre y la categoría para guardar."
+    if (creating && (!form.name.trim() || form.categories.length === 0)) {
+      const message = "Escribe al menos el nombre y una categoría para guardar."
       setError(message)
       toast.error("Datos incompletos", { description: message })
       return
@@ -407,22 +409,17 @@ export function BusinessProfileWizard({
               className="h-11 rounded-xl"
             />
           </Field>
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Categoría principal</span>
-            <div className="flex flex-wrap gap-2">
-              {ONBOARDING_CATEGORIES.map((category) => (
-                <Button
-                  key={category}
-                  type="button"
-                  variant={form.category === category ? "default" : "outline"}
-                  className="rounded-full"
-                  onClick={() => patchForm("category", category)}
-                >
-                  {category}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <Field label="Categorías del negocio">
+            <CategoryMultiCombobox
+              label="Categorías del negocio"
+              value={form.categories}
+              onChange={(categories) => patchForm("categories", categories)}
+              options={BUSINESS_CATEGORY_COMBO_OPTIONS}
+              allowCreate={false}
+              maxItems={MAX_BUSINESS_CATEGORIES}
+              hint="Elige una o más rubros (gimnasio, farmacia, licorera, surf, entretenimiento, etc.)."
+            />
+          </Field>
           <Field label="Descripción completa">
             <Textarea
               value={form.description}
