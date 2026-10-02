@@ -1,4 +1,4 @@
-import type { Business, BusinessModule, User } from "@workspace/shared"
+import type { Business, BusinessModule, DiscoverMatch, User } from "@workspace/shared"
 
 export type AccountBusiness = {
   id: string
@@ -34,6 +34,8 @@ export type BusinessSummary = {
   whatsappNumber: string | null
   bannerUrl: string | null
   distanceKm: number | null
+  slug?: string
+  matches?: DiscoverMatch[]
 }
 
 export type BusinessDetail = {

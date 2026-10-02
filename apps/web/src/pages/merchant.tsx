@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router"
 import type {
   Business,
   CreateMenuItemInput,
-  CreateProductInput,
   CreateServiceInput,
   MenuItem,
   Product,
@@ -11,6 +10,7 @@ import type {
 } from "@workspace/shared"
 
 import { BusinessProfileWizard } from "@/components/business-profile-wizard"
+import { ProductEditorDialog } from "@/components/product-editor-dialog"
 import { MerchantHomeDashboard } from "@/components/merchant-home-dashboard"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
@@ -20,7 +20,6 @@ import { TeamPermissions, TeamRoster, useBusinessTeam } from "@/components/team-
 import { getBusiness } from "@/services/businesses.service"
 import {
   createMenuItem,
-  createProduct,
   createService,
   deleteCatalogItem,
   listMenuItems,
@@ -177,13 +176,15 @@ export function MerchantBusinessPage() {
   const [listIds, setListIds] = useState<string[]>(["productos"])
   const [error, setError] = useState<string | null>(null)
   const [editor, setEditor] = useState<{ kind: CatalogKind; id: string; name: string; price: number | null } | null>(null)
+  const [productEditorOpen, setProductEditorOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [tab, setTab] = useState("ficha")
   const team = useBusinessTeam(id)
   const businessModules = useBusinessModules(id)
 
   function loadCatalog() {
     void Promise.all([
-      listProducts(id, { includeUnavailable: true }),
+      listProducts(id, { includeUnavailable: true, expand: true }),
       listServices(id).catch(() => [] as Service[]),
       listMenuItems(id).catch(() => [] as MenuItem[]),
     ]).then(([productRows, serviceRows, menuRows]) => {
@@ -328,19 +329,16 @@ export function MerchantBusinessPage() {
             ) : (
               <>
                 {businessModules.isEnabled("products") && (listIds.length === 0 || listIds.includes("productos")) ? (
-                  <CatalogForm
-                    placeholder="Producto"
-                    submitLabel="Agregar producto"
-                    onSubmit={async (name, price) => {
-                      try {
-                        await createProduct(id, { name, price: Number(price) } as CreateProductInput)
-                        setError(null)
-                        loadCatalog()
-                      } catch {
-                        setError("No se pudo agregar el producto. Revisa el precio.")
-                      }
+                  <Button
+                    type="button"
+                    className="w-fit rounded-full"
+                    onClick={() => {
+                      setEditingProduct(null)
+                      setProductEditorOpen(true)
                     }}
-                  />
+                  >
+                    Nuevo producto
+                  </Button>
                 ) : null}
                 {businessModules.isEnabled("services") && (listIds.length === 0 || listIds.includes("servicios")) ? (
                   <CatalogForm
@@ -388,8 +386,16 @@ export function MerchantBusinessPage() {
                           group: (item) => item.category,
                           render: (items) => (
                             <CatalogRows
-                              rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
-                              onEdit={(row) => setEditor({ kind: "products", ...row })}
+                              rows={items.map((item) => ({
+                                id: item.id,
+                                name: `${item.name}${item.productKind !== "simple" ? ` (${item.productKind})` : ""}`,
+                                price: item.price,
+                              }))}
+                              onEdit={(row) => {
+                                const full = products.find((p) => p.id === row.id) ?? null
+                                setEditingProduct(full)
+                                setProductEditorOpen(true)
+                              }}
                               onDelete={(itemId) => void removeItem("products", itemId)}
                             />
                           ),
@@ -443,6 +449,23 @@ export function MerchantBusinessPage() {
             {id ? <TeamPermissions businessId={id} team={team} /> : null}
           </TabsContent>
         </Tabs>
+
+        <ProductEditorDialog
+          businessId={id}
+          open={productEditorOpen}
+          onOpenChange={setProductEditorOpen}
+          product={editingProduct}
+          componentVariants={products.flatMap((product) =>
+            (product.variants ?? []).map((variant) => ({
+              id: variant.id,
+              label: `${product.name} · ${Object.values(variant.options).join(" ") || "default"} (₡${variant.price})`,
+            })),
+          )}
+          onSaved={() => {
+            setError(null)
+            loadCatalog()
+          }}
+        />
 
         <CatalogEditor
           item={editor}

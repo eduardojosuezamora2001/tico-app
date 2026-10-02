@@ -17,6 +17,8 @@ import type {
   NearbyBusiness,
   PermissionName,
   Product,
+  ProductBundleItem,
+  ProductVariant,
   Service,
   TeamMember,
   User,
@@ -200,7 +202,53 @@ export function toBusinessModule(row: Tables<"business_modules">): BusinessModul
   }
 }
 
-export function toProduct(row: Tables<"products">): Product {
+function parseJsonArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
+function parseJsonObject(value: unknown): Record<string, string | number | boolean> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  return value as Record<string, string | number | boolean>
+}
+
+export function toProductVariant(row: Tables<"product_variants">): ProductVariant {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    price: Number(row.price),
+    stock: row.stock,
+    imageUrl: row.image_url,
+    options: (row.options ?? {}) as Record<string, string>,
+    sku: row.sku,
+    sortOrder: row.sort_order,
+    isDefault: row.is_default,
+    isAvailable: row.is_available,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function toProductBundleItem(row: Tables<"product_bundle_items">): ProductBundleItem {
+  return {
+    id: row.id,
+    bundleProductId: row.bundle_product_id,
+    componentVariantId: row.component_variant_id,
+    defaultQty: row.default_qty,
+    minQty: row.min_qty,
+    maxQty: row.max_qty,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+  }
+}
+
+export function toProduct(
+  row: Tables<"products">,
+  extras?: {
+    variants?: ProductVariant[]
+    bundleItems?: ProductBundleItem[]
+    marketplaceTags?: Product["marketplaceTags"]
+  },
+): Product {
   return {
     id: row.id,
     businessId: row.business_id,
@@ -210,7 +258,15 @@ export function toProduct(row: Tables<"products">): Product {
     stock: row.stock,
     imageUrl: row.image_url,
     category: row.category,
+    marketplaceTags: extras?.marketplaceTags,
     isAvailable: row.is_available,
+    productKind: (row.product_kind ?? "simple") as Product["productKind"],
+    optionGroups: parseJsonArray(row.option_groups),
+    specSchema: parseJsonArray(row.spec_schema),
+    specifications: parseJsonObject(row.specifications),
+    bundleConfig: (row.bundle_config ?? { pricingMode: "fixed" }) as Product["bundleConfig"],
+    variants: extras?.variants,
+    bundleItems: extras?.bundleItems,
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

@@ -10,7 +10,10 @@ import { secureHeaders } from "hono/secure-headers"
 
 import { env, isProduction } from "./config/env.js"
 import { addressRoutes } from "./routes/addresses.js"
-import { menuRoutes, productRoutes, serviceRoutes } from "./routes/catalog.js"
+import { menuRoutes, serviceRoutes } from "./routes/catalog.js"
+import { catalogTagRoutes } from "./routes/catalog-tags.js"
+import { discoverRoutes } from "./routes/discover.js"
+import { productRoutes } from "./routes/products.js"
 import { businessRoutes } from "./routes/businesses.js"
 import { chainRoutes } from "./routes/chains.js"
 import { countryRoutes, divisionRoutes } from "./routes/countries.js"
@@ -51,6 +54,8 @@ app.route("/countries", countryRoutes)
 app.route("/administrative-divisions", divisionRoutes)
 app.route("/addresses", addressRoutes)
 app.route("/businesses", businessRoutes)
+app.route("/catalog", catalogTagRoutes)
+app.route("/discover", discoverRoutes)
 app.route("/chains", chainRoutes)
 app.route("/businesses/:id/team", teamRoutes)
 app.route("/businesses/:id/products", productRoutes)

@@ -86,12 +86,11 @@ export function HomePage() {
   }
 
   const filterKey = `${query}|${category.join(",")}|${selectedProvinces.join(",")}`
-  const [seenFilter, setSeenFilter] = useState(filterKey)
-  if (seenFilter !== filterKey) {
+
+  useEffect(() => {
     cursors.current = [null]
-    setSeenFilter(filterKey)
     setPage(0)
-  }
+  }, [filterKey])
 
   useEffect(() => {
     const cursor = page === 0 ? undefined : cursors.current[page]
@@ -200,7 +199,9 @@ export function HomePage() {
               {
                 id: "todas",
                 label: "Todos",
-                empty: "Todavía no hay comercios publicados con ese criterio.",
+                empty: query
+                  ? `No hay locales que coincidan con “${query}”.`
+                  : "Todavía no hay comercios publicados con ese criterio.",
                 items,
                 text: () => "",
                 group: () => null,
@@ -209,7 +210,9 @@ export function HomePage() {
               ...categories.map((item) => ({
                 id: item.id,
                 label: item.label,
-                empty: "Todavía no hay comercios publicados con ese criterio.",
+                empty: query
+                  ? `No hay locales que coincidan con “${query}”.`
+                  : "Todavía no hay comercios publicados con ese criterio.",
                 items,
                 text: () => "",
                 group: () => null,
@@ -298,6 +301,11 @@ function BusinessGrid({ items }: { items: BusinessSummary[] }) {
                   {item.address ?? "Costa Rica"}
                   {item.distanceKm !== null ? ` · ${item.distanceKm} km` : ""}
                 </p>
+                {item.matches && item.matches.length > 0 ? (
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    Coincide: {item.matches.map((match) => match.label).join(", ")}
+                  </p>
+                ) : null}
                 {item.description ? <p className="line-clamp-2 text-sm">{item.description}</p> : null}
               </div>
             </Link>

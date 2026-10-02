@@ -795,6 +795,122 @@ export type Database = {
           },
         ]
       }
+      catalog_tags: {
+        Row: {
+          id: string
+          scope: string
+          business_id: string | null
+          parent_id: string | null
+          slug: string
+          name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          scope: string
+          business_id?: string | null
+          parent_id?: string | null
+          slug: string
+          name: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          scope?: string
+          business_id?: string | null
+          parent_id?: string | null
+          slug?: string
+          name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_tags_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_tags_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_tag_synonyms: {
+        Row: {
+          id: string
+          tag_id: string
+          term: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tag_id: string
+          term: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tag_id?: string
+          term?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_tag_synonyms_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_catalog_tags: {
+        Row: {
+          product_id: string
+          tag_id: string
+          created_at: string
+        }
+        Insert: {
+          product_id: string
+          tag_id: string
+          created_at?: string
+        }
+        Update: {
+          product_id?: string
+          tag_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_catalog_tags_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_catalog_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           business_id: string
@@ -1140,9 +1256,111 @@ export type Database = {
           },
         ]
       }
+      product_bundle_items: {
+        Row: {
+          bundle_product_id: string
+          component_variant_id: string
+          created_at: string
+          default_qty: number
+          id: string
+          max_qty: number
+          min_qty: number
+          sort_order: number
+        }
+        Insert: {
+          bundle_product_id: string
+          component_variant_id: string
+          created_at?: string
+          default_qty?: number
+          id?: string
+          max_qty?: number
+          min_qty?: number
+          sort_order?: number
+        }
+        Update: {
+          bundle_product_id?: string
+          component_variant_id?: string
+          created_at?: string
+          default_qty?: number
+          id?: string
+          max_qty?: number
+          min_qty?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_bundle_items_bundle_product_id_fkey"
+            columns: ["bundle_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_bundle_items_component_variant_id_fkey"
+            columns: ["component_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          is_available: boolean
+          is_default: boolean
+          options: Json
+          price: number
+          product_id: string
+          sku: string | null
+          sort_order: number
+          stock: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          is_default?: boolean
+          options?: Json
+          price: number
+          product_id: string
+          sku?: string | null
+          sort_order?: number
+          stock?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          is_default?: boolean
+          options?: Json
+          price?: number
+          product_id?: string
+          sku?: string | null
+          sort_order?: number
+          stock?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           business_id: string
+          bundle_config: Json
           category: string | null
           created_at: string
           created_by: string | null
@@ -1151,12 +1369,17 @@ export type Database = {
           image_url: string | null
           is_available: boolean
           name: string
+          option_groups: Json
           price: number
+          product_kind: string
+          spec_schema: Json
+          specifications: Json
           stock: number | null
           updated_at: string
         }
         Insert: {
           business_id: string
+          bundle_config?: Json
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -1165,12 +1388,17 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean
           name: string
+          option_groups?: Json
           price: number
+          product_kind?: string
+          spec_schema?: Json
+          specifications?: Json
           stock?: number | null
           updated_at?: string
         }
         Update: {
           business_id?: string
+          bundle_config?: Json
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -1179,7 +1407,11 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean
           name?: string
+          option_groups?: Json
           price?: number
+          product_kind?: string
+          spec_schema?: Json
+          specifications?: Json
           stock?: number | null
           updated_at?: string
         }
@@ -1359,6 +1591,50 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           distance_m: number
+        }[]
+      }
+      discover_businesses: {
+        Args: {
+          q?: string | null
+          marketplace_tag_slugs?: string[] | null
+          categories?: string[] | null
+          lat?: number | null
+          lng?: number | null
+          radius_km?: number | null
+          lim?: number | null
+          cursor_distance?: number | null
+          cursor_name?: string | null
+          cursor_id?: string | null
+          provinces?: string[] | null
+          catalog_kind?: string | null
+          catalog_label?: string | null
+        }
+        Returns: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          category: string
+          address: string | null
+          whatsapp_number: string | null
+          logo_url: string | null
+          banner_url: string | null
+          latitude: number | null
+          longitude: number | null
+          distance_m: number | null
+          matches: Json
+        }[]
+      }
+      suggest_catalog: {
+        Args: {
+          q: string
+          lim?: number
+        }
+        Returns: {
+          kind: string
+          id: string
+          label: string
+          hint: string | null
         }[]
       }
       search_businesses: {

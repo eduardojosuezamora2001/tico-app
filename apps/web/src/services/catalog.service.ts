@@ -1,4 +1,5 @@
 import type {
+  MarketplaceTag,
   CreateMenuItemInput,
   CreateProductInput,
   CreateServiceInput,
@@ -13,11 +14,32 @@ import type {
 import { deleteData, getData, patchData, postData } from "@/services/http"
 import type { CatalogKind } from "@/services/types"
 
+export async function listMarketplaceTags() {
+  return getData<MarketplaceTag[]>("/catalog/marketplace-tags")
+}
+
 export async function listProducts(
   businessId: string,
-  options?: { includeUnavailable?: boolean },
+  options?: { includeUnavailable?: boolean; expand?: boolean },
 ) {
-  return getData<Product[]>(`/businesses/${businessId}/products`, options)
+  return getData<Product[]>(`/businesses/${businessId}/products`, {
+    includeUnavailable: options?.includeUnavailable,
+    expand: options?.expand ? "variants,bundle" : undefined,
+  })
+}
+
+export async function validateProductSelection(
+  businessId: string,
+  productId: string,
+  body: { options?: Record<string, string>; bundleQuantities?: Record<string, number> },
+) {
+  return postData<{
+    variantId: string
+    price: number
+    stock: number | null
+    label: string
+    bundleLines?: { variantId: string; quantity: number }[]
+  }>(`/businesses/${businessId}/products/${productId}/validate-selection`, body)
 }
 
 export async function createProduct(businessId: string, input: CreateProductInput) {
