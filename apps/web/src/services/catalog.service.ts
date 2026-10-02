@@ -1,4 +1,5 @@
 import type {
+  MarketplaceBusinessCategory,
   MarketplaceTag,
   CreateMenuItemInput,
   CreateProductInput,
@@ -16,6 +17,10 @@ import type { CatalogKind } from "@/services/types"
 
 export async function listMarketplaceTags() {
   return getData<MarketplaceTag[]>("/catalog/marketplace-tags")
+}
+
+export async function listMarketplaceBusinessCategories() {
+  return getData<MarketplaceBusinessCategory[]>("/catalog/business-categories")
 }
 
 export async function listProducts(
