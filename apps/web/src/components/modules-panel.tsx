@@ -226,6 +226,7 @@ export function ModulesPanel({
   loading,
   error,
   onReload,
+  focus,
 }: {
   businessId: string
   modules: Record<ModuleName, boolean>
@@ -233,9 +234,15 @@ export function ModulesPanel({
   loading: boolean
   error: string | null
   onReload: () => void
+  focus?: { id: ModuleName | null; token: number } | null
 }) {
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<ModuleName | null>(null)
+
+  useEffect(() => {
+    if (!focus) return
+    setSelected(focus.id)
+  }, [focus])
 
   const filtered = filterModuleCatalog(query)
   const selectedEntry = selected ? moduleCatalogEntry(selected) : null
