@@ -17,6 +17,7 @@ import type {
   PERMISSIONS,
   ROLES,
 } from "./constants.js"
+import type { BundleConfig, ProductKind, ProductOptionGroup, SpecField } from "./product-catalog.js"
 
 /** Fecha/hora serializada en formato ISO 8601 (p. ej. `2026-09-24T14:00:00.000Z`). */
 export type ISODateString = string
@@ -247,6 +248,40 @@ export interface Permission {
 // Modulo: Productos
 // --------------------------------------------------------------------------
 
+export type { ProductKind }
+
+export interface ProductVariant {
+  id: string
+  productId: string
+  price: number
+  stock: number | null
+  imageUrl: string | null
+  options: Record<string, string>
+  sku: string | null
+  sortOrder: number
+  isDefault: boolean
+  isAvailable: boolean
+  createdAt: ISODateString
+  updatedAt: ISODateString
+}
+
+export interface ProductBundleItem {
+  id: string
+  bundleProductId: string
+  componentVariantId: string
+  defaultQty: number
+  minQty: number
+  maxQty: number
+  sortOrder: number
+  createdAt: ISODateString
+}
+
+export interface MarketplaceTag {
+  id: string
+  slug: string
+  name: string
+}
+
 export interface Product {
   id: string
   businessId: string
@@ -256,7 +291,15 @@ export interface Product {
   stock: number | null
   imageUrl: string | null
   category: string | null
+  marketplaceTags?: MarketplaceTag[]
   isAvailable: boolean
+  productKind: ProductKind
+  optionGroups: ProductOptionGroup[]
+  specSchema: SpecField[]
+  specifications: Record<string, string | number | boolean>
+  bundleConfig: BundleConfig
+  variants?: ProductVariant[]
+  bundleItems?: ProductBundleItem[]
   createdBy: string | null
   createdAt: ISODateString
   updatedAt: ISODateString

@@ -15,13 +15,14 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/comp
 
 import { FilterCombobox } from "@/components/list-filter"
 
+import { OfferProductCard, type ProductOffer } from "@/components/offer-product-card"
 import { sendMessage } from "@/services/messages.service"
 import { cartTotal, useCartStore, type CartLine } from "@/stores/cart-store"
 import { useAuthStore } from "@/stores/auth-store"
 
 const emptyLines: CartLine[] = []
 
-export type Offer = {
+export type Offer = ProductOffer | {
   id: string
   name: string
   description: string | null
@@ -29,6 +30,10 @@ export type Offer = {
   stock: number | null
   imageUrl: string | null
   category: string | null
+}
+
+function isProductOffer(offer: Offer): offer is ProductOffer {
+  return "productKind" in offer && typeof offer.productKind === "string"
 }
 
 export function colones(value: number) {
@@ -125,79 +130,123 @@ export function OrderBoard({
         </Empty>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
-          {visible.map((offer) => {
-            const line = lines.find((item) => item.productId === offer.id)
-            const inCart = line?.quantity ?? 0
-            const soldOut = offer.stock === 0
-            const capped = offer.stock !== null && inCart >= offer.stock
-            return (
-              <li key={offer.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_30px_-18px_oklch(0.2_0.04_275)]">
-                <div className={`relative bg-muted ${offer.imageUrl ? "aspect-[16/9]" : "h-24"}`}>
-                  {offer.imageUrl ? (
-                    <img src={offer.imageUrl} alt="" className="size-full object-cover" />
-                  ) : (
-                    <div className="grid size-full place-items-center bg-[linear-gradient(145deg,var(--muted),color-mix(in_oklch,var(--primary)_22%,var(--card)))]">
-                      <span className="text-2xl font-semibold text-primary/80">{offer.name.slice(0, 1)}</span>
-                    </div>
-                  )}
-                  {offer.category ? (
-                    <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground">
-                      {offer.category}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="space-y-3 p-4">
-                  <div>
-                    <h3 className="font-medium">{offer.name}</h3>
-                    {offer.description ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{offer.description}</p>
-                    ) : null}
-                  </div>
-                  <p className="text-lg font-semibold text-primary">{colones(offer.price)}</p>
-                  {canOrder ? (
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      {inCart > 0 ? (
-                        <div className="flex items-center gap-2 rounded-full bg-muted px-2 py-1 text-xs">
-                          <span className="pl-1 text-muted-foreground">En el carrito: {inCart}</span>
-                          <button
-                            type="button"
-                            className="grid size-7 place-items-center rounded-full bg-background text-base"
-                            aria-label={`Quitar uno de ${offer.name}`}
-                            onClick={() => setQuantity(business.id, offer.id, inCart - 1, offer.stock)}
-                          >
-                            −
-                          </button>
-                          <button
-                            type="button"
-                            className="grid size-7 place-items-center rounded-full bg-background text-base"
-                            aria-label={`Agregar otro ${offer.name}`}
-                            disabled={capped}
-                            onClick={() => setQuantity(business.id, offer.id, inCart + 1, offer.stock)}
-                          >
-                            +
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{soldOut ? "Agotado" : "Disponible en este local"}</span>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="rounded-full px-4"
-                        disabled={soldOut || capped}
-                        onClick={() => add(business.id, offer)}
-                      >
-                        {soldOut ? "Agotado" : inCart > 0 ? "Agregar otro" : "Agregar"}
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
+          {visible.map((offer) =>
+            isProductOffer(offer) ? (
+              <OfferProductCard key={offer.id} business={business} offer={offer} canOrder={canOrder} />
+            ) : (
+              <SimpleOfferCard
+                key={offer.id}
+                business={business}
+                offer={offer}
+                canOrder={canOrder}
+                lines={lines}
+                add={add}
+                setQuantity={setQuantity}
+              />
+            ),
+          )}
         </ul>
       )}
     </div>
+  )
+}
+
+function SimpleOfferCard({
+  business,
+  offer,
+  canOrder,
+  lines,
+  add,
+  setQuantity,
+}: {
+  business: Business
+  offer: Extract<Offer, { productKind?: never }>
+  canOrder: boolean
+  lines: CartLine[]
+  add: ReturnType<typeof useCartStore.getState>["add"]
+  setQuantity: ReturnType<typeof useCartStore.getState>["setQuantity"]
+}) {
+  const line = lines.find((item) => item.lineKey === offer.id)
+  const inCart = line?.quantity ?? 0
+  const soldOut = offer.stock === 0
+  const capped = offer.stock !== null && inCart >= offer.stock
+  return (
+    <li className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_30px_-18px_oklch(0.2_0.04_275)]">
+      <div className={`relative bg-muted ${offer.imageUrl ? "aspect-[16/9]" : "h-24"}`}>
+        {offer.imageUrl ? (
+          <img src={offer.imageUrl} alt="" className="size-full object-cover" />
+        ) : (
+          <div className="grid size-full place-items-center bg-[linear-gradient(145deg,var(--muted),color-mix(in_oklch,var(--primary)_22%,var(--card)))]">
+            <span className="text-2xl font-semibold text-primary/80">{offer.name.slice(0, 1)}</span>
+          </div>
+        )}
+        {offer.category ? (
+          <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground">
+            {offer.category}
+          </span>
+        ) : null}
+      </div>
+      <div className="space-y-3 p-4">
+        <div>
+          <h3 className="font-medium">{offer.name}</h3>
+          {offer.description ? (
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{offer.description}</p>
+          ) : null}
+        </div>
+        <p className="text-lg font-semibold text-primary">{colones(offer.price)}</p>
+        {canOrder ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {inCart > 0 ? (
+              <div className="flex items-center gap-2 rounded-full bg-muted px-2 py-1 text-xs">
+                <span className="pl-1 text-muted-foreground">En el carrito: {inCart}</span>
+                <button
+                  type="button"
+                  className="grid size-7 place-items-center rounded-full bg-background text-base"
+                  aria-label={`Quitar uno de ${offer.name}`}
+                  onClick={() => setQuantity(business.id, offer.id, inCart - 1, offer.stock)}
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className="grid size-7 place-items-center rounded-full bg-background text-base"
+                  aria-label={`Agregar otro ${offer.name}`}
+                  disabled={capped}
+                  onClick={() =>
+                    add(business.id, {
+                      productId: offer.id,
+                      name: offer.name,
+                      price: offer.price,
+                      stock: offer.stock,
+                    })
+                  }
+                >
+                  +
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">{soldOut ? "Agotado" : "Disponible en este local"}</span>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-full px-4"
+              disabled={soldOut || capped}
+              onClick={() =>
+                add(business.id, {
+                  productId: offer.id,
+                  name: offer.name,
+                  price: offer.price,
+                  stock: offer.stock,
+                })
+              }
+            >
+              {soldOut ? "Agotado" : inCart > 0 ? "Agregar otro" : "Agregar"}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </li>
   )
 }
 
@@ -222,9 +271,11 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
           businessName: business.name,
           lines: lines.map((line) => ({
             productId: line.productId,
+            variantId: line.variantId ?? null,
             name: line.name,
             quantity: line.quantity,
             price: line.price,
+            selection: line.selection,
           })),
         },
       })
@@ -285,7 +336,7 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
 
           <ul className="flex max-h-60 flex-col gap-3 overflow-y-auto border-y border-border py-4">
             {lines.map((line) => (
-              <li key={line.productId} className="flex items-start justify-between gap-3 text-sm">
+              <li key={line.lineKey} className="flex items-start justify-between gap-3 text-sm">
                 <div className="min-w-0">
                   <p className="font-medium">
                     {line.quantity}x {line.name}

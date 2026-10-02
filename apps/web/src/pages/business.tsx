@@ -55,7 +55,9 @@ export function BusinessPage() {
         const businessId = next.business.id
         const [productRows, serviceRows, menuRows, eventRows, galleryRows, hourRows] =
           await Promise.all([
-            enabled.has("products") ? listProducts(businessId) : Promise.resolve([] as Product[]),
+            enabled.has("products")
+              ? listProducts(businessId, { expand: true })
+              : Promise.resolve([] as Product[]),
             enabled.has("services") ? listServices(businessId) : Promise.resolve([] as Service[]),
             enabled.has("menu") ? listMenuItems(businessId) : Promise.resolve([] as MenuItem[]),
             listBusinessEvents(businessId),
@@ -92,6 +94,11 @@ export function BusinessPage() {
     stock: item.stock,
     imageUrl: item.imageUrl,
     category: item.category,
+    productKind: item.productKind ?? "simple",
+    optionGroups: item.optionGroups ?? [],
+    specifications: item.specifications ?? {},
+    variants: item.variants ?? [],
+    bundleItems: item.bundleItems ?? [],
   }))
   const menuOffers: Offer[] = menu.map((item) => ({
     id: item.id,

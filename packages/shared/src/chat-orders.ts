@@ -5,11 +5,18 @@ export const CHAT_ORDER_PREFIX = "[[tico-order:v1]]"
 export type ChatOrderStatus = "pending" | "accepted" | "denied"
 export type ChatOrderFulfillmentStage = "preparing" | "ready" | "delivered"
 
+export type ChatOrderLineSelection = {
+  options?: Record<string, string>
+  bundleLines?: { variantId: string; quantity: number; label?: string }[]
+}
+
 export type ChatOrderLine = {
   productId: string
+  variantId?: string | null
   name: string
   quantity: number
   price: number
+  selection?: ChatOrderLineSelection
 }
 
 export type ChatOrderPayload = {
@@ -23,11 +30,26 @@ export type ChatOrderPayload = {
   stageUpdatedAt?: string
 }
 
+export const ChatOrderLineSelectionSchema = z.object({
+  options: z.record(z.string(), z.string()).optional(),
+  bundleLines: z
+    .array(
+      z.object({
+        variantId: z.string().uuid(),
+        quantity: z.number().int().positive().max(99),
+        label: z.string().max(120).optional(),
+      }),
+    )
+    .optional(),
+})
+
 export const ChatOrderLineSchema = z.object({
   productId: z.string().min(1),
+  variantId: z.string().uuid().nullable().optional(),
   name: z.string().trim().min(1).max(160),
   quantity: z.number().int().positive().max(99),
   price: z.number().nonnegative(),
+  selection: ChatOrderLineSelectionSchema.optional(),
 })
 
 export const SendChatOrderSchema = z.object({
@@ -79,9 +101,11 @@ export function parseMessageContent(text: string): ParsedMessageContent {
 export function createChatOrderPayload(input: SendChatOrderInput, orderId: string): ChatOrderPayload {
   const lines = input.lines.map((line) => ({
     productId: line.productId,
+    variantId: line.variantId ?? null,
     name: line.name,
     quantity: line.quantity,
     price: line.price,
+    selection: line.selection,
   }))
   return {
     orderId,
