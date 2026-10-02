@@ -32,6 +32,7 @@ export const BUSINESS_CATEGORY_OPTIONS = [
   "Deportes y fitness",
   "Bicicletas",
   "Entretenimiento",
+  "Videojuegos",
   "Cine y eventos",
   "Apuestas y lotería",
   "Casino",

@@ -16,13 +16,21 @@ export function BuscarPage() {
   const [params] = useSearchParams()
   const kind = params.get("kind")
   const label = params.get("label")?.trim() ?? ""
-  const offerKind = kind === "product" || kind === "service" || kind === "menu" ? kind : null
+  const tag = params.get("tag")?.trim() ?? ""
+  const bcat = params.get("bcat")?.trim() ?? ""
+  const offerKind = kind === "product" || kind === "service" || kind === "menu" ? kind : tag ? "product" : null
   const [items, setItems] = useState<BusinessSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!offerKind || !label) {
+    if (!offerKind && !bcat && !tag) {
+      setItems([])
+      setLoading(false)
+      setError(null)
+      return
+    }
+    if (offerKind && !label && !tag) {
       setItems([])
       setLoading(false)
       setError(null)
@@ -30,8 +38,10 @@ export function BuscarPage() {
     }
     setLoading(true)
     void searchBusinesses({
-      catalogKind: offerKind,
-      catalogLabel: label,
+      catalogKind: label && offerKind ? offerKind : undefined,
+      catalogLabel: label || undefined,
+      tag: tag || undefined,
+      bcat: bcat || undefined,
       limit: 24,
     })
       .then((response) => {
@@ -40,10 +50,15 @@ export function BuscarPage() {
       })
       .catch(() => setError("No se pudieron cargar los locales."))
       .finally(() => setLoading(false))
-  }, [offerKind, label])
+  }, [offerKind, label, tag, bcat])
 
-  const title =
-    offerKind && label ? `${kindCopy[offerKind]} “${label}”` : "Búsqueda"
+  const title = bcat
+    ? `Negocios en “${label || bcat.replace(/-/g, " ")}”`
+    : tag
+      ? `Locales con productos en “${label || tag.replace(/-/g, " ")}”`
+      : offerKind && label
+        ? `${kindCopy[offerKind]} “${label}”`
+        : "Búsqueda"
 
   return (
     <div className="min-h-svh bg-background text-foreground">

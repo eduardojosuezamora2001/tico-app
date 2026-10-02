@@ -23,6 +23,10 @@ import {
   addressPatchFromInput,
 } from "../lib/address-input.js"
 import {
+  expandBusinessCategoryLabels,
+  expandMarketplaceTagSlugs,
+} from "../lib/marketplace-taxonomy.js"
+import {
   ensureCountryExists,
   validateDivisionChain,
 } from "../lib/address-validation.js"
@@ -107,6 +111,7 @@ businessRoutes.get("/", async (c) => {
   const parsed = SearchBusinessesSchema.safeParse({
     q: c.req.query("q") || undefined,
     categories: csv(c.req.query("category"), 60, 12),
+    businessCategorySlugs: csv(c.req.query("bcat"), 80, 8),
     marketplaceTagSlugs: csv(c.req.query("tag"), 80, 12),
     latitude: c.req.query("latitude") ? Number(c.req.query("latitude")) : undefined,
     longitude: c.req.query("longitude") ? Number(c.req.query("longitude")) : undefined,
@@ -122,10 +127,29 @@ businessRoutes.get("/", async (c) => {
   const cursor = decodeCursor(parsed.data.cursor)
   if (cursor === null) return fail(c, 400, "VALIDATION", "Cursor inválido")
 
+  let categories = parsed.data.categories ?? []
+  if (parsed.data.businessCategorySlugs?.length) {
+    try {
+      const expanded = await expandBusinessCategoryLabels(parsed.data.businessCategorySlugs)
+      categories = [...new Set([...categories, ...expanded])]
+    } catch (error) {
+      return dbFail(c, error)
+    }
+  }
+
+  let marketplaceTagSlugs = parsed.data.marketplaceTagSlugs ?? []
+  if (marketplaceTagSlugs.length > 0) {
+    try {
+      marketplaceTagSlugs = await expandMarketplaceTagSlugs(marketplaceTagSlugs)
+    } catch (error) {
+      return dbFail(c, error)
+    }
+  }
+
   const { data, error } = await supabaseAdmin.rpc("discover_businesses", {
     q: parsed.data.q ?? null,
-    marketplace_tag_slugs: parsed.data.marketplaceTagSlugs ?? null,
-    categories: parsed.data.categories ?? null,
+    marketplace_tag_slugs: marketplaceTagSlugs.length > 0 ? marketplaceTagSlugs : null,
+    categories: categories.length > 0 ? categories : null,
     lat: parsed.data.latitude ?? null,
     lng: parsed.data.longitude ?? null,
     radius_km: parsed.data.radiusKm,

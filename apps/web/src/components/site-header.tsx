@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router"
 
+import { HeaderCategoryExplorerDesktop, HeaderCategoryExplorerMobile } from "@/components/header-category-explorer"
 import { HeaderSearch } from "@/components/header-search"
 
 import { Menu01Icon } from "@hugeicons/core-free-icons"
@@ -24,7 +25,6 @@ const links = [
   { to: "/", label: "Inicio", icon: HomeIcon, match: (path: string) => path === "/" },
   { to: "/mi-negocio", label: "Para negocios", icon: StoreIcon, match: (path: string) => path.startsWith("/mi-negocio") },
   { to: "/mensajes", label: "Mensajes", icon: MessageIcon, match: (path: string) => path.startsWith("/mensajes") },
-  { to: "/pedidos", label: "Pedidos", icon: BagIcon, match: (path: string) => path.startsWith("/pedidos") },
 ] as const
 
 export function SiteHeader() {
@@ -50,6 +50,8 @@ export function SiteHeader() {
           <span className="hidden sm:inline">TicoApp</span>
         </Link>
 
+        <HeaderCategoryExplorerMobile />
+        <HeaderCategoryExplorerDesktop />
         <HeaderSearch />
 
         <nav className="hidden items-center gap-1 lg:flex">
@@ -67,9 +69,6 @@ export function SiteHeader() {
               >
                 <item.icon />
                 {item.label}
-                {item.to === "/pedidos" && signedIn ? (
-                  <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
-                ) : null}
               </Link>
             )
           })}
@@ -94,12 +93,16 @@ export function SiteHeader() {
                   <Button key={item.to} variant="ghost" className="justify-start" render={<Link to={href} />}>
                     <item.icon />
                     {item.label}
-                    {item.to === "/pedidos" && signedIn ? (
-                      <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
-                    ) : null}
                   </Button>
                 )
               })}
+              {signedIn ? (
+                <Button variant="ghost" className="justify-start" render={<Link to="/pedidos" />}>
+                  <BagIcon />
+                  Pedidos
+                  <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
+                </Button>
+              ) : null}
             </nav>
             <SheetFooter>
               <Button variant="outline" onClick={() => setTheme(isDark ? "light" : "dark")}>
@@ -146,9 +149,13 @@ export function SiteHeader() {
                 <span className="hidden text-sm md:inline">Mi cuenta</span>
                 <ChevronIcon />
               </summary>
-              <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-border bg-popover p-1 text-sm shadow-[0_16px_40px_-24px_oklch(0.2_0.04_275)]">
+              <div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-popover p-1 text-sm shadow-[0_16px_40px_-24px_oklch(0.2_0.04_275)]">
                 <Link className="block rounded-lg px-3 py-2 hover:bg-muted" to="/cuenta">
                   Mi cuenta
+                </Link>
+                <Link className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 hover:bg-muted" to="/pedidos">
+                  <span>Pedidos</span>
+                  <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
                 </Link>
                 <button
                   type="button"
@@ -193,7 +200,7 @@ export function SiteHeader() {
 }
 
 function authHref(to: string, signedIn: boolean) {
-  if (!signedIn && (to === "/mensajes" || to === "/pedidos")) return "/login"
+  if (!signedIn && to === "/mensajes") return "/login"
   return to
 }
 

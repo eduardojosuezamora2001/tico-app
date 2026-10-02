@@ -338,6 +338,7 @@ export const CatalogOfferKindSchema = z.enum(["product", "service", "menu"])
 export const SearchBusinessesSchema = z.object({
   q: z.string().trim().max(120).optional(),
   categories: z.array(z.string().trim().min(1).max(60)).max(12).optional(),
+  businessCategorySlugs: z.array(marketplaceSlugSchema).max(8).optional(),
   marketplaceTagSlugs: z.array(marketplaceSlugSchema).max(12).optional(),
   latitude: latitudeSchema.optional(),
   longitude: longitudeSchema.optional(),

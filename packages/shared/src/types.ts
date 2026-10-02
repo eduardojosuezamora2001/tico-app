@@ -280,6 +280,17 @@ export interface MarketplaceTag {
   id: string
   slug: string
   name: string
+  parentId?: string | null
+  sortOrder?: number
+}
+
+export interface MarketplaceBusinessCategory {
+  id: string
+  slug: string
+  name: string
+  legacyLabel: string
+  parentId?: string | null
+  sortOrder?: number
 }
 
 export interface Product {
