@@ -247,6 +247,7 @@ export function toProduct(
     variants?: ProductVariant[]
     bundleItems?: ProductBundleItem[]
     marketplaceTags?: Product["marketplaceTags"]
+    merchantTags?: Product["merchantTags"]
   },
 ): Product {
   return {
@@ -257,8 +258,8 @@ export function toProduct(
     price: Number(row.price),
     stock: row.stock,
     imageUrl: row.image_url,
-    category: row.category,
     marketplaceTags: extras?.marketplaceTags,
+    merchantTags: extras?.merchantTags,
     isAvailable: row.is_available,
     productKind: (row.product_kind ?? "simple") as Product["productKind"],
     optionGroups: parseJsonArray(row.option_groups),

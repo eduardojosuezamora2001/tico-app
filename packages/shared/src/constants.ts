@@ -182,6 +182,62 @@ export const PERMISSIONS = {
 
 export const PERMISSION_NAMES = PERMISSION_DEFINITIONS.map((p) => p.name)
 
+/**
+ * Techo de permisos por rol de negocio (`business_users.role`).
+ * El dueño no usa este mapa: tiene acceso implícito vía `is_business_owner`.
+ * Invariante: employee ⊆ manager (todo permiso de empleado es también asignable a encargado).
+ */
+const employeeModulePermissions = Object.values(MODULES).flatMap((module) =>
+  MODULE_ACTIONS.map((action) => `${module}:${action}`),
+)
+
+const employeeExtraPermissions = [
+  PERMISSIONS.CHAT_VIEW_ALL,
+  PERMISSIONS.GALLERY_UPLOAD,
+  PERMISSIONS.REVIEWS_RESPOND,
+] as const
+
+export const BUSINESS_ROLE_PERMISSION_CEILINGS = {
+  [BUSINESS_ROLES.MANAGER]: [...PERMISSION_NAMES],
+  [BUSINESS_ROLES.EMPLOYEE]: [...employeeModulePermissions, ...employeeExtraPermissions],
+} as const
+
+export type AssignableBusinessRole =
+  | typeof BUSINESS_ROLES.MANAGER
+  | typeof BUSINESS_ROLES.EMPLOYEE
+
+export function permissionCeilingForRole(role: AssignableBusinessRole): readonly string[] {
+  return BUSINESS_ROLE_PERMISSION_CEILINGS[role]
+}
+
+export function isPermissionAllowedForRole(role: AssignableBusinessRole, permission: string) {
+  return permissionCeilingForRole(role).includes(permission)
+}
+
+/** Recorta permisos al techo del rol (y deduplica). */
+export function clampPermissionsToRoleCeiling(
+  role: AssignableBusinessRole,
+  permissions: readonly string[],
+): string[] {
+  const allowed = new Set(permissionCeilingForRole(role))
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const name of permissions) {
+    if (!allowed.has(name) || seen.has(name)) continue
+    seen.add(name)
+    out.push(name)
+  }
+  return out
+}
+
+export function permissionsExceedRoleCeiling(
+  role: AssignableBusinessRole,
+  permissions: readonly string[],
+) {
+  const allowed = new Set(permissionCeilingForRole(role))
+  return permissions.some((name) => !allowed.has(name))
+}
+
 // --------------------------------------------------------------------------
 // Idiomas
 // --------------------------------------------------------------------------

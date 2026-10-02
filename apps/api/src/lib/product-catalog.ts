@@ -17,7 +17,6 @@ export function productRowPatch(input: Record<string, unknown>) {
   const patch: Record<string, unknown> = {}
   if (input.name !== undefined) patch.name = input.name
   if (input.description !== undefined) patch.description = input.description ?? null
-  if (input.category !== undefined) patch.category = input.category ?? null
   if (input.isAvailable !== undefined) patch.is_available = input.isAvailable
   if (input.productKind !== undefined) patch.product_kind = input.productKind
   if (input.optionGroups !== undefined) patch.option_groups = input.optionGroups

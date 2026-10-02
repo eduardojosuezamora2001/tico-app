@@ -1,22 +1,26 @@
-import { useEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type { Business, MenuItem, ModuleName, Product, Service } from "@workspace/shared"
+import type { Business, MarketplaceTag, MenuItem, ModuleName, Product, Service } from "@workspace/shared"
 
 import { BusinessProfileWizard } from "@/components/business-profile-wizard"
 import { ProductEditorDialog } from "@/components/product-editor-dialog"
 import { MerchantHomeDashboard } from "@/components/merchant-home-dashboard"
-import { MerchantCatalogStudio } from "@/components/merchant-catalog-studio"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
 import { ModulesPanel, useBusinessModules } from "@/components/modules-panel"
-import { TeamPermissions, TeamRoster, useBusinessTeam } from "@/components/team-panel"
+import { TeamRoster, useBusinessTeam } from "@/components/team-panel"
 import { getBusiness } from "@/services/businesses.service"
-import { listMenuItems, listProducts, listServices, updateCatalogItem } from "@/services/catalog.service"
+import { listMarketplaceTags, listMenuItems, listProducts, listServices, updateCatalogItem } from "@/services/catalog.service"
 import { listChains } from "@/services/chains.service"
 import { getMe } from "@/services/me.service"
 import type { BusinessChain } from "@workspace/shared"
 import type { CatalogKind, Membership } from "@/services/types"
 import { Button } from "@workspace/ui/components/button"
+import { Skeleton } from "@workspace/ui/components/skeleton"
+
+const MerchantCatalogStudio = lazy(() =>
+  import("@/components/merchant-catalog-studio").then((mod) => ({ default: mod.MerchantCatalogStudio })),
+)
 import {
   Dialog,
   DialogContent,
@@ -125,8 +129,29 @@ export function MerchantBusinessPage() {
 
   useEffect(() => {
     if (!ready || !id) return
-    reloadBusiness()
-    loadCatalog()
+    let cancelled = false
+    setCatalogReady(false)
+    void Promise.all([
+      getBusiness(id),
+      listProducts(id, { includeUnavailable: true, expand: true }),
+      listServices(id).catch(() => [] as Service[]),
+      listMenuItems(id).catch(() => [] as MenuItem[]),
+      listMarketplaceTags().catch(() => [] as MarketplaceTag[]),
+    ])
+      .then(([detail, productRows, serviceRows, menuRows]) => {
+        if (cancelled) return
+        setBusiness(detail.business)
+        setProducts(productRows)
+        setServices(serviceRows)
+        setMenu(menuRows)
+        setCatalogReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setCatalogReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [id, ready])
 
   if (!ready) {
@@ -173,7 +198,6 @@ export function MerchantBusinessPage() {
               <TabsTrigger value="modulos" className="data-active:text-primary after:bg-primary">Módulos</TabsTrigger>
               <TabsTrigger value="catalogo" className="data-active:text-primary after:bg-primary">Catálogo</TabsTrigger>
               <TabsTrigger value="equipo" className="data-active:text-primary after:bg-primary">Equipo</TabsTrigger>
-              <TabsTrigger value="permisos" className="data-active:text-primary after:bg-primary">Permisos</TabsTrigger>
             </TabsList>
           </div>
 
@@ -211,6 +235,15 @@ export function MerchantBusinessPage() {
           </TabsContent>
 
           <TabsContent value="catalogo" className="pt-4">
+            <Suspense
+              fallback={
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <Skeleton key={index} className="h-44 rounded-xl" />
+                  ))}
+                </div>
+              }
+            >
             <MerchantCatalogStudio
               businessId={id}
               modules={businessModules.modules}
@@ -233,14 +266,11 @@ export function MerchantBusinessPage() {
                 setEditor({ kind: item.module, id: item.id, name: item.name, price: item.price })
               }}
             />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="equipo" className="pt-4">
             {id ? <TeamRoster businessId={id} team={team} /> : null}
-          </TabsContent>
-
-          <TabsContent value="permisos" className="pt-4">
-            {id ? <TeamPermissions businessId={id} team={team} /> : null}
           </TabsContent>
         </Tabs>
 

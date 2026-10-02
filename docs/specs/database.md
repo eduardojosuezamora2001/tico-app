@@ -9,7 +9,7 @@ Proyecto Supabase `tico-app` (Postgres 17 + PostGIS). Fuente de verdad: `supabas
 | `20260924200003_rls_policies`               | RLS en las 16 tablas + privilegios de columna                 |
 | `20260924200004_seed_permissions`           | Catalogo de 32 permisos                                       |
 | `20260924210230_rls_consolidate_policies`   | Una sola politica SELECT por rol (advisor de performance)     |
-| `20261001220000_catalog_tags_discovery`   | Taxonomia de productos, N:M, RPC `discover_businesses`        |
+| `20261001220000_catalog_tags_discovery`   | Taxonomia de productos, N:M, discovery (hoy `discover_businesses_v2`) |
 | `20261002100000_discover_catalog_full`    | Busqueda de servicios/menu y `matches` en discover            |
 
 Detalle de taxonomia y descubrimiento: [catalog-discovery.md](./catalog-discovery.md).

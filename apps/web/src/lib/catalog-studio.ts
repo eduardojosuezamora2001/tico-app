@@ -1,5 +1,6 @@
 import {
   MODULES,
+  formatMarketplaceTagLabels,
   type CreateMenuItemInput,
   type CreateProductInput,
   type CreateServiceInput,
@@ -85,6 +86,10 @@ function uniqueGroups(values: Array<string | null | undefined>) {
   return [...new Set(values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))]
 }
 
+function productGroup(item: Product) {
+  return formatMarketplaceTagLabels(item.marketplaceTags) ?? ""
+}
+
 export function parseCatalogPrice(raw: string, required: boolean) {
   const trimmed = raw.trim().replace(",", ".")
   if (!trimmed) {
@@ -121,19 +126,21 @@ export const CATALOG_MODULES: CatalogModuleConfig[] = [
         name: item.name,
         description: item.description,
         price: item.price,
-        group: item.category,
+        group: productGroup(item),
         listed: item.isAvailable,
         stock: item.stock,
         detail: item.productKind === "simple" ? null : item.productKind === "bundle" ? "Combo" : "Con variantes",
       })),
-    groups: (bag) => uniqueGroups(bag.products.map((item) => item.category)),
+    groups: (bag) => uniqueGroups(bag.products.map((item) => productGroup(item))),
     create: async (businessId, draft) => {
+      if (!draft.marketplaceTagIds?.length) {
+        throw new Error("Elige al menos una categoría.")
+      }
       const price = parseCatalogPrice(draft.price, true)
       const input: CreateProductInput = {
         name: draft.name.trim(),
         price,
-        category: draft.group.trim() || undefined,
-        marketplaceTagIds: draft.marketplaceTagIds?.length ? draft.marketplaceTagIds : undefined,
+        marketplaceTagIds: draft.marketplaceTagIds,
         productKind: "simple",
         isAvailable: true,
         optionGroups: [],
@@ -231,6 +238,8 @@ export const CATALOG_MODULES: CatalogModuleConfig[] = [
     remove: deleteMenuItem,
   },
 ]
+
+export const CATALOG_MODULE_BY_KIND = new Map(CATALOG_MODULES.map((entry) => [entry.kind, entry]))
 
 export function catalogModule(id: ModuleName) {
   return CATALOG_MODULES.find((entry) => entry.id === id) ?? null

@@ -795,6 +795,50 @@ export type Database = {
           },
         ]
       }
+      marketplace_business_categories: {
+        Row: {
+          id: string
+          parent_id: string | null
+          slug: string
+          name: string
+          legacy_label: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          parent_id?: string | null
+          slug: string
+          name: string
+          legacy_label: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          parent_id?: string | null
+          slug?: string
+          name?: string
+          legacy_label?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_business_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_business_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_tags: {
         Row: {
           id: string
@@ -1361,7 +1405,6 @@ export type Database = {
         Row: {
           business_id: string
           bundle_config: Json
-          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -1380,7 +1423,6 @@ export type Database = {
         Insert: {
           business_id: string
           bundle_config?: Json
-          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1399,7 +1441,6 @@ export type Database = {
         Update: {
           business_id?: string
           bundle_config?: Json
-          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1593,7 +1634,15 @@ export type Database = {
           distance_m: number
         }[]
       }
-      discover_businesses: {
+      expand_marketplace_business_category_labels: {
+        Args: { p_slugs: string[] }
+        Returns: string[]
+      }
+      expand_marketplace_catalog_tag_slugs: {
+        Args: { p_slugs: string[] }
+        Returns: string[]
+      }
+      discover_businesses_v2: {
         Args: {
           q?: string | null
           marketplace_tag_slugs?: string[] | null
@@ -1624,6 +1673,28 @@ export type Database = {
           distance_m: number | null
           matches: Json
         }[]
+      }
+      list_business_catalog: {
+        Args: {
+          p_business_id: string
+          lim?: number
+          cursor_updated_at?: string | null
+          cursor_item_type?: string | null
+          cursor_item_id?: string | null
+        }
+        Returns: {
+          item_type: string
+          item_id: string
+          name: string
+          price: number | null
+          group_label: string | null
+          listed: boolean
+          updated_at: string
+        }[]
+      }
+      refresh_business_catalog_search: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       suggest_catalog: {
         Args: {

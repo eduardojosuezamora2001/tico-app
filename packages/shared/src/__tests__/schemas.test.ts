@@ -177,6 +177,23 @@ describe("AddBusinessUserSchema", () => {
       }).success
     ).toBe(true)
   })
+
+  it("rejects employee permissions above the role ceiling", () => {
+    expect(
+      AddBusinessUserSchema.safeParse({
+        email: "emp@example.com",
+        role: "employee",
+        permissions: ["products:view", "employees:manage"],
+      }).success
+    ).toBe(false)
+    expect(
+      AddBusinessUserSchema.safeParse({
+        email: "mgr@example.com",
+        role: "manager",
+        permissions: ["employees:manage", "business:edit"],
+      }).success
+    ).toBe(true)
+  })
 })
 
 describe("CreateReviewSchema / CreateEventSchema / SendMessageSchema", () => {

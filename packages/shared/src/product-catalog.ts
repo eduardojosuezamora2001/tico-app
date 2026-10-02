@@ -128,6 +128,12 @@ export function findVariantByOptions(
   return variants.find((v) => optionsKey(v.options) === key && v.isAvailable) ?? null
 }
 
+/** Etiqueta visible para agrupar/filtrar productos en UI (nombres de tags marketplace). */
+export function formatMarketplaceTagLabels(tags: { name: string }[] | undefined | null): string | null {
+  if (!tags?.length) return null
+  return tags.map((tag) => tag.name).join(", ")
+}
+
 export function formatVariantLabel(
   optionGroups: ProductOptionGroup[],
   options: Record<string, string>,

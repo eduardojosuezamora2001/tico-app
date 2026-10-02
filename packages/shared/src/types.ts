@@ -301,8 +301,8 @@ export interface Product {
   price: number
   stock: number | null
   imageUrl: string | null
-  category: string | null
   marketplaceTags?: MarketplaceTag[]
+  merchantTags?: MarketplaceTag[]
   isAvailable: boolean
   productKind: ProductKind
   optionGroups: ProductOptionGroup[]

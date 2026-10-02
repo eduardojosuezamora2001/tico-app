@@ -47,11 +47,11 @@ describe("GET /api/businesses discover", () => {
     })
   })
 
-  it("usa discover_businesses y devuelve matches", async () => {
+  it("usa discover_businesses_v2 y devuelve matches", async () => {
     const res = await app.request("/api/businesses?q=Ranchitas")
     expect(res.status).toBe(200)
     expect(rpc).toHaveBeenCalledWith(
-      "discover_businesses",
+      "discover_businesses_v2",
       expect.objectContaining({ q: "Ranchitas" }),
     )
     const body = (await res.json()) as {

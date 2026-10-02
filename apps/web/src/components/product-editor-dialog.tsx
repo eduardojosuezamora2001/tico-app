@@ -154,11 +154,6 @@ export function ProductEditorDialog({
       name: name.trim(),
       description: description.trim() || undefined,
       marketplaceTagIds: tagIds,
-      category:
-        tagOptions
-          .filter((option) => tagIds.includes(option.id))
-          .map((option) => option.label)
-          .join(", ") || undefined,
       productKind,
       optionGroups,
       specSchema,

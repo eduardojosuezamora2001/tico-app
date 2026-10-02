@@ -5,6 +5,9 @@
  *   sistema (bitacora, retencion de chat, tareas admin) tras autorizar en la API.
  * - `createUserClient(accessToken)`: cliente que actua en nombre del usuario
  *   autenticado; RLS aplica con su identidad. Preferirlo en endpoints normales.
+ *
+ * Estas llamadas van por PostgREST (HTTP). Supabase ya las enruta por su pooler.
+ * No abrir conexiones Postgres directas desde la API.
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"

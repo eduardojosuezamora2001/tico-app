@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { Link, useParams } from "react-router"
 import {
   PAYMENT_METHOD_KEYS,
+  formatMarketplaceTagLabels,
   type Business,
   type BusinessEvent,
   type BusinessHours,
@@ -93,7 +94,7 @@ export function BusinessPage() {
     price: item.price,
     stock: item.stock,
     imageUrl: item.imageUrl,
-    category: item.category,
+    category: formatMarketplaceTagLabels(item.marketplaceTags),
     productKind: item.productKind ?? "simple",
     optionGroups: item.optionGroups ?? [],
     specifications: item.specifications ?? {},

@@ -31,6 +31,7 @@ import {
   validateDivisionChain,
 } from "../lib/address-validation.js"
 import { env } from "../config/env.js"
+import { discoverBusinesses, logCatalogList } from "../lib/discovery-engine.js"
 import { isChainAdmin } from "../lib/chain-access.js"
 import { requireEditableBusiness } from "../lib/business-access.js"
 import { businessPatchFromInput } from "../lib/business-input.js"
@@ -133,7 +134,7 @@ businessRoutes.get("/", async (c) => {
       const expanded = await expandBusinessCategoryLabels(parsed.data.businessCategorySlugs)
       categories = [...new Set([...categories, ...expanded])]
     } catch (error) {
-      return dbFail(c, error)
+      return dbFail(c, error as { message: string })
     }
   }
 
@@ -142,11 +143,11 @@ businessRoutes.get("/", async (c) => {
     try {
       marketplaceTagSlugs = await expandMarketplaceTagSlugs(marketplaceTagSlugs)
     } catch (error) {
-      return dbFail(c, error)
+      return dbFail(c, error as { message: string })
     }
   }
 
-  const { data, error } = await supabaseAdmin.rpc("discover_businesses", {
+  const { data, error } = await discoverBusinesses({
     q: parsed.data.q ?? null,
     marketplace_tag_slugs: marketplaceTagSlugs.length > 0 ? marketplaceTagSlugs : null,
     categories: categories.length > 0 ? categories : null,
@@ -187,6 +188,57 @@ businessRoutes.get("/", async (c) => {
       longitude: row.longitude,
       distanceKm: row.distance_m === null ? null : Math.round((row.distance_m / 1000) * 10) / 10,
       matches: parseMatches(row.matches),
+    })),
+  })
+})
+
+function decodeCatalogCursor(cursor: string | undefined) {
+  if (!cursor) return { updatedAt: null as string | null, itemType: null as string | null, itemId: null as string | null }
+  const [updatedAt, itemType, itemId] = cursor.split(cursorSeparator)
+  if (!updatedAt || !itemType || !itemId) return null
+  if (!["product", "service", "menu"].includes(itemType)) return null
+  if (!z.uuid().safeParse(itemId).success) return null
+  if (Number.isNaN(Date.parse(updatedAt))) return null
+  return { updatedAt, itemType, itemId }
+}
+
+businessRoutes.get("/:id/catalog", requireAuth, async (c) => {
+  const parsedId = z.uuid().safeParse(c.req.param("id"))
+  if (!parsedId.success) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
+
+  const limit = Math.min(Number(c.req.query("limit") ?? 50) || 50, 100)
+  const cursor = decodeCatalogCursor(c.req.query("cursor") || undefined)
+  if (cursor === null) return fail(c, 400, "VALIDATION", "Cursor inválido")
+
+  const started = performance.now()
+  const { data, error } = await supabaseAdmin.rpc("list_business_catalog", {
+    p_business_id: parsedId.data,
+    lim: limit + 1,
+    cursor_updated_at: cursor.updatedAt,
+    cursor_item_type: cursor.itemType,
+    cursor_item_id: cursor.itemId,
+  })
+  logCatalogList(parsedId.data, started, "sellable")
+  if (error) return dbFail(c, error)
+
+  const rows = data ?? []
+  const page = rows.slice(0, limit)
+  const last = page.at(-1)
+  const nextCursor =
+    rows.length > limit && last
+      ? [last.updated_at, last.item_type, last.item_id].join(cursorSeparator)
+      : null
+
+  return c.json({
+    nextCursor,
+    data: page.map((row) => ({
+      itemType: row.item_type,
+      itemId: row.item_id,
+      name: row.name,
+      price: row.price === null ? null : Number(row.price),
+      groupLabel: row.group_label,
+      listed: row.listed,
+      updatedAt: row.updated_at,
     })),
   })
 })
