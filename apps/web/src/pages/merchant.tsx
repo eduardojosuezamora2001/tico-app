@@ -1,32 +1,17 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type {
-  Business,
-  CreateMenuItemInput,
-  CreateServiceInput,
-  MenuItem,
-  Product,
-  Service,
-} from "@workspace/shared"
+import type { Business, MenuItem, ModuleName, Product, Service } from "@workspace/shared"
 
 import { BusinessProfileWizard } from "@/components/business-profile-wizard"
 import { ProductEditorDialog } from "@/components/product-editor-dialog"
 import { MerchantHomeDashboard } from "@/components/merchant-home-dashboard"
-import { ListFilter } from "@/components/list-filter"
+import { MerchantCatalogStudio } from "@/components/merchant-catalog-studio"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
 import { ModulesPanel, useBusinessModules } from "@/components/modules-panel"
 import { TeamPermissions, TeamRoster, useBusinessTeam } from "@/components/team-panel"
 import { getBusiness } from "@/services/businesses.service"
-import {
-  createMenuItem,
-  createService,
-  deleteCatalogItem,
-  listMenuItems,
-  listProducts,
-  listServices,
-  updateCatalogItem,
-} from "@/services/catalog.service"
+import { listMenuItems, listProducts, listServices, updateCatalogItem } from "@/services/catalog.service"
 import { listChains } from "@/services/chains.service"
 import { getMe } from "@/services/me.service"
 import type { BusinessChain } from "@workspace/shared"
@@ -83,88 +68,6 @@ export function MerchantHomePage() {
   )
 }
 
-const colones = new Intl.NumberFormat("es-CR", {
-  style: "currency",
-  currency: "CRC",
-  maximumFractionDigits: 0,
-})
-
-function CatalogForm({
-  placeholder,
-  submitLabel,
-  onSubmit,
-}: {
-  placeholder: string
-  submitLabel: string
-  onSubmit: (name: string, price: string) => Promise<void>
-}) {
-  const [name, setName] = useState("")
-  const [price, setPrice] = useState("")
-
-  return (
-    <form
-      className="flex flex-col gap-2 sm:flex-row sm:items-center"
-      onSubmit={(event) => {
-        event.preventDefault()
-        void onSubmit(name, price).then(() => {
-          setName("")
-          setPrice("")
-        })
-      }}
-    >
-      <Input
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        className="h-11 min-w-0 flex-1 rounded-xl"
-      />
-      <Input
-        value={price}
-        onChange={(event) => setPrice(event.target.value)}
-        placeholder="Precio"
-        aria-label={`Precio de ${placeholder}`}
-        inputMode="decimal"
-        className="h-11 w-full rounded-xl sm:w-28"
-      />
-      <Button type="submit" className="rounded-full">
-        {submitLabel}
-      </Button>
-    </form>
-  )
-}
-
-function CatalogRows({
-  rows,
-  onEdit,
-  onDelete,
-}: {
-  rows: { id: string; name: string; price: number | null }[]
-  onEdit: (row: { id: string; name: string; price: number | null }) => void
-  onDelete: (id: string) => void
-}) {
-  return (
-    <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card">
-      {rows.map((item) => (
-        <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
-          <span className="min-w-0 truncate">{item.name}</span>
-          <span className="flex shrink-0 items-center gap-2">
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {item.price === null ? "Sin precio" : colones.format(item.price)}
-            </span>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onEdit(item)}>
-              Editar
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onDelete(item.id)}>
-              Quitar
-            </Button>
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 export function MerchantBusinessPage() {
   const { id = "" } = useParams()
   const navigate = useNavigate()
@@ -173,8 +76,8 @@ export function MerchantBusinessPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
-  const [listIds, setListIds] = useState<string[]>(["productos"])
-  const [error, setError] = useState<string | null>(null)
+  const [catalogReady, setCatalogReady] = useState(false)
+  const [moduleFocus, setModuleFocus] = useState<{ id: ModuleName | null; token: number } | null>(null)
   const [editor, setEditor] = useState<{ kind: CatalogKind; id: string; name: string; price: number | null } | null>(null)
   const [productEditorOpen, setProductEditorOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -191,7 +94,13 @@ export function MerchantBusinessPage() {
       setProducts(productRows)
       setServices(serviceRows)
       setMenu(menuRows)
+      setCatalogReady(true)
     })
+  }
+
+  function openModules(moduleId: ModuleName | null) {
+    setModuleFocus({ id: moduleId, token: Date.now() })
+    setTab("modulos")
   }
 
   useEffect(() => {
@@ -226,16 +135,6 @@ export function MerchantBusinessPage() {
         <SiteHeader />
       </div>
     )
-  }
-
-  async function removeItem(kind: CatalogKind, itemId: string) {
-    try {
-      await deleteCatalogItem(id, kind, itemId)
-      setError(null)
-      loadCatalog()
-    } catch {
-      setError("No se pudo quitar ese elemento.")
-    }
   }
 
   const place = [business?.category, business?.address].filter(Boolean).join(" · ")
@@ -306,139 +205,34 @@ export function MerchantBusinessPage() {
                 loading={businessModules.loading}
                 error={businessModules.error}
                 onReload={() => void businessModules.reload()}
+                focus={moduleFocus}
               />
             ) : null}
           </TabsContent>
 
-          <TabsContent value="catalogo" className="flex flex-col gap-4 pt-4">
-            <div>
-              <h2 className="text-lg font-semibold">Catálogo</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Agrega lo que vendes o ofreces. Primero activa un módulo en la sección Módulos.
-              </p>
-            </div>
-            {!businessModules.isEnabled("products") &&
-            !businessModules.isEnabled("services") &&
-            !businessModules.isEnabled("menu") ? (
-              <div className="rounded-2xl border border-dashed border-border bg-card px-4 py-6 text-center">
-                <p className="text-sm text-muted-foreground">Todavía no hay módulos de catálogo activos.</p>
-                <Button type="button" className="mt-4 rounded-full" onClick={() => setTab("modulos")}>
-                  Buscar y activar módulos
-                </Button>
-              </div>
-            ) : (
-              <>
-                {businessModules.isEnabled("products") && (listIds.length === 0 || listIds.includes("productos")) ? (
-                  <Button
-                    type="button"
-                    className="w-fit rounded-full"
-                    onClick={() => {
-                      setEditingProduct(null)
-                      setProductEditorOpen(true)
-                    }}
-                  >
-                    Nuevo producto
-                  </Button>
-                ) : null}
-                {businessModules.isEnabled("services") && (listIds.length === 0 || listIds.includes("servicios")) ? (
-                  <CatalogForm
-                    placeholder="Servicio"
-                    submitLabel="Agregar servicio"
-                    onSubmit={async (name, price) => {
-                      try {
-                        await createService(id, { name, price: Number(price) } as CreateServiceInput)
-                        setError(null)
-                        loadCatalog()
-                      } catch {
-                        setError("No se pudo agregar el servicio.")
-                      }
-                    }}
-                  />
-                ) : null}
-                {businessModules.isEnabled("menu") && (listIds.length === 0 || listIds.includes("menu")) ? (
-                  <CatalogForm
-                    placeholder="Plato del menú"
-                    submitLabel="Agregar al menú"
-                    onSubmit={async (name, price) => {
-                      try {
-                        await createMenuItem(id, { name, price: Number(price) } as CreateMenuItemInput)
-                        setError(null)
-                        loadCatalog()
-                      } catch {
-                        setError("No se pudo agregar al menú.")
-                      }
-                    }}
-                  />
-                ) : null}
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
-                <ListFilter
-                  activeIds={listIds}
-                  onActiveChange={setListIds}
-                  placeholder="Buscar en el catálogo"
-                  lists={[
-                    businessModules.isEnabled("products")
-                      ? {
-                          id: "productos",
-                          label: "Productos",
-                          empty: "Todavía no hay productos.",
-                          items: products,
-                          text: (item) => item.name,
-                          group: (item) => item.category,
-                          render: (items) => (
-                            <CatalogRows
-                              rows={items.map((item) => ({
-                                id: item.id,
-                                name: `${item.name}${item.productKind !== "simple" ? ` (${item.productKind})` : ""}`,
-                                price: item.price,
-                              }))}
-                              onEdit={(row) => {
-                                const full = products.find((p) => p.id === row.id) ?? null
-                                setEditingProduct(full)
-                                setProductEditorOpen(true)
-                              }}
-                              onDelete={(itemId) => void removeItem("products", itemId)}
-                            />
-                          ),
-                        }
-                      : null,
-                    businessModules.isEnabled("services")
-                      ? {
-                          id: "servicios",
-                          label: "Servicios",
-                          empty: "Todavía no hay servicios.",
-                          items: services,
-                          text: (item) => item.name,
-                          group: (item) => item.category,
-                          render: (items) => (
-                            <CatalogRows
-                              rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
-                              onEdit={(row) => setEditor({ kind: "services", ...row })}
-                              onDelete={(itemId) => void removeItem("services", itemId)}
-                            />
-                          ),
-                        }
-                      : null,
-                    businessModules.isEnabled("menu")
-                      ? {
-                          id: "menu",
-                          label: "Menú",
-                          empty: "Todavía no hay platos.",
-                          items: menu,
-                          text: (item) => item.name,
-                          group: (item) => item.section,
-                          render: (items) => (
-                            <CatalogRows
-                              rows={items.map((item) => ({ id: item.id, name: item.name, price: item.price }))}
-                              onEdit={(row) => setEditor({ kind: "menu", ...row })}
-                              onDelete={(itemId) => void removeItem("menu", itemId)}
-                            />
-                          ),
-                        }
-                      : null,
-                  ].filter((list): list is NonNullable<typeof list> => list !== null)}
-                />
-              </>
-            )}
+          <TabsContent value="catalogo" className="pt-4">
+            <MerchantCatalogStudio
+              businessId={id}
+              modules={businessModules.modules}
+              modulesLoading={businessModules.loading}
+              bag={{ products, services, menu }}
+              catalogReady={catalogReady}
+              onModulesChanged={() => void businessModules.reload()}
+              onCatalogChanged={loadCatalog}
+              onOpenModuleSettings={openModules}
+              onCreateFullProduct={() => {
+                setEditingProduct(null)
+                setProductEditorOpen(true)
+              }}
+              onEdit={(item, product) => {
+                if (item.module === "products") {
+                  setEditingProduct(product)
+                  setProductEditorOpen(true)
+                  return
+                }
+                setEditor({ kind: item.module, id: item.id, name: item.name, price: item.price })
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="equipo" className="pt-4">
@@ -461,10 +255,7 @@ export function MerchantBusinessPage() {
               label: `${product.name} · ${Object.values(variant.options).join(" ") || "default"} (₡${variant.price})`,
             })),
           )}
-          onSaved={() => {
-            setError(null)
-            loadCatalog()
-          }}
+          onSaved={loadCatalog}
         />
 
         <CatalogEditor
