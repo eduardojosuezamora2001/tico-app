@@ -12,11 +12,36 @@ import type {
   UpdateServiceInput,
 } from "@workspace/shared"
 
-import { deleteData, getData, patchData, postData } from "@/services/http"
+import { deleteData, getData, getPage, patchData, postData } from "@/services/http"
 import type { CatalogKind } from "@/services/types"
 
-export async function listMarketplaceTags() {
-  return getData<MarketplaceTag[]>("/catalog/marketplace-tags")
+let marketplaceTagsRequest: Promise<MarketplaceTag[]> | null = null
+
+/** Una sola petición en vuelo para toda la sesión (dedup tipo SWR). */
+export function listMarketplaceTags() {
+  marketplaceTagsRequest ??= getData<MarketplaceTag[]>("/catalog/marketplace-tags").catch((error: unknown) => {
+    marketplaceTagsRequest = null
+    throw error
+  })
+  return marketplaceTagsRequest
+}
+
+export function prefetchMarketplaceTags() {
+  void listMarketplaceTags().catch(() => undefined)
+}
+
+export type SellableCatalogItem = {
+  itemType: "product" | "service" | "menu"
+  itemId: string
+  name: string
+  price: number | null
+  groupLabel: string | null
+  listed: boolean
+  updatedAt: string
+}
+
+export function listSellableCatalog(businessId: string, cursor?: string, limit = 50) {
+  return getPage<SellableCatalogItem[]>(`/businesses/${businessId}/catalog`, { cursor, limit })
 }
 
 export async function listMarketplaceBusinessCategories() {

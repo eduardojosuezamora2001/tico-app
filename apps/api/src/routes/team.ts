@@ -1,4 +1,12 @@
-import { AddBusinessUserSchema, AddCoOwnerSchema, toTeamMember, UpdateBusinessUserSchema } from "@workspace/shared"
+import {
+  AddBusinessUserSchema,
+  AddCoOwnerSchema,
+  clampPermissionsToRoleCeiling,
+  permissionsExceedRoleCeiling,
+  toTeamMember,
+  UpdateBusinessUserSchema,
+  type AssignableBusinessRole,
+} from "@workspace/shared"
 import type { Context } from "hono"
 import { Hono } from "hono"
 import { z } from "zod"
@@ -89,6 +97,9 @@ teamRoutes.post("/", async (c) => {
     return fail(c, 403, "FORBIDDEN", "No puedes administrar el equipo de este negocio")
   }
 
+  const role = parsed.data.role as AssignableBusinessRole
+  const permissions = clampPermissionsToRoleCeiling(role, parsed.data.permissions)
+
   const { data: account, error: accountError } = await supabaseAdmin
     .from("users")
     .select("id, full_name, email")
@@ -103,8 +114,8 @@ teamRoutes.post("/", async (c) => {
     .insert({
       business_id: id,
       user_id: account.id,
-      role: parsed.data.role,
-      permissions: parsed.data.permissions,
+      role,
+      permissions,
     })
     .select("*")
     .single()
@@ -120,25 +131,51 @@ teamRoutes.patch("/:memberId", async (c) => {
   const parsed = UpdateBusinessUserSchema.safeParse(await c.req.json().catch(() => null))
   if (!parsed.success) return validationError(c, parsed.error)
 
-  const patch: { role?: "manager" | "employee"; permissions?: string[]; is_active?: boolean } = {}
-  if (parsed.data.role) patch.role = parsed.data.role
-  if (parsed.data.permissions) patch.permissions = parsed.data.permissions
-  if (parsed.data.isActive !== undefined) patch.is_active = parsed.data.isActive
-  if (Object.keys(patch).length === 0) {
-    return fail(c, 400, "VALIDATION_ERROR", "Nada que actualizar")
-  }
-  if (patch.is_active === false) {
-    const { data: current, error: currentError } = await c
-      .get("db")
-      .from("business_users")
-      .select("role")
-      .eq("id", memberId)
-      .eq("business_id", businessId(c))
-      .maybeSingle()
-    if (currentError) return dbFail(c, currentError)
-    if (current?.role === "owner") {
+  const { data: current, error: currentError } = await c
+    .get("db")
+    .from("business_users")
+    .select("role, permissions")
+    .eq("id", memberId)
+    .eq("business_id", businessId(c))
+    .maybeSingle()
+  if (currentError) return dbFail(c, currentError)
+  if (!current) return fail(c, 404, "NOT_FOUND", "Miembro no encontrado")
+  if (current.role === "owner") {
+    if (parsed.data.isActive === false) {
       return fail(c, 400, "VALIDATION_ERROR", "El dueño no se puede desactivar")
     }
+    if (parsed.data.role || parsed.data.permissions) {
+      return fail(c, 400, "VALIDATION_ERROR", "El dueño no usa permisos asignables")
+    }
+  }
+
+  const nextRole = (parsed.data.role ?? current.role) as AssignableBusinessRole | "owner"
+  const patch: { role?: "manager" | "employee"; permissions?: string[]; is_active?: boolean } = {}
+  if (parsed.data.role) patch.role = parsed.data.role
+  if (parsed.data.isActive !== undefined) patch.is_active = parsed.data.isActive
+
+  if (nextRole !== "owner") {
+    const permissionsExplicit = parsed.data.permissions !== undefined
+    const nextPermissions = permissionsExplicit
+      ? parsed.data.permissions!
+      : parsed.data.role
+        ? (current.permissions as string[])
+        : null
+    if (nextPermissions !== null) {
+      if (permissionsExplicit && permissionsExceedRoleCeiling(nextRole, nextPermissions)) {
+        return fail(
+          c,
+          400,
+          "VALIDATION_ERROR",
+          "Hay permisos que superan el techo del rol (un empleado no puede tener más que un encargado).",
+        )
+      }
+      patch.permissions = clampPermissionsToRoleCeiling(nextRole, nextPermissions)
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return fail(c, 400, "VALIDATION_ERROR", "Nada que actualizar")
   }
 
   const { data, error } = await c

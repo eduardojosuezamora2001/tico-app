@@ -17,6 +17,7 @@ import {
   resolveSelection,
   validateBundleItems,
 } from "../lib/product-catalog.js"
+import { logCatalogList } from "../lib/discovery-engine.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
 import { supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
@@ -95,9 +96,10 @@ async function replaceVariants(productId: string, variants: ReturnType<typeof no
   if (error) throw error
 }
 
-async function loadMarketplaceTags(productIds: string[]) {
-  const byProduct = new Map<string, MarketplaceTag[]>()
-  if (productIds.length === 0) return byProduct
+async function loadProductTags(productIds: string[]) {
+  const marketplace = new Map<string, MarketplaceTag[]>()
+  const merchant = new Map<string, MarketplaceTag[]>()
+  if (productIds.length === 0) return { marketplace, merchant }
 
   const { data, error } = await supabaseAdmin
     .from("product_catalog_tags")
@@ -107,12 +109,14 @@ async function loadMarketplaceTags(productIds: string[]) {
 
   for (const row of data ?? []) {
     const tag = row.catalog_tags
-    if (!tag || tag.scope !== "marketplace") continue
-    const list = byProduct.get(row.product_id) ?? []
+    if (!tag) continue
+    const bucket = tag.scope === "merchant" ? merchant : tag.scope === "marketplace" ? marketplace : null
+    if (!bucket) continue
+    const list = bucket.get(row.product_id) ?? []
     list.push({ id: tag.id, slug: tag.slug, name: tag.name })
-    byProduct.set(row.product_id, list)
+    bucket.set(row.product_id, list)
   }
-  return byProduct
+  return { marketplace, merchant }
 }
 
 async function assertMarketplaceTags(ids: string[]) {
@@ -131,19 +135,37 @@ async function assertMarketplaceTags(ids: string[]) {
   return data ?? []
 }
 
-async function replaceMarketplaceTags(productId: string, ids: string[]) {
-  const { data: marketplace, error: listError } = await supabaseAdmin
+async function assertMerchantTags(businessId: string, ids: string[]) {
+  const unique = [...new Set(ids)]
+  if (unique.length === 0) return [] as { id: string; name: string }[]
+  const { data, error } = await supabaseAdmin
     .from("catalog_tags")
-    .select("id")
-    .eq("scope", "marketplace")
+    .select("id, name")
+    .eq("scope", "merchant")
+    .eq("business_id", businessId)
+    .eq("is_active", true)
+    .in("id", unique)
+  if (error) throw error
+  if ((data ?? []).length !== unique.length) {
+    throw new Error("Hay etiquetas del local que no existen.")
+  }
+  return data ?? []
+}
+
+async function replaceTags(productId: string, ids: string[], scope: "marketplace" | "merchant", businessId?: string) {
+  let query = supabaseAdmin.from("catalog_tags").select("id").eq("scope", scope)
+  if (scope === "merchant") {
+    query = query.eq("business_id", businessId ?? "")
+  }
+  const { data: tags, error: listError } = await query
   if (listError) throw listError
-  const marketplaceIds = (marketplace ?? []).map((row) => row.id)
-  if (marketplaceIds.length > 0) {
+  const tagIds = (tags ?? []).map((row) => row.id)
+  if (tagIds.length > 0) {
     const { error: deleteError } = await supabaseAdmin
       .from("product_catalog_tags")
       .delete()
       .eq("product_id", productId)
-      .in("tag_id", marketplaceIds)
+      .in("tag_id", tagIds)
     if (deleteError) throw deleteError
   }
   if (ids.length === 0) return
@@ -151,6 +173,14 @@ async function replaceMarketplaceTags(productId: string, ids: string[]) {
     ids.map((tagId) => ({ product_id: productId, tag_id: tagId })),
   )
   if (insertError) throw insertError
+}
+
+function replaceMarketplaceTags(productId: string, ids: string[]) {
+  return replaceTags(productId, ids, "marketplace")
+}
+
+function replaceMerchantTags(productId: string, businessId: string, ids: string[]) {
+  return replaceTags(productId, ids, "merchant", businessId)
 }
 
 async function replaceBundleItems(productId: string, items: { componentVariantId: string; defaultQty: number; minQty: number; maxQty: number; sortOrder: number }[]) {
@@ -183,19 +213,22 @@ productRoutes.get("/", async (c) => {
   const rows = data ?? []
   const ids = rows.map((r) => r.id)
   let graph = { variantsByProduct: new Map(), bundlesByProduct: new Map() }
-  let tags = new Map<string, MarketplaceTag[]>()
+  let tags = { marketplace: new Map<string, MarketplaceTag[]>(), merchant: new Map<string, MarketplaceTag[]>() }
+  const started = performance.now()
   try {
     graph = await loadProductGraph(ids, expand)
-    tags = await loadMarketplaceTags(ids)
+    tags = await loadProductTags(ids)
   } catch (e) {
     return dbFail(c, e as { message: string })
   }
+  logCatalogList(businessId, started, "products")
 
   const payload = rows.map((row) =>
     toProduct(row, {
       variants: graph.variantsByProduct.get(row.id),
       bundleItems: graph.bundlesByProduct.get(row.id),
-      marketplaceTags: tags.get(row.id) ?? [],
+      marketplaceTags: tags.marketplace.get(row.id) ?? [],
+      merchantTags: tags.merchant.get(row.id) ?? [],
     }),
   )
 
@@ -228,9 +261,16 @@ productRoutes.post("/", requireAuth, async (c) => {
   const specifications = applySpecValidation(input.specSchema, input.specifications)
 
   let marketplaceTags: { id: string; name: string }[] = []
-  if (input.marketplaceTagIds) {
+  if (input.marketplaceTagIds !== undefined) {
     try {
       marketplaceTags = await assertMarketplaceTags(input.marketplaceTagIds)
+    } catch (e) {
+      return fail(c, 400, "INVALID_TAGS", (e as Error).message)
+    }
+  }
+  if (input.merchantTagIds !== undefined) {
+    try {
+      await assertMerchantTags(businessId, input.merchantTagIds)
     } catch (e) {
       return fail(c, 400, "INVALID_TAGS", (e as Error).message)
     }
@@ -252,10 +292,6 @@ productRoutes.post("/", requireAuth, async (c) => {
       business_id: businessId,
       name: input.name,
       description: input.description ?? null,
-      category:
-        input.marketplaceTagIds !== undefined
-          ? marketplaceTags.map((tag) => tag.name).join(", ") || null
-          : input.category ?? null,
       is_available: input.isAvailable ?? true,
       product_kind: input.productKind,
       option_groups: input.optionGroups,
@@ -276,8 +312,11 @@ productRoutes.post("/", requireAuth, async (c) => {
     if (input.productKind === "bundle" && input.bundleItems) {
       await replaceBundleItems(product.id, input.bundleItems)
     }
-    if (input.marketplaceTagIds) {
+    if (input.marketplaceTagIds !== undefined) {
       await replaceMarketplaceTags(product.id, input.marketplaceTagIds)
+    }
+    if (input.merchantTagIds !== undefined) {
+      await replaceMerchantTags(product.id, businessId, input.merchantTagIds)
     }
   } catch (e) {
     await supabaseAdmin.from("products").delete().eq("id", product.id)
@@ -285,13 +324,14 @@ productRoutes.post("/", requireAuth, async (c) => {
   }
 
   const graph = await loadProductGraph([product.id], { variants: true, bundle: true })
-  const tags = await loadMarketplaceTags([product.id])
+  const tags = await loadProductTags([product.id])
   return c.json(
     {
       data: toProduct(product, {
         variants: graph.variantsByProduct.get(product.id),
         bundleItems: graph.bundlesByProduct.get(product.id),
-        marketplaceTags: tags.get(product.id) ?? [],
+        marketplaceTags: tags.marketplace.get(product.id) ?? [],
+        merchantTags: tags.merchant.get(product.id) ?? [],
       }),
     },
     201,
@@ -331,10 +371,16 @@ productRoutes.patch("/:itemId", requireAuth, async (c) => {
         : undefined,
   })
 
-  if (input.marketplaceTagIds) {
+  if (input.marketplaceTagIds !== undefined) {
     try {
-      const tags = await assertMarketplaceTags(input.marketplaceTagIds)
-      patch.category = tags.map((tag) => tag.name).join(", ") || null
+      await assertMarketplaceTags(input.marketplaceTagIds)
+    } catch (e) {
+      return fail(c, 400, "INVALID_TAGS", (e as Error).message)
+    }
+  }
+  if (input.merchantTagIds !== undefined) {
+    try {
+      await assertMerchantTags(businessId, input.merchantTagIds)
     } catch (e) {
       return fail(c, 400, "INVALID_TAGS", (e as Error).message)
     }
@@ -381,21 +427,29 @@ productRoutes.patch("/:itemId", requireAuth, async (c) => {
     data = updated.data
   }
 
-  if (input.marketplaceTagIds) {
+  if (input.marketplaceTagIds !== undefined) {
     try {
       await replaceMarketplaceTags(productId, input.marketplaceTagIds)
     } catch (e) {
       return dbFail(c, e as { message: string })
     }
   }
+  if (input.merchantTagIds !== undefined) {
+    try {
+      await replaceMerchantTags(productId, businessId, input.merchantTagIds)
+    } catch (e) {
+      return dbFail(c, e as { message: string })
+    }
+  }
 
   const graph = await loadProductGraph([productId], { variants: true, bundle: true })
-  const tags = await loadMarketplaceTags([productId])
+  const tags = await loadProductTags([productId])
   return c.json({
     data: toProduct(data, {
       variants: graph.variantsByProduct.get(productId),
       bundleItems: graph.bundlesByProduct.get(productId),
-      marketplaceTags: tags.get(productId) ?? [],
+      marketplaceTags: tags.marketplace.get(productId) ?? [],
+      merchantTags: tags.merchant.get(productId) ?? [],
     }),
   })
 })

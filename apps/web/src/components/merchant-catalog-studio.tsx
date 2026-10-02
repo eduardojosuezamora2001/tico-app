@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type SubmitEvent } from "react"
+import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState, startTransition, type SubmitEvent } from "react"
 import {
   Add01Icon,
   Menu01Icon,
@@ -19,6 +19,7 @@ import {
 
 import { CategoryMultiCombobox } from "@/components/category-multi-combobox"
 import {
+  CATALOG_MODULE_BY_KIND,
   CATALOG_MODULES,
   catalogModule,
   collectStudioItems,
@@ -28,7 +29,7 @@ import {
   type StudioItem,
 } from "@/lib/catalog-studio"
 import { MODULE_CATALOG } from "@/lib/module-catalog"
-import { listMarketplaceTags } from "@/services/catalog.service"
+import { useMarketplaceTags } from "@/hooks/use-marketplace-tags"
 import { setBusinessModule } from "@/services/modules.service"
 import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert"
 import { Badge } from "@workspace/ui/components/badge"
@@ -62,6 +63,76 @@ const colones = new Intl.NumberFormat("es-CR", {
   style: "currency",
   currency: "CRC",
   maximumFractionDigits: 0,
+})
+
+const OFFER_PAGE = 100
+
+const StudioOfferCard = memo(function StudioOfferCard({
+  item,
+  title,
+  pending,
+  confirming,
+  onToggleListed,
+  onEdit,
+  onAskRemove,
+  onConfirmRemove,
+}: {
+  item: StudioItem
+  title: string
+  pending: boolean
+  confirming: boolean
+  onToggleListed: (item: StudioItem) => void
+  onEdit: (item: StudioItem) => void
+  onAskRemove: (itemId: string) => void
+  onConfirmRemove: (item: StudioItem) => void
+}) {
+  const soldOut = item.stock === 0
+  return (
+    <li className="min-w-0 [content-visibility:auto] [contain-intrinsic-size:auto_180px]">
+      <Card size="sm" className="h-full">
+        <CardHeader>
+          <CardTitle className="truncate">{item.name}</CardTitle>
+          {item.description ? (
+            <CardDescription className="line-clamp-2">{item.description}</CardDescription>
+          ) : null}
+          <CardAction>
+            <Badge variant="secondary">{title}</Badge>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {item.group ? <Badge variant="outline">{item.group}</Badge> : null}
+            <Badge variant={soldOut || !item.listed ? "destructive" : "secondary"}>
+              {soldOut ? "Sin stock" : item.listed ? "En la página" : "Oculto"}
+            </Badge>
+            {item.detail ? <Badge variant="outline">{item.detail}</Badge> : null}
+          </div>
+          <p className="tabular-nums">
+            {item.price === null ? "Cotización" : colones.format(item.price)}
+            {item.stock !== null ? ` · Stock ${item.stock}` : ""}
+          </p>
+        </CardContent>
+        <CardFooter className="mt-auto flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" disabled={pending} onClick={() => onToggleListed(item)}>
+            {pending ? <Spinner data-icon="inline-start" /> : null}
+            {item.listed ? "Ocultar" : "Publicar"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => onEdit(item)}>
+            Editar
+          </Button>
+          {confirming ? (
+            <Button type="button" variant="destructive" size="sm" disabled={pending} onClick={() => onConfirmRemove(item)}>
+              Confirmar
+            </Button>
+          ) : (
+            <Button type="button" variant="ghost" size="sm" onClick={() => onAskRemove(item.id)}>
+              Quitar
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+    </li>
+  )
 })
 
 const MODULE_ICONS = {
@@ -108,8 +179,13 @@ export function MerchantCatalogStudio({
   const [name, setName] = useState("")
   const [categories, setCategories] = useState<string[]>([])
   const [section, setSection] = useState("")
-  const [tagOptions, setTagOptions] = useState<{ id: string; label: string }[]>([])
   const [price, setPrice] = useState("")
+  const [offerLimit, setOfferLimit] = useState(OFFER_PAGE)
+  const marketplaceTags = useMarketplaceTags()
+  const tagOptions = useMemo(
+    () => (marketplaceTags ?? []).map((tag) => ({ id: tag.id, label: tag.name })),
+    [marketplaceTags],
+  )
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -122,6 +198,8 @@ export function MerchantCatalogStudio({
   const enabledCatalog = CATALOG_MODULES.filter((entry) => modules[entry.id])
   const nameInvalid = Boolean(formError && /nombre/i.test(formError))
   const priceInvalid = Boolean(formError && /precio/i.test(formError))
+  const groupInvalid = Boolean(formError && /categor/i.test(formError))
+  const deferredQuery = useDeferredValue(query)
 
   useEffect(() => {
     if (selected || modulesLoading) return
@@ -138,15 +216,13 @@ export function MerchantCatalogStudio({
   }, [selected])
 
   useEffect(() => {
-    void listMarketplaceTags()
-      .then((tags) => setTagOptions(tags.map((tag) => ({ id: tag.id, label: tag.name }))))
-      .catch(() => setTagOptions([]))
-  }, [])
+    setOfferLimit(OFFER_PAGE)
+  }, [filter, deferredQuery])
 
   const visible = useMemo(() => {
-    const term = query.trim().toLowerCase()
+    const term = deferredQuery.trim().toLowerCase()
     return items.filter((item) => {
-      const entry = CATALOG_MODULES.find((candidate) => candidate.kind === item.module)
+      const entry = CATALOG_MODULE_BY_KIND.get(item.module)
       if (!entry) return false
       const viewingModule = filter !== "all" && filter !== "hidden" && entry.id === filter
       if (!modules[entry.id] && !viewingModule) return false
@@ -155,10 +231,12 @@ export function MerchantCatalogStudio({
       if (!term) return true
       return [item.name, item.description, item.group, item.detail].join(" ").toLowerCase().includes(term)
     })
-  }, [filter, items, modules, query])
+  }, [deferredQuery, filter, items, modules])
+
+  const shown = visible.length > OFFER_PAGE ? visible.slice(0, offerLimit) : visible
 
   const hiddenCount = items.filter((item) => {
-    const entry = CATALOG_MODULES.find((candidate) => candidate.kind === item.module)
+    const entry = CATALOG_MODULE_BY_KIND.get(item.module)
     return entry && modules[entry.id] && (!item.listed || item.stock === 0)
   }).length
 
@@ -201,6 +279,12 @@ export function MerchantCatalogStudio({
     setFormError(null)
     try {
       if (!name.trim()) throw new Error("Escribe el nombre.")
+      if (
+        (selectedConfig.quick.groupMode === "marketplace" || selectedConfig.quick.groupMode === "business") &&
+        categories.length === 0
+      ) {
+        throw new Error("Elige al menos una categoría.")
+      }
       parseCatalogPrice(price, selectedConfig.quick.priceRequired)
       const marketplaceTagIds =
         selectedConfig.quick.groupMode === "marketplace" ? categories : undefined
@@ -226,7 +310,7 @@ export function MerchantCatalogStudio({
     }
   }
 
-  async function toggleListed(item: StudioItem) {
+  const toggleListed = useCallback(async (item: StudioItem) => {
     const entry = CATALOG_MODULES.find((candidate) => candidate.kind === item.module)
     if (!entry) return
     setPendingItem(item.id)
@@ -239,9 +323,9 @@ export function MerchantCatalogStudio({
     } finally {
       setPendingItem(null)
     }
-  }
+  }, [businessId, onCatalogChanged])
 
-  async function removeItem(item: StudioItem) {
+  const removeItem = useCallback(async (item: StudioItem) => {
     const entry = CATALOG_MODULES.find((candidate) => candidate.kind === item.module)
     if (!entry) return
     setPendingItem(item.id)
@@ -255,7 +339,17 @@ export function MerchantCatalogStudio({
     } finally {
       setPendingItem(null)
     }
-  }
+  }, [businessId, onCatalogChanged])
+
+  const editItem = useCallback(
+    (item: StudioItem) => {
+      onEdit(
+        item,
+        item.module === "products" ? (bag.products.find((product) => product.id === item.id) ?? null) : null,
+      )
+    },
+    [bag.products, onEdit],
+  )
 
   const filterOptions: { value: OfferFilter; label: string }[] = [
     { value: "all", label: `Todos (${totalListed})` },
@@ -412,12 +506,13 @@ export function MerchantCatalogStudio({
                   </Field>
                   {selectedConfig.quick.groupMode === "marketplace" ||
                   selectedConfig.quick.groupMode === "business" ? (
-                    <Field>
+                    <Field data-invalid={groupInvalid || undefined}>
                       <FieldLabel>{selectedConfig.quick.groupLabel}</FieldLabel>
                       <CategoryMultiCombobox
                         label={selectedConfig.quick.groupLabel ?? "Categorías"}
                         value={categories}
                         onChange={setCategories}
+                        invalid={groupInvalid}
                         options={
                           selectedConfig.quick.groupMode === "marketplace"
                             ? tagOptions
@@ -428,6 +523,7 @@ export function MerchantCatalogStudio({
                           selectedConfig.quick.groupMode === "marketplace" ? 12 : MAX_BUSINESS_CATEGORIES
                         }
                       />
+                      {groupInvalid ? <FieldError>{formError}</FieldError> : null}
                     </Field>
                   ) : selectedConfig.quick.groupLabel ? (
                     <Field>
@@ -468,7 +564,7 @@ export function MerchantCatalogStudio({
                     {priceInvalid ? <FieldError>{formError}</FieldError> : null}
                   </Field>
                 </FieldGroup>
-                {formError && !nameInvalid && !priceInvalid ? (
+                {formError && !nameInvalid && !priceInvalid && !groupInvalid ? (
                   <Alert variant="destructive" className="mt-4">
                     <AlertTitle>No se pudo agregar</AlertTitle>
                     <AlertDescription>{formError}</AlertDescription>
@@ -590,83 +686,35 @@ export function MerchantCatalogStudio({
             </EmptyHeader>
           </Empty>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {visible.map((item) => {
-              const entry = CATALOG_MODULES.find((candidate) => candidate.kind === item.module)
-              const title = entry ? moduleTitle(entry.id) : item.module
-              const soldOut = item.stock === 0
-              return (
-                <li key={`${item.module}-${item.id}`} className="min-w-0">
-                  <Card size="sm" className="h-full">
-                    <CardHeader>
-                      <CardTitle className="truncate">{item.name}</CardTitle>
-                      {item.description ? (
-                        <CardDescription className="line-clamp-2">{item.description}</CardDescription>
-                      ) : null}
-                      <CardAction>
-                        <Badge variant="secondary">{title}</Badge>
-                      </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {item.group ? <Badge variant="outline">{item.group}</Badge> : null}
-                        <Badge variant={soldOut || !item.listed ? "destructive" : "secondary"}>
-                          {soldOut ? "Sin stock" : item.listed ? "En la página" : "Oculto"}
-                        </Badge>
-                        {item.detail ? <Badge variant="outline">{item.detail}</Badge> : null}
-                      </div>
-                      <p className="tabular-nums">
-                        {item.price === null ? "Cotización" : colones.format(item.price)}
-                        {item.stock !== null ? ` · Stock ${item.stock}` : ""}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="mt-auto flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={pendingItem === item.id}
-                        onClick={() => void toggleListed(item)}
-                      >
-                        {pendingItem === item.id ? <Spinner data-icon="inline-start" /> : null}
-                        {item.listed ? "Ocultar" : "Publicar"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          onEdit(
-                            item,
-                            item.module === "products"
-                              ? (bag.products.find((product) => product.id === item.id) ?? null)
-                              : null,
-                          )
-                        }
-                      >
-                        Editar
-                      </Button>
-                      {confirmRemove === item.id ? (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          disabled={pendingItem === item.id}
-                          onClick={() => void removeItem(item)}
-                        >
-                          Confirmar
-                        </Button>
-                      ) : (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmRemove(item.id)}>
-                          Quitar
-                        </Button>
-                      )}
-                    </CardFooter>
-                  </Card>
-                </li>
-              )
-            })}
-          </ul>
+          <div className="flex flex-col gap-4">
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {shown.map((item) => {
+                const entry = CATALOG_MODULE_BY_KIND.get(item.module)
+                return (
+                  <StudioOfferCard
+                    key={`${item.module}-${item.id}`}
+                    item={item}
+                    title={entry ? moduleTitle(entry.id) : item.module}
+                    pending={pendingItem === item.id}
+                    confirming={confirmRemove === item.id}
+                    onToggleListed={toggleListed}
+                    onEdit={editItem}
+                    onAskRemove={setConfirmRemove}
+                    onConfirmRemove={removeItem}
+                  />
+                )
+              })}
+            </ul>
+            {shown.length < visible.length ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => startTransition(() => setOfferLimit((current) => current + OFFER_PAGE))}
+              >
+                Mostrar más ({visible.length - shown.length})
+              </Button>
+            ) : null}
+          </div>
         )}
       </section>
     </div>

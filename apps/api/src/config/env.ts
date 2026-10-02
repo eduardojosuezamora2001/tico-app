@@ -34,6 +34,11 @@ const envSchema = z.object({
 
   /** Secreto para hashear códigos de retiro (mín. 16 caracteres en producción). */
   PICKUP_CODE_PEPPER: z.string().min(8).default("dev-pickup-pepper-change-me"),
+
+  /** postgres usa discover_businesses_v2; external llama DISCOVERY_EXTERNAL_URL y, si falla, vuelve a Postgres. */
+  DISCOVERY_ENGINE: z.enum(["postgres", "external"]).default("postgres"),
+  DISCOVERY_EXTERNAL_URL: z.url().optional(),
+  DISCOVERY_P95_SLA_MS: z.coerce.number().int().positive().default(300),
 })
 
 export type Env = z.infer<typeof envSchema>

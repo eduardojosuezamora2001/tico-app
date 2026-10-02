@@ -57,6 +57,7 @@ export function CategoryMultiCombobox({
   allowCreate,
   maxItems,
   hint,
+  invalid = false,
 }: {
   value: string[]
   onChange: (categories: string[]) => void
@@ -65,6 +66,7 @@ export function CategoryMultiCombobox({
   allowCreate?: boolean
   maxItems?: number
   hint?: string
+  invalid?: boolean
 }) {
   const anchor = useComboboxAnchor()
   const onChangeRef = useRef(onChange)
@@ -137,6 +139,7 @@ export function CategoryMultiCombobox({
                 <ComboboxChip key={item.id}>{item.label}</ComboboxChip>
               ))}
               <ComboboxChipsInput
+                aria-invalid={invalid || undefined}
                 aria-label={label}
                 placeholder={
                   atMax

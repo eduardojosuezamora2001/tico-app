@@ -6,6 +6,7 @@
 import { z } from "zod"
 
 import {
+  BUSINESS_CATEGORY_OPTIONS,
   MAX_BUSINESS_CATEGORIES,
   parseBusinessCategories,
 } from "./business-categories.js"
@@ -20,6 +21,8 @@ import {
   MODULES,
   PERMISSIONS,
   ROLES,
+  permissionsExceedRoleCeiling,
+  type AssignableBusinessRole,
 } from "./constants.js"
 import { normalizeHttpUrl, normalizePhoneToE164 } from "./input-normalization.js"
 import {
@@ -427,17 +430,38 @@ export const BusinessUserSchema = z.object({
   updatedAt: isoDateSchema,
 })
 
-export const AddBusinessUserSchema = z.object({
-  email: emailSchema,
-  role: businessRoleSchema.exclude([BUSINESS_ROLES.OWNER]),
-  permissions: z.array(permissionNameSchema).default([]),
-})
+export const AddBusinessUserSchema = z
+  .object({
+    email: emailSchema,
+    role: businessRoleSchema.exclude([BUSINESS_ROLES.OWNER]),
+    permissions: z.array(permissionNameSchema).default([]),
+  })
+  .superRefine((data, ctx) => {
+    if (permissionsExceedRoleCeiling(data.role as AssignableBusinessRole, data.permissions)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["permissions"],
+        message: "Hay permisos que superan el techo del rol elegido.",
+      })
+    }
+  })
 
-export const UpdateBusinessUserSchema = z.object({
-  role: businessRoleSchema.exclude([BUSINESS_ROLES.OWNER]).optional(),
-  permissions: z.array(permissionNameSchema).optional(),
-  isActive: z.boolean().optional(),
-})
+export const UpdateBusinessUserSchema = z
+  .object({
+    role: businessRoleSchema.exclude([BUSINESS_ROLES.OWNER]).optional(),
+    permissions: z.array(permissionNameSchema).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Si solo llegan permisos sin rol, la API debe validar contra el rol actual.
+    if (data.role && data.permissions && permissionsExceedRoleCeiling(data.role, data.permissions)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["permissions"],
+        message: "Hay permisos que superan el techo del rol elegido.",
+      })
+    }
+  })
 
 // --------------------------------------------------------------------------
 // Productos
@@ -469,6 +493,14 @@ export const ProductBundleItemSchema = z.object({
   createdAt: isoDateSchema,
 })
 
+export const CatalogTagSchema = z.object({
+  id: uuidSchema,
+  slug: z.string(),
+  name: z.string(),
+  parentId: uuidSchema.nullable().optional(),
+  sortOrder: z.number().optional(),
+})
+
 export const ProductSchema = z.object({
   id: uuidSchema,
   businessId: uuidSchema,
@@ -477,7 +509,8 @@ export const ProductSchema = z.object({
   price: priceSchema,
   stock: z.number().int().min(0).nullable(),
   imageUrl: urlSchema.nullable(),
-  category: z.string().nullable(),
+  marketplaceTags: z.array(CatalogTagSchema).optional(),
+  merchantTags: z.array(CatalogTagSchema).optional(),
   isAvailable: z.boolean(),
   productKind: ProductKindSchema,
   optionGroups: z.array(ProductOptionGroupSchema),
@@ -497,8 +530,8 @@ const CreateProductBodySchema = z.object({
   price: z.number().positive("Debe ser mayor a 0").multipleOf(0.01).optional(),
   stock: z.number().int().min(0).optional(),
   imageUrl: urlSchema.optional(),
-  category: z.string().trim().max(200).optional(),
   marketplaceTagIds: z.array(z.string().uuid()).max(12).optional(),
+  merchantTagIds: z.array(z.string().uuid()).max(24).optional(),
   isAvailable: z.boolean().default(true),
   productKind: ProductKindSchema.default("simple"),
   optionGroups: z.array(ProductOptionGroupSchema).max(10).default([]),
@@ -562,6 +595,13 @@ export const CreateServiceSchema = z.object({
         ctx.addIssue({
           code: "custom",
           message: `Máximo ${MAX_BUSINESS_CATEGORIES} categorías`,
+        })
+      }
+      const allowed = new Set<string>(BUSINESS_CATEGORY_OPTIONS)
+      if (parts.some((part) => !allowed.has(part))) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Usa una categoría del catálogo de rubros.",
         })
       }
     })

@@ -9,6 +9,7 @@ import {
 import { Hono } from "hono"
 import type { ZodType } from "zod"
 
+import { logCatalogList } from "../lib/discovery-engine.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
 import { supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
@@ -52,7 +53,9 @@ function catalogRoutes(options: {
     }
     if (!includeUnavailable && options.table === "services") query = query.eq("is_active", true)
     if (!includeUnavailable && options.table !== "services") query = query.eq("is_available", true)
+    const started = performance.now()
     const { data, error } = await query.order("created_at", { ascending: false })
+    logCatalogList(businessId, started, options.table)
     if (error) return dbFail(c, error)
     return c.json({ data: (data ?? []).map((row) => options.toRow(row as never)) })
   })

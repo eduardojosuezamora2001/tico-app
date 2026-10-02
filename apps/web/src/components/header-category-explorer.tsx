@@ -15,7 +15,7 @@ import {
   type ExploreTab,
   type TagTreeNode,
 } from "@/lib/explore-catalog"
-import { listMarketplaceBusinessCategories, listMarketplaceTags } from "@/services/catalog.service"
+import { listMarketplaceBusinessCategories, listMarketplaceTags, prefetchMarketplaceTags } from "@/services/catalog.service"
 import { Button } from "@workspace/ui/components/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
@@ -48,6 +48,8 @@ export function HeaderCategoryExplorerDesktop({ className }: { className?: strin
           type="button"
           variant="ghost"
           className={`hidden h-10 shrink-0 rounded-full px-3 text-sm font-medium lg:inline-flex ${open ? "bg-muted text-foreground" : ""} ${className ?? ""}`}
+          onMouseEnter={prefetchMarketplaceTags}
+          onFocus={prefetchMarketplaceTags}
         >
           Categorías
           <HugeiconsIcon
@@ -71,7 +73,13 @@ export function HeaderCategoryExplorerMobile({ className }: { className?: string
       side="right"
       contentClassName="flex h-full w-full max-w-md flex-col gap-0 p-0 sm:max-w-lg"
       trigger={
-        <Button type="button" variant="ghost" className={`h-10 rounded-full px-3 text-sm font-medium lg:hidden ${className ?? ""}`}>
+        <Button
+          type="button"
+          variant="ghost"
+          className={`h-10 rounded-full px-3 text-sm font-medium lg:hidden ${className ?? ""}`}
+          onMouseEnter={prefetchMarketplaceTags}
+          onFocus={prefetchMarketplaceTags}
+        >
           Categorías
         </Button>
       }
