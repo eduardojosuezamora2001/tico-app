@@ -10,6 +10,7 @@ import { secureHeaders } from "hono/secure-headers"
 
 import { env, isProduction } from "./config/env.js"
 import { addressRoutes } from "./routes/addresses.js"
+import { adminRoutes } from "./routes/admin.js"
 import { menuRoutes, serviceRoutes } from "./routes/catalog.js"
 import { catalogTagRoutes } from "./routes/catalog-tags.js"
 import { discoverRoutes } from "./routes/discover.js"
@@ -23,6 +24,7 @@ import { hoursRoutes } from "./routes/hours.js"
 import { meRoutes } from "./routes/me.js"
 import { messageRoutes } from "./routes/messages.js"
 import { orderRoutes } from "./routes/orders.js"
+import { reviewRoutes } from "./routes/reviews.js"
 import { teamRoutes } from "./routes/team.js"
 import type { AppEnv } from "./types.js"
 
@@ -48,6 +50,7 @@ app.get("/health", (c) =>
 )
 
 app.route("/me", meRoutes)
+app.route("/admin", adminRoutes)
 app.route("/messages", messageRoutes)
 app.route("/orders", orderRoutes)
 app.route("/countries", countryRoutes)
@@ -64,6 +67,7 @@ app.route("/businesses/:id/menu", menuRoutes)
 app.route("/businesses/:id/gallery", galleryRoutes)
 app.route("/businesses/:id/hours", hoursRoutes)
 app.route("/businesses/:id/events", eventRoutes)
+app.route("/businesses/:id/reviews", reviewRoutes)
 
 app.notFound((c) =>
   c.json({ error: { code: "NOT_FOUND", message: "Recurso no encontrado" } }, 404)

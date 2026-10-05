@@ -128,12 +128,17 @@ export function AccountPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-semibold tracking-tight">{profile?.fullName || "Tu cuenta"}</h1>
                 {verified ? <Pill>Verificado</Pill> : null}
-                <Pill muted>{headlineRole}</Pill>
+                <Pill muted>{profile?.role === "admin" ? "Super admin" : headlineRole}</Pill>
               </div>
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="truncate">{profile?.email}</span>
                 {since ? <span>Miembro desde {since}</span> : null}
               </p>
+              {profile?.role === "admin" ? (
+                <Button className="mt-3" size="sm" render={<Link to="/admin" />}>
+                  Abrir panel admin
+                </Button>
+              ) : null}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:min-w-72">

@@ -25,6 +25,9 @@ sequenceDiagram
 - Si cambia el email en Auth, `on_auth_user_email_updated` lo sincroniza en `public.users`.
 - El usuario solo puede editar `full_name`, `avatar_url` y `preferred_language`
   (privilegios de columna + RLS).
+- **Super admin:** no hay registro de admin. Promueve un usuario existente con
+  `update public.users set role = 'admin' where email = '…'`. Detalle en
+  [`docs/guides/admin-bootstrap.md`](../guides/admin-bootstrap.md).
 
 ## 1. Email + contrasena (activo por defecto)
 
