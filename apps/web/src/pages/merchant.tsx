@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router"
 import type { Business, MarketplaceTag, MenuItem, ModuleName, Product, Service } from "@workspace/shared"
 
 import { BusinessProfileWizard } from "@/components/business-profile-wizard"
-import { ProductEditorDialog } from "@/components/product-editor-dialog"
 import { MerchantHomeDashboard } from "@/components/merchant-home-dashboard"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
@@ -83,8 +82,6 @@ export function MerchantBusinessPage() {
   const [catalogReady, setCatalogReady] = useState(false)
   const [moduleFocus, setModuleFocus] = useState<{ id: ModuleName | null; token: number } | null>(null)
   const [editor, setEditor] = useState<{ kind: CatalogKind; id: string; name: string; price: number | null } | null>(null)
-  const [productEditorOpen, setProductEditorOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [tab, setTab] = useState("ficha")
   const team = useBusinessTeam(id)
   const businessModules = useBusinessModules(id)
@@ -253,16 +250,7 @@ export function MerchantBusinessPage() {
               onModulesChanged={() => void businessModules.reload()}
               onCatalogChanged={loadCatalog}
               onOpenModuleSettings={openModules}
-              onCreateFullProduct={() => {
-                setEditingProduct(null)
-                setProductEditorOpen(true)
-              }}
-              onEdit={(item, product) => {
-                if (item.module === "products") {
-                  setEditingProduct(product)
-                  setProductEditorOpen(true)
-                  return
-                }
+              onEdit={(item) => {
                 setEditor({ kind: item.module, id: item.id, name: item.name, price: item.price })
               }}
             />
@@ -273,20 +261,6 @@ export function MerchantBusinessPage() {
             {id ? <TeamRoster businessId={id} team={team} /> : null}
           </TabsContent>
         </Tabs>
-
-        <ProductEditorDialog
-          businessId={id}
-          open={productEditorOpen}
-          onOpenChange={setProductEditorOpen}
-          product={editingProduct}
-          componentVariants={products.flatMap((product) =>
-            (product.variants ?? []).map((variant) => ({
-              id: variant.id,
-              label: `${product.name} · ${Object.values(variant.options).join(" ") || "default"} (₡${variant.price})`,
-            })),
-          )}
-          onSaved={loadCatalog}
-        />
 
         <CatalogEditor
           item={editor}

@@ -13,7 +13,7 @@ export type DiscoverBusinessArgs = {
   cursor_distance: number | null
   cursor_name: string | null
   cursor_id: string | null
-  provinces: string[] | null
+  administrative_division_ids: string[] | null
   catalog_kind: string | null
   catalog_label: string | null
 }

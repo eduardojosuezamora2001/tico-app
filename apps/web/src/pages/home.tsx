@@ -19,27 +19,25 @@ const categories = [
   { id: "servicios", label: "Servicios", hint: "Oficios", tint: "bg-violet-500/15 text-violet-700 dark:text-violet-200" },
 ] as const
 
-const fallbackProvinces = ["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"] as const
-
-const provinceHints: Record<string, string[]> = {
-  "San José": ["san jose", "san josé", "escazu", "escazú", "desamparados", "curridabat"],
-  Alajuela: ["alajuela"],
-  Cartago: ["cartago"],
-  Heredia: ["heredia"],
-  Guanacaste: ["guanacaste", "liberia", "santa cruz"],
-  Puntarenas: ["puntarenas", "esparza", "quepos"],
-  Limón: ["limon", "limón"],
-}
+const fallbackProvinces = [
+  { id: "d1c10001-0001-4001-8001-000000000001", label: "San José" },
+  { id: "d1c10002-0002-4002-8002-000000000002", label: "Alajuela" },
+  { id: "d1c10003-0003-4003-8003-000000000003", label: "Cartago" },
+  { id: "d1c10004-0004-4004-8004-000000000004", label: "Heredia" },
+  { id: "d1c10005-0005-4005-8005-000000000005", label: "Guanacaste" },
+  { id: "d1c10006-0006-4006-8006-000000000006", label: "Puntarenas" },
+  { id: "d1c10007-0007-4007-8007-000000000007", label: "Limón" },
+] as const
 
 export function HomePage() {
   const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""))
   const [category, setCategory] = useQueryState("category", parseAsArrayOf(parseAsString).withDefault([]))
   const [draft, setDraft] = useState(query)
-  const [provinceOptions, setProvinceOptions] = useState([
+  const [provinceOptions, setProvinceOptions] = useState<{ id: string; label: string }[]>([
     { id: "todos", label: "Todas las provincias" },
-    ...fallbackProvinces.map((item) => ({ id: item, label: item })),
+    ...fallbackProvinces.map((item) => ({ id: item.id, label: item.label })),
   ])
-  const [selectedProvinces, setSelectedProvinces] = useState<string[]>([])
+  const [selectedDivisionIds, setSelectedDivisionIds] = useState<string[]>([])
   const [items, setItems] = useState<BusinessSummary[]>([])
   const [page, setPage] = useState(0)
   const [hasNext, setHasNext] = useState(false)
@@ -49,6 +47,10 @@ export function HomePage() {
   const provinceNames = provinceOptions
     .filter((option) => option.id !== "todos")
     .map((option) => option.label)
+  const selectedDivisionLabels = selectedDivisionIds.flatMap((id) => {
+    const match = provinceOptions.find((option) => option.id === id)
+    return match ? [match.label] : []
+  })
 
   useEffect(() => {
     setDraft(query)
@@ -58,7 +60,7 @@ export function HomePage() {
     void listAdministrativeDivisions({ country: "CR" })
       .then((divisions) => {
         const items = divisions.map((division) => ({
-          id: division.name,
+          id: division.id,
           label: division.name,
         }))
         if (items.length > 0) {
@@ -81,11 +83,11 @@ export function HomePage() {
   const searchParams = {
     q: query || undefined,
     category: category.length > 0 ? category.join(",") : undefined,
-    province: selectedProvinces.length > 0 ? selectedProvinces.join(",") : undefined,
+    divisionId: selectedDivisionIds.length > 0 ? selectedDivisionIds.join(",") : undefined,
     limit: 6,
   }
 
-  const filterKey = `${query}|${category.join(",")}|${selectedProvinces.join(",")}`
+  const filterKey = `${query}|${category.join(",")}|${selectedDivisionIds.join(",")}`
 
   useEffect(() => {
     cursors.current = [null]
@@ -178,7 +180,7 @@ export function HomePage() {
               return match ? [match.id] : []
             })}
             query={draft}
-            group={selectedProvinces}
+            group={selectedDivisionLabels}
             groups={provinceNames}
             showCount={false}
             loading={loading}
@@ -190,7 +192,13 @@ export function HomePage() {
               void setCategory(labels.length > 0 ? labels : null)
             }}
             onQueryChange={setDraft}
-            onGroupChange={setSelectedProvinces}
+            onGroupChange={(labels) => {
+              const ids = labels.flatMap((label) => {
+                const match = provinceOptions.find((option) => option.label === label)
+                return match && match.id !== "todos" ? [match.id] : []
+              })
+              setSelectedDivisionIds(ids)
+            }}
             page={page}
             hasPrevious={page > 0}
             hasNext={hasNext}
@@ -226,27 +234,29 @@ export function HomePage() {
           <h2 className="text-2xl font-semibold">Explorá por provincia</h2>
           <p className="mt-1 text-sm text-muted-foreground">Los comercios publicados cuya dirección cae en esa provincia.</p>
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-            {provinceNames.map((item) => {
-              const count = items.filter((business) => inProvince(business.address, item)).length
-              const selected = selectedProvinces.includes(item)
-              return (
-                <li key={item}>
-                  <button
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() =>
-                      setSelectedProvinces(
-                        selected ? selectedProvinces.filter((name) => name !== item) : [...selectedProvinces, item],
-                      )
-                    }
-                    className={`w-full rounded-2xl border px-3 py-4 text-left ${selected ? "border-primary bg-accent" : "border-border bg-card"}`}
-                  >
-                    <span className="block text-sm font-medium">{item}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">{count} {count === 1 ? "local" : "locales"}</span>
-                  </button>
-                </li>
-              )
-            })}
+            {provinceOptions
+              .filter((option) => option.id !== "todos")
+              .map((option) => {
+                const selected = selectedDivisionIds.includes(option.id)
+                return (
+                  <li key={option.id}>
+                    <button
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() =>
+                        setSelectedDivisionIds(
+                          selected
+                            ? selectedDivisionIds.filter((id) => id !== option.id)
+                            : [...selectedDivisionIds, option.id],
+                        )
+                      }
+                      className={`w-full rounded-2xl border px-3 py-4 text-left ${selected ? "border-primary bg-accent" : "border-border bg-card"}`}
+                    >
+                      <span className="block text-sm font-medium">{option.label}</span>
+                    </button>
+                  </li>
+                )
+              })}
           </ul>
         </section>
 
@@ -265,12 +275,6 @@ export function HomePage() {
       <SiteFooter variant="full" />
     </div>
   )
-}
-
-function inProvince(address: string | null, province: string) {
-  if (province === "Todas") return true
-  const haystack = (address ?? "").toLocaleLowerCase("es")
-  return (provinceHints[province] ?? [province.toLocaleLowerCase("es")]).some((hint) => haystack.includes(hint))
 }
 
 function actionLabel(category: string) {

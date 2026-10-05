@@ -32,6 +32,10 @@ export function isCollaboratorMembership(membership: Membership) {
   return membership.role === "manager" || membership.role === "employee"
 }
 
+export function isActiveMemberOfBusiness(memberships: Membership[], businessId: string) {
+  return memberships.some((row) => row.businessId === businessId && row.isActive)
+}
+
 function isShownInChains(membership: Membership, chainBusinessIds: Set<string>) {
   return chainBusinessIds.has(membership.businessId)
 }

@@ -19,6 +19,7 @@ import type {
   Product,
   ProductBundleItem,
   ProductVariant,
+  Review,
   Service,
   TeamMember,
   User,
@@ -146,9 +147,6 @@ export function toBusiness(row: Tables<"businesses">): Business {
     category: row.category,
     latitude: row.latitude,
     longitude: row.longitude,
-    province: row.province ?? null,
-    canton: row.canton ?? null,
-    district: row.district ?? null,
     address: row.address,
     whatsappNumber: row.whatsapp_number,
     website: row.website,
@@ -298,6 +296,22 @@ export function toGalleryImage(row: Tables<"business_gallery">): GalleryImage {
     imageUrl: row.image_url,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
+  }
+}
+
+export function toReview(
+  row: Tables<"reviews">,
+  profile?: { full_name: string | null } | null,
+): Review {
+  return {
+    id: row.id,
+    businessId: row.business_id,
+    userId: row.user_id,
+    rating: row.rating,
+    comment: row.comment,
+    authorName: profile?.full_name ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 

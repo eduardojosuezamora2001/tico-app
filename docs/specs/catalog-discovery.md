@@ -4,11 +4,12 @@ Modelo de producción para escalar búsqueda del tipo: *“locales que venden be
 
 ## Principios
 
-1. **Separar rubro del negocio vs etiquetas de producto** — `businesses.category` describe el local (Pulpería, Farmacia). La taxonomía de producto vive en tablas propias.
-2. **Dos ámbitos de etiqueta (`scope`)** — marketplace (global, curada) vs merchant (estantería interna del negocio). El descubrimiento público filtra por tags `marketplace`.
-3. **Relación N:M** — un producto puede tener varias etiquetas; una etiqueta agrupa muchos productos y, vía productos, muchos negocios.
-4. **Búsqueda por nombre en capa SQL dedicada** — MV `business_catalog_search` + RPC `discover_businesses_v2` (geo, provincia, paginación, `matches jsonb`) unificando texto de catálogo, tags y metadatos del negocio. Servicios y menú solo cuentan si el módulo correspondiente está activo.
-5. **Tags en productos** — la fuente de verdad es `product_catalog_tags` (marketplace + merchant).
+1. **Separar rubro del negocio vs etiquetas de producto** — `businesses.category` / `marketplace_business_categories` describe el local (Pulpería, Farmacia). La taxonomía de producto vive en `catalog_tags`.
+2. **Taxonomía curada por super admin** — los comercios eligen rubros y tags; no los crean. CRUD en `/admin/catalogo` (API `/api/admin/*`). Bootstrap: `docs/guides/admin-bootstrap.md`.
+3. **Dos ámbitos de etiqueta (`scope`)** — marketplace (global, curada) vs merchant (estantería interna del negocio). El descubrimiento público filtra por tags `marketplace`.
+4. **Relación N:M** — un producto puede tener varias etiquetas; una etiqueta agrupa muchos productos y, vía productos, muchos negocios.
+5. **Búsqueda por nombre en capa SQL dedicada** — MV `business_catalog_search` + RPC `discover_businesses_v2` (geo, provincia, paginación, `matches jsonb`) unificando texto de catálogo, tags y metadatos del negocio. Servicios y menú solo cuentan si el módulo correspondiente está activo.
+6. **Tags en productos** — la fuente de verdad es `product_catalog_tags` (marketplace + merchant).
 
 ## Diagrama
 
@@ -68,7 +69,7 @@ Parámetros principales:
 | `marketplace_tag_slugs` | Filtro OR de slugs marketplace (vía `tag_slugs` en la MV) |
 | `matches` | Hasta 5 coincidencias `{ kind, id, label }` por local (`business`, `product`, `service`, `menu`) |
 | `categories` | Rubro del **negocio** (compat con home actual) |
-| `lat`, `lng`, `radius_km`, `provinces` | Geo y división administrativa |
+| `lat`, `lng`, `radius_km`, `administrative_division_ids` | Geo y división administrativa (UUIDs del árbol por país) |
 | cursores | Misma estrategia keyset que `search_businesses` |
 
 Criterio de inclusión (OR dentro de `q`):

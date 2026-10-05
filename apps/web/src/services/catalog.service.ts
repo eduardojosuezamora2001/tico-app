@@ -26,6 +26,11 @@ export function listMarketplaceTags() {
   return marketplaceTagsRequest
 }
 
+/** Invalida el cache tras cambios del panel admin. */
+export function clearMarketplaceTagsCache() {
+  marketplaceTagsRequest = null
+}
+
 export function prefetchMarketplaceTags() {
   void listMarketplaceTags().catch(() => undefined)
 }

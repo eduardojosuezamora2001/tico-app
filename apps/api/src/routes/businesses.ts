@@ -63,6 +63,19 @@ function csv(value: string | undefined, itemMax: number, countMax: number) {
   return items.length > 0 ? items : undefined
 }
 
+function csvUuids(value: string | undefined, countMax: number) {
+  if (!value) return undefined
+  const items = [...new Set(value.split(",").map((part) => part.trim()).filter(Boolean))].slice(
+    0,
+    countMax,
+  )
+  const uuids = items.flatMap((part) => {
+    const parsed = z.uuid().safeParse(part)
+    return parsed.success ? [parsed.data] : []
+  })
+  return uuids.length > 0 ? uuids : undefined
+}
+
 function decodeCursor(cursor: string | undefined) {
   if (!cursor) return { distance: null, name: null, id: null }
   const [distanceRaw, name, id] = cursor.split(cursorSeparator)
@@ -119,7 +132,7 @@ businessRoutes.get("/", async (c) => {
     radiusKm: c.req.query("radiusKm") ? Number(c.req.query("radiusKm")) : undefined,
     limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
     cursor: c.req.query("cursor") || undefined,
-    provinces: csv(c.req.query("province"), 40, 8),
+    administrativeDivisionIds: csvUuids(c.req.query("divisionId"), 8),
     catalogKind: c.req.query("catalogKind") || undefined,
     catalogLabel: c.req.query("catalogLabel") || undefined,
   })
@@ -158,7 +171,7 @@ businessRoutes.get("/", async (c) => {
     cursor_distance: cursor.distance,
     cursor_name: cursor.name,
     cursor_id: cursor.id,
-    provinces: parsed.data.provinces ?? null,
+    administrative_division_ids: parsed.data.administrativeDivisionIds ?? null,
     catalog_kind: parsed.data.catalogKind ?? null,
     catalog_label: parsed.data.catalogLabel ?? null,
   })
@@ -264,11 +277,12 @@ businessRoutes.get("/:id", async (c) => {
     .from("businesses")
     .select("*")
     .eq("id", parsedId.data)
-    .eq("is_active", true)
     .maybeSingle()
   if (error) return dbFail(c, error)
   if (!data) return fail(c, 404, "NOT_FOUND", "Negocio no encontrado")
-  if (data.is_draft) {
+
+  const isPublicListing = data.is_active && !data.is_draft
+  if (!isPublicListing) {
     const header = c.req.header("Authorization")
     const token = header?.startsWith("Bearer ") ? header.slice(7) : null
     if (!(await canViewDraftBusiness(data.id, token))) {
