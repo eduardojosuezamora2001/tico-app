@@ -1,8 +1,10 @@
 import {
   AdminBusinessStatusActionSchema,
+  AdminUpdateUserRoleSchema,
   CreateMarketplaceBusinessCategorySchema,
   CreateMarketplaceCatalogTagSchema,
   ListAdminBusinessesSchema,
+  ListAdminUsersSchema,
   MODULES,
   ROLES,
   UpdateMarketplaceBusinessCategorySchema,
@@ -10,10 +12,12 @@ import {
   type AdminBusinessListItem,
   type AdminBusinessPlatformStatus,
   type AdminStats,
+  type AdminUserListItem,
   type MarketplaceBusinessCategory,
   type MarketplaceTag,
   type ModuleName,
   type TablesUpdate,
+  type UserRole,
 } from "@workspace/shared"
 import { Hono } from "hono"
 
@@ -545,4 +549,146 @@ adminRoutes.patch("/businesses/:id/status", async (c) => {
     .single()
   if (error) return dbFail(c, error)
   return c.json({ data: mapAdminBusiness(data as unknown as AdminBusinessRow) })
+})
+
+function mapAdminUser(row: {
+  id: string
+  email: string
+  full_name: string | null
+  avatar_url: string | null
+  role: string
+  created_at: string
+}, ownedBusinessCount: number): AdminUserListItem {
+  return {
+    id: row.id,
+    email: row.email,
+    fullName: row.full_name,
+    avatarUrl: row.avatar_url,
+    role: row.role as UserRole,
+    ownedBusinessCount,
+    createdAt: row.created_at,
+  }
+}
+
+async function ownedBusinessCounts(ownerIds: string[]) {
+  const counts = new Map<string, number>()
+  if (ownerIds.length === 0) return counts
+  const { data, error } = await supabaseAdmin
+    .from("businesses")
+    .select("owner_id")
+    .in("owner_id", ownerIds)
+  if (error) throw error
+  for (const row of data ?? []) {
+    counts.set(row.owner_id, (counts.get(row.owner_id) ?? 0) + 1)
+  }
+  return counts
+}
+
+adminRoutes.get("/users", async (c) => {
+  const parsed = ListAdminUsersSchema.safeParse({
+    q: c.req.query("q") || undefined,
+    role: c.req.query("role") || undefined,
+    limit: c.req.query("limit") || undefined,
+    cursor: c.req.query("cursor") || undefined,
+  })
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const { q, role, limit, cursor } = parsed.data
+  let query = supabaseAdmin
+    .from("users")
+    .select("id, email, full_name, avatar_url, role, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit + 1)
+
+  if (role !== "all") {
+    query = query.eq("role", role)
+  }
+
+  if (q) {
+    const term = q.replace(/[%_,]/g, " ").trim()
+    if (term) {
+      query = query.or(`email.ilike.%${term}%,full_name.ilike.%${term}%`)
+    }
+  }
+
+  if (cursor) {
+    query = query.lt("created_at", cursor)
+  }
+
+  const { data, error } = await query
+  if (error) return dbFail(c, error)
+
+  const rows = data ?? []
+  const hasMore = rows.length > limit
+  const page = hasMore ? rows.slice(0, limit) : rows
+  const nextCursor = hasMore ? (page[page.length - 1]?.created_at ?? null) : null
+
+  let counts: Map<string, number>
+  try {
+    counts = await ownedBusinessCounts(page.map((row) => row.id))
+  } catch (countError) {
+    return dbFail(c, countError as { message: string })
+  }
+
+  return c.json({
+    data: page.map((row) => mapAdminUser(row, counts.get(row.id) ?? 0)),
+    nextCursor,
+  })
+})
+
+adminRoutes.patch("/users/:id/role", async (c) => {
+  const id = c.req.param("id")
+  const actorId = c.get("userId")
+  const parsed = AdminUpdateUserRoleSchema.safeParse(await c.req.json())
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const { data: existing, error: loadError } = await supabaseAdmin
+    .from("users")
+    .select("id, email, full_name, avatar_url, role, created_at")
+    .eq("id", id)
+    .maybeSingle()
+  if (loadError) return dbFail(c, loadError)
+  if (!existing) return fail(c, 404, "NOT_FOUND", "Usuario no encontrado")
+
+  if (id === actorId && parsed.data.role !== ROLES.ADMIN) {
+    return fail(c, 400, "VALIDATION_ERROR", "No podés quitarte el rol de administrador a vos mismo")
+  }
+
+  if (existing.role === ROLES.ADMIN && parsed.data.role !== ROLES.ADMIN) {
+    const { count, error: countError } = await supabaseAdmin
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("role", ROLES.ADMIN)
+    if (countError) return dbFail(c, countError)
+    if ((count ?? 0) <= 1) {
+      return fail(c, 400, "VALIDATION_ERROR", "Debe quedar al menos un administrador en la plataforma")
+    }
+  }
+
+  if (existing.role === parsed.data.role) {
+    let counts: Map<string, number>
+    try {
+      counts = await ownedBusinessCounts([existing.id])
+    } catch (countError) {
+      return dbFail(c, countError as { message: string })
+    }
+    return c.json({ data: mapAdminUser(existing, counts.get(existing.id) ?? 0) })
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .update({ role: parsed.data.role })
+    .eq("id", id)
+    .select("id, email, full_name, avatar_url, role, created_at")
+    .single()
+  if (error) return dbFail(c, error)
+
+  let counts: Map<string, number>
+  try {
+    counts = await ownedBusinessCounts([data.id])
+  } catch (countError) {
+    return dbFail(c, countError as { message: string })
+  }
+
+  return c.json({ data: mapAdminUser(data, counts.get(data.id) ?? 0) })
 })

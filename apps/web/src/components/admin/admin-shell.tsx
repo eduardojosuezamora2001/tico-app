@@ -2,14 +2,11 @@ import { FormEvent, useEffect, useState, startTransition } from "react"
 import { Link, NavLink, Outlet, useNavigate, useSearchParams } from "react-router"
 import {
   Building03Icon,
-  ClipboardListIcon,
   DashboardSquare01Icon,
   FolderTreeIcon,
   Search01Icon,
-  Settings01Icon,
   Shield01Icon,
   UserGroupIcon,
-  Wallet01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
@@ -22,10 +19,7 @@ const NAV = [
   { to: "/admin", end: true, label: "Resumen Global / Métricas", icon: DashboardSquare01Icon },
   { to: "/admin/comercios", end: false, label: "Comercios & Negocios", icon: Building03Icon },
   { to: "/admin/catalogo", end: false, label: "Catálogo Global", icon: FolderTreeIcon },
-  { to: "/admin/usuarios", end: false, label: "Usuarios & Dueños", icon: UserGroupIcon, soon: true },
-  { to: "/admin/reportes", end: false, label: "Reportes & Disputas", icon: ClipboardListIcon, soon: true },
-  { to: "/admin/finanzas", end: false, label: "Finanzas & SINPE", icon: Wallet01Icon, soon: true },
-  { to: "/admin/configuracion", end: false, label: "Configuración del Sistema", icon: Settings01Icon, soon: true },
+  { to: "/admin/usuarios", end: false, label: "Usuarios & Dueños", icon: UserGroupIcon },
 ] as const
 
 export function AdminShell() {
@@ -64,39 +58,24 @@ export function AdminShell() {
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 p-3">
-          {NAV.map((item) => {
-            if ("soon" in item && item.soon) {
-              return (
-                <span
-                  key={item.to}
-                  className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[oklch(0.55_0.02_280)]"
-                  title="Próximamente"
-                >
-                  <HugeiconsIcon icon={item.icon} strokeWidth={2} className="size-4 shrink-0 opacity-60" />
-                  <span className="flex-1 truncate">{item.label}</span>
-                  <span className="text-[10px] tracking-wide uppercase">Soon</span>
-                </span>
-              )
-            }
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                    isActive
-                      ? "bg-[oklch(0.55_0.22_285)] text-white"
-                      : "text-[oklch(0.78_0.02_280)] hover:bg-[oklch(0.22_0.03_275)] hover:text-white",
-                  )
-                }
-              >
-                <HugeiconsIcon icon={item.icon} strokeWidth={2} className="size-4 shrink-0" />
-                {item.label}
-              </NavLink>
-            )
-          })}
+          {NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-[oklch(0.55_0.22_285)] text-white"
+                    : "text-[oklch(0.78_0.02_280)] hover:bg-[oklch(0.22_0.03_275)] hover:text-white",
+                )
+              }
+            >
+              <HugeiconsIcon icon={item.icon} strokeWidth={2} className="size-4 shrink-0" />
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
 
         <div className="border-t border-[oklch(0.28_0.03_275)] px-4 py-4">

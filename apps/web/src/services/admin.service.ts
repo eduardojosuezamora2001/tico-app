@@ -2,9 +2,12 @@ import type {
   AdminBusinessListItem,
   AdminBusinessStatusActionInput,
   AdminStats,
+  AdminUpdateUserRoleInput,
+  AdminUserListItem,
   CreateMarketplaceBusinessCategoryInput,
   CreateMarketplaceCatalogTagInput,
   ListAdminBusinessesInput,
+  ListAdminUsersInput,
   MarketplaceBusinessCategory,
   MarketplaceTag,
   UpdateMarketplaceBusinessCategoryInput,
@@ -23,6 +26,14 @@ export function listAdminBusinesses(params?: Partial<ListAdminBusinessesInput>) 
 
 export function updateAdminBusinessStatus(id: string, input: AdminBusinessStatusActionInput) {
   return patchData<AdminBusinessListItem>(`/admin/businesses/${id}/status`, input)
+}
+
+export function listAdminUsers(params?: Partial<ListAdminUsersInput>) {
+  return getPage<AdminUserListItem[]>("/admin/users", params)
+}
+
+export function updateAdminUserRole(id: string, input: AdminUpdateUserRoleInput) {
+  return patchData<AdminUserListItem>(`/admin/users/${id}/role`, input)
 }
 
 export function listAdminBusinessCategories() {

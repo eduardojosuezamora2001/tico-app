@@ -31,6 +31,8 @@ Todas bajo `/api/admin/*`, con Bearer JWT y `requireAdmin`:
 | Método | Ruta | Uso |
 | ------ | ---- | --- |
 | GET | `/admin/stats` | Contadores del resumen |
+| GET | `/admin/users` | Listar usuarios (filtro rol, búsqueda) |
+| PATCH | `/admin/users/:id/role` | Cambiar rol global (`users.role`) |
 | GET/POST | `/admin/business-categories` | Listar / crear rubros |
 | PATCH/DELETE | `/admin/business-categories/:id` | Editar / desactivar (`is_active = false`) |
 | GET/POST | `/admin/marketplace-tags` | Listar / crear tags |

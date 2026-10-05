@@ -783,6 +783,25 @@ export const ListAdminBusinessesSchema = z.object({
   cursor: z.string().trim().min(1).optional(),
 })
 
+export const AdminUserRoleFilterSchema = z.enum([
+  "all",
+  ROLES.ADMIN,
+  ROLES.BUSINESS_OWNER,
+  ROLES.BUSINESS_EMPLOYEE,
+  ROLES.CLIENT,
+])
+
+export const ListAdminUsersSchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  role: AdminUserRoleFilterSchema.optional().default("all"),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(40),
+  cursor: z.string().trim().min(1).optional(),
+})
+
+export const AdminUpdateUserRoleSchema = z.object({
+  role: userRoleSchema,
+})
+
 // --------------------------------------------------------------------------
 // Tipos inferidos de inputs
 // --------------------------------------------------------------------------
@@ -826,3 +845,5 @@ export type CreateMarketplaceCatalogTagInput = z.infer<typeof CreateMarketplaceC
 export type UpdateMarketplaceCatalogTagInput = z.infer<typeof UpdateMarketplaceCatalogTagSchema>
 export type AdminBusinessStatusActionInput = z.infer<typeof AdminBusinessStatusActionSchema>
 export type ListAdminBusinessesInput = z.infer<typeof ListAdminBusinessesSchema>
+export type ListAdminUsersInput = z.infer<typeof ListAdminUsersSchema>
+export type AdminUpdateUserRoleInput = z.infer<typeof AdminUpdateUserRoleSchema>

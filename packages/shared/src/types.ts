@@ -318,6 +318,16 @@ export interface AdminStats {
 
 export type AdminBusinessPlatformStatus = "active" | "draft" | "suspended"
 
+export interface AdminUserListItem {
+  id: string
+  email: string
+  fullName: string | null
+  avatarUrl: string | null
+  role: UserRole
+  ownedBusinessCount: number
+  createdAt: ISODateString
+}
+
 export interface AdminBusinessListItem {
   id: string
   name: string
