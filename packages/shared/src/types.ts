@@ -536,6 +536,63 @@ export interface Notification {
 }
 
 // --------------------------------------------------------------------------
+// Asistente RAG + soporte
+// --------------------------------------------------------------------------
+
+export type AssistantMessageRole = "user" | "assistant" | "tool"
+
+export interface AssistantThread {
+  id: string
+  userId: string
+  title: string | null
+  lastAt: ISODateString
+  createdAt: ISODateString
+}
+
+export interface AssistantMessage {
+  id: string
+  threadId: string
+  role: AssistantMessageRole
+  content: string
+  metadata: Record<string, unknown>
+  createdAt: ISODateString
+}
+
+export interface AssistantChatResponse {
+  threadId: string
+  message: AssistantMessage
+  citations: AssistantCitation[]
+}
+
+export interface AssistantCitation {
+  businessId: string | null
+  label: string
+  href: string | null
+}
+
+export type SupportThreadStatus = "open" | "assigned" | "closed"
+
+export interface SupportThread {
+  id: string
+  userId: string
+  status: SupportThreadStatus
+  assigneeAdminId: string | null
+  lastText: string | null
+  lastAt: ISODateString
+  userEmail?: string | null
+  userName?: string | null
+}
+
+export interface SupportMessage {
+  id: string
+  threadId: string
+  senderId: string
+  body: string
+  isRead: boolean
+  createdAt: ISODateString
+}
+
+// --------------------------------------------------------------------------
 // Respuestas de la API
 // --------------------------------------------------------------------------
 

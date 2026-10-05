@@ -3,6 +3,7 @@ import { messagePreviewText, type Conversation } from "@workspace/shared"
 import { HelpCircleIcon, Search01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { AssistantHubEntry } from "@/components/assistant-hub-entry"
 import { PersonAvatar } from "@/components/message-thread"
 import {
   activeConversationCount,
@@ -87,6 +88,8 @@ export function MessagesConversationSidebar({
             aria-label="Buscar conversaciones"
           />
         </InputGroup>
+
+        <AssistantHubEntry />
       </div>
 
       <ScrollArea className="min-h-0 flex-1" viewportClassName="h-full">

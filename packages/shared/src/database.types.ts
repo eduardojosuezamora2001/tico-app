@@ -1569,6 +1569,120 @@ export type Database = {
           },
         ]
       }
+      assistant_messages: {
+        Row: {
+          id: string
+          thread_id: string
+          role: string
+          content: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          role: string
+          content: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          role?: string
+          content?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      assistant_threads: {
+        Row: {
+          id: string
+          user_id: string
+          title: string | null
+          last_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title?: string | null
+          last_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string | null
+          last_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          id: string
+          thread_id: string
+          sender_id: string
+          body: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          sender_id: string
+          body: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          sender_id?: string
+          body?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      support_threads: {
+        Row: {
+          id: string
+          user_id: string
+          status: string
+          assignee_admin_id: string | null
+          last_text: string | null
+          last_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          status?: string
+          assignee_admin_id?: string | null
+          last_text?: string | null
+          last_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          status?: string
+          assignee_admin_id?: string | null
+          last_text?: string | null
+          last_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           avatar_url: string | null

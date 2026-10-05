@@ -7,6 +7,7 @@ import {
   Search01Icon,
   Shield01Icon,
   UserGroupIcon,
+  BubbleChatIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
@@ -20,6 +21,7 @@ const NAV = [
   { to: "/admin/comercios", end: false, label: "Comercios & Negocios", icon: Building03Icon },
   { to: "/admin/catalogo", end: false, label: "Catálogo Global", icon: FolderTreeIcon },
   { to: "/admin/usuarios", end: false, label: "Usuarios & Dueños", icon: UserGroupIcon },
+  { to: "/admin/soporte", end: false, label: "Soporte plataforma", icon: BubbleChatIcon },
 ] as const
 
 export function AdminShell() {
