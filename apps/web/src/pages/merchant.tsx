@@ -14,8 +14,13 @@ import { listChains } from "@/services/chains.service"
 import { getMe } from "@/services/me.service"
 import type { BusinessChain } from "@workspace/shared"
 import type { CatalogKind, Membership } from "@/services/types"
+import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert"
 import { Button } from "@workspace/ui/components/button"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+
+function isPlatformSuspended(business: Business) {
+  return !business.isActive && !business.isDraft
+}
 
 const MerchantCatalogStudio = lazy(() =>
   import("@/components/merchant-catalog-studio").then((mod) => ({ default: mod.MerchantCatalogStudio })),
@@ -160,6 +165,7 @@ export function MerchantBusinessPage() {
   }
 
   const place = [business?.category, business?.address].filter(Boolean).join(" · ")
+  const platformSuspended = business ? isPlatformSuspended(business) : false
 
   return (
     <div className="min-h-svh bg-background">
@@ -173,8 +179,20 @@ export function MerchantBusinessPage() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{business?.name ?? "Negocio"}</h1>
               {business ? (
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                  {business.isActive ? "Activo" : "Inactivo"}
+                <span
+                  className={
+                    platformSuspended
+                      ? "rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive"
+                      : "rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
+                  }
+                >
+                  {business.isActive
+                    ? "Activo"
+                    : platformSuspended
+                      ? "Suspendido"
+                      : business.isDraft
+                        ? "Borrador"
+                        : "Inactivo"}
                 </span>
               ) : null}
             </div>
@@ -186,6 +204,17 @@ export function MerchantBusinessPage() {
             </Button>
           ) : null}
         </header>
+
+        {platformSuspended ? (
+          <Alert variant="destructive" className="border-destructive/40 bg-destructive/10">
+            <AlertTitle>Bloqueado por administración</AlertTitle>
+            <AlertDescription>
+              Este negocio fue suspendido por el equipo de TicoApp. No aparece en el directorio público ni en
+              búsquedas hasta que un administrador lo reactive. Podés seguir editando la ficha y el catálogo; para
+              apelar o resolver el caso, contactá soporte de la plataforma.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         <Tabs value={tab} onValueChange={setTab}>
           <div className="-mx-4 overflow-x-auto overflow-y-hidden border-b border-border px-4 sm:mx-0 sm:px-0">

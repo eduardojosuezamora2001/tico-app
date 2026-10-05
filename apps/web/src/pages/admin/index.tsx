@@ -70,6 +70,10 @@ export function AdminResumenPage() {
             <HugeiconsIcon icon={FolderTreeIcon} strokeWidth={2} data-icon="inline-start" />
             Catálogo global
           </Button>
+          <Button size="sm" variant="outline" render={<Link to="/admin/usuarios" />}>
+            <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} data-icon="inline-start" />
+            Usuarios & dueños
+          </Button>
         </div>
       </div>
 
