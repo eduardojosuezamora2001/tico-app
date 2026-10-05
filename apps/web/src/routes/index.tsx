@@ -17,6 +17,7 @@ import { AdminResumenPage } from "@/pages/admin"
 import { AdminCatalogoPage } from "@/pages/admin/catalogo"
 import { AdminComerciosPage } from "@/pages/admin/comercios"
 import { AdminUsuariosPage } from "@/pages/admin/usuarios"
+import { AdminSoportePage } from "@/pages/admin/soporte"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { NotFoundPage } from "@/pages/not-found"
 import { ROLES } from "@workspace/shared"
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
               { path: "comercios", element: <AdminComerciosPage /> },
               { path: "catalogo", element: <AdminCatalogoPage /> },
               { path: "usuarios", element: <AdminUsuariosPage /> },
+              { path: "soporte", element: <AdminSoportePage /> },
             ],
           },
         ],

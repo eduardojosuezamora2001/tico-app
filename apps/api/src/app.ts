@@ -10,6 +10,7 @@ import { secureHeaders } from "hono/secure-headers"
 
 import { env, isProduction } from "./config/env.js"
 import { addressRoutes } from "./routes/addresses.js"
+import { assistantRoutes } from "./routes/assistant.js"
 import { adminRoutes } from "./routes/admin.js"
 import { menuRoutes, serviceRoutes } from "./routes/catalog.js"
 import { catalogTagRoutes } from "./routes/catalog-tags.js"
@@ -50,6 +51,7 @@ app.get("/health", (c) =>
 )
 
 app.route("/me", meRoutes)
+app.route("/assistant", assistantRoutes)
 app.route("/admin", adminRoutes)
 app.route("/messages", messageRoutes)
 app.route("/orders", orderRoutes)

@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from "@workspace/ui/components/sheet"
 
+import { AssistantHubEntry } from "@/components/assistant-hub-entry"
 import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
 import {
   claimConversation,
@@ -342,6 +343,7 @@ export function FloatChat() {
           ) : (
             <ScrollArea className="min-h-0 flex-1" viewportClassName="h-full">
               <div className="flex flex-col gap-4 px-4 pb-4">
+                <AssistantHubEntry compact />
                 <FloatSection
                   title={staffView ? "Por atender" : undefined}
                   items={staffView ? queue : items}
