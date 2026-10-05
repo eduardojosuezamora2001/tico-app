@@ -9,17 +9,22 @@ import {
   type GalleryImage,
   type MenuItem,
   type Product,
+  type Review,
   type Service,
 } from "@workspace/shared"
 
 import { PaymentMethodBadgeList } from "@/components/payment-methods"
+import { Button } from "@workspace/ui/components/button"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
 import { colones, OrderBoard, type Offer } from "@/components/business-cart"
+import { BusinessReviewsPanel } from "@/components/business-reviews-panel"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
+import { isActiveMemberOfBusiness } from "@/lib/merchant-memberships"
 import { getBusiness } from "@/services/businesses.service"
+import { getMe } from "@/services/me.service"
 import {
   listMenuItems,
   listProducts,
@@ -28,6 +33,7 @@ import {
 import { listBusinessEvents } from "@/services/events.service"
 import { listGalleryImages } from "@/services/gallery.service"
 import { getBusinessHours } from "@/services/hours.service"
+import { listBusinessReviews } from "@/services/reviews.service"
 import { useAuthStore } from "@/stores/auth-store"
 
 type Payload = {
@@ -44,7 +50,9 @@ export function BusinessPage() {
   const [events, setEvents] = useState<BusinessEvent[]>([])
   const [gallery, setGallery] = useState<GalleryImage[]>([])
   const [hours, setHours] = useState<BusinessHours[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [canAdminister, setCanAdminister] = useState(false)
 
   useEffect(() => {
     setPayload(null)
@@ -54,7 +62,7 @@ export function BusinessPage() {
         setPayload(next)
         const enabled = new Set(next.modules.filter((item) => item.enabled).map((item) => item.moduleName))
         const businessId = next.business.id
-        const [productRows, serviceRows, menuRows, eventRows, galleryRows, hourRows] =
+        const [productRows, serviceRows, menuRows, eventRows, galleryRows, hourRows, reviewRows] =
           await Promise.all([
             enabled.has("products")
               ? listProducts(businessId, { expand: true })
@@ -64,6 +72,7 @@ export function BusinessPage() {
             listBusinessEvents(businessId),
             listGalleryImages(businessId),
             getBusinessHours(businessId).catch(() => [] as BusinessHours[]),
+            listBusinessReviews(businessId).catch(() => [] as Review[]),
           ])
         setProducts(productRows)
         setServices(serviceRows)
@@ -71,13 +80,25 @@ export function BusinessPage() {
         setEvents(eventRows)
         setGallery(galleryRows)
         setHours(hourRows)
+        setReviews(reviewRows)
       })
       .catch(() => setError("No encontramos ese comercio."))
   }, [id])
 
+  const signedIn = useAuthStore((s) => s.status) === "authenticated"
+
+  useEffect(() => {
+    setCanAdminister(false)
+    const businessId = payload?.business.id
+    if (!businessId || !signedIn) return
+
+    void getMe()
+      .then((me) => setCanAdminister(isActiveMemberOfBusiness(me.memberships, businessId)))
+      .catch(() => setCanAdminister(false))
+  }, [payload?.business.id, signedIn])
+
   const business = payload?.business
   const whatsapp = business?.whatsappNumber?.replace(/\D/g, "")
-  const signedIn = useAuthStore((s) => s.status) === "authenticated"
   const userId = useAuthStore((s) => s.session?.user.id)
   const hero = gallery[0]?.imageUrl ?? business?.bannerUrl ?? null
   const mapsHref =
@@ -144,6 +165,15 @@ export function BusinessPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {canAdminister ? (
+                    <Button
+                      variant="outline"
+                      className="rounded-full"
+                      render={<Link to={`/mi-negocio/${business.id}`} />}
+                    >
+                      Administrar
+                    </Button>
+                  ) : null}
                   {whatsapp ? (
                     <a
                       className="inline-flex h-10 items-center rounded-full bg-[#128C7E] px-4 text-sm font-medium text-white hover:bg-[#0f7a6e]"
@@ -178,6 +208,9 @@ export function BusinessPage() {
                     </TabsTrigger>
                     <TabsTrigger value="eventos" className="data-active:text-primary after:bg-primary">
                       Eventos {events.length}
+                    </TabsTrigger>
+                    <TabsTrigger value="resenas" className="data-active:text-primary after:bg-primary">
+                      Reseñas {reviews.length}
                     </TabsTrigger>
                     <TabsTrigger value="info" className="data-active:text-primary after:bg-primary">
                       Información
@@ -306,6 +339,13 @@ export function BusinessPage() {
                     </TabsContent>
                     <TabsContent value="eventos">
                       <EventList events={events} />
+                    </TabsContent>
+                    <TabsContent value="resenas">
+                      <BusinessReviewsPanel
+                        businessId={business.id}
+                        businessName={business.name}
+                        onReviewsChange={setReviews}
+                      />
                     </TabsContent>
                     <TabsContent value="info">
                       <section className="mt-4 rounded-2xl border border-border bg-card p-5">

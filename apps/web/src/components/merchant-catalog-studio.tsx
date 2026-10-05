@@ -18,6 +18,7 @@ import {
 } from "@workspace/shared"
 
 import { CategoryMultiCombobox } from "@/components/category-multi-combobox"
+import { ProductEditorForm } from "@/components/product-editor-form"
 import {
   CATALOG_MODULE_BY_KIND,
   CATALOG_MODULES,
@@ -157,7 +158,6 @@ export function MerchantCatalogStudio({
   onModulesChanged,
   onCatalogChanged,
   onOpenModuleSettings,
-  onCreateFullProduct,
   onEdit,
 }: {
   businessId: string
@@ -168,8 +168,7 @@ export function MerchantCatalogStudio({
   onModulesChanged: () => void
   onCatalogChanged: () => void
   onOpenModuleSettings: (moduleId: ModuleName | null) => void
-  onCreateFullProduct: () => void
-  onEdit: (item: StudioItem, product: Product | null) => void
+  onEdit: (item: StudioItem) => void
 }) {
   const formId = useId()
   const nameRef = useRef<HTMLInputElement>(null)
@@ -192,6 +191,18 @@ export function MerchantCatalogStudio({
   const [pendingModule, setPendingModule] = useState<ModuleName | null>(null)
   const [pendingItem, setPendingItem] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+
+  const componentVariants = useMemo(
+    () =>
+      bag.products.flatMap((product) =>
+        (product.variants ?? []).map((variant) => ({
+          id: variant.id,
+          label: `${product.name} · ${Object.values(variant.options).join(" ") || "default"} (₡${variant.price})`,
+        })),
+      ),
+    [bag.products],
+  )
 
   const items = useMemo(() => collectStudioItems(bag), [bag])
   const selectedConfig = selected ? catalogModule(selected) : null
@@ -343,13 +354,21 @@ export function MerchantCatalogStudio({
 
   const editItem = useCallback(
     (item: StudioItem) => {
-      onEdit(
-        item,
-        item.module === "products" ? (bag.products.find((product) => product.id === item.id) ?? null) : null,
-      )
+      if (item.module === "products") {
+        setSelected(MODULES.PRODUCTS)
+        setEditingProduct(bag.products.find((product) => product.id === item.id) ?? null)
+        return
+      }
+      onEdit(item)
     },
     [bag.products, onEdit],
   )
+
+  useEffect(() => {
+    if (selected !== MODULES.PRODUCTS) {
+      setEditingProduct(null)
+    }
+  }, [selected])
 
   const filterOptions: { value: OfferFilter; label: string }[] = [
     { value: "all", label: `Todos (${totalListed})` },
@@ -462,10 +481,25 @@ export function MerchantCatalogStudio({
       {selectedConfig ? (
         <Card>
           <CardHeader>
-            <CardTitle>Agregar al instante</CardTitle>
+            <CardTitle>
+              {selectedConfig.id === MODULES.PRODUCTS
+                ? editingProduct
+                  ? "Editar producto"
+                  : "Nuevo producto"
+                : "Agregar al instante"}
+            </CardTitle>
             <CardDescription>
-              El formulario cambia según el módulo. Un módulo nuevo se suma aquí al registrarlo en el catálogo.
+              {selectedConfig.id === MODULES.PRODUCTS
+                ? "Foto, variantes, combos y promociones en un solo formulario."
+                : "El formulario cambia según el módulo. Un módulo nuevo se suma aquí al registrarlo en el catálogo."}
             </CardDescription>
+            {selectedConfig.id === MODULES.PRODUCTS && editingProduct ? (
+              <CardAction>
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditingProduct(null)}>
+                  Crear otro
+                </Button>
+              </CardAction>
+            ) : null}
           </CardHeader>
           <CardContent>
             <ToggleGroup
@@ -488,6 +522,20 @@ export function MerchantCatalogStudio({
             </ToggleGroup>
           </CardContent>
           {modules[selectedConfig.id] ? (
+            selectedConfig.id === MODULES.PRODUCTS ? (
+              <CardContent>
+                <ProductEditorForm
+                  businessId={businessId}
+                  product={editingProduct}
+                  componentVariants={componentVariants}
+                  onSaved={() => {
+                    setEditingProduct(null)
+                    onCatalogChanged()
+                  }}
+                  onCancel={editingProduct ? () => setEditingProduct(null) : undefined}
+                />
+              </CardContent>
+            ) : (
             <form onSubmit={(event) => void submitQuickAdd(event)}>
               <CardContent>
                 <FieldGroup className="gap-4 lg:grid lg:grid-cols-3">
@@ -571,14 +619,7 @@ export function MerchantCatalogStudio({
                   </Alert>
                 ) : null}
               </CardContent>
-              <CardFooter className="justify-between">
-                {selectedConfig.id === MODULES.PRODUCTS ? (
-                  <Button type="button" variant="link" onClick={onCreateFullProduct}>
-                    Producto con variantes o combo
-                  </Button>
-                ) : (
-                  <span />
-                )}
+              <CardFooter className="justify-end">
                 <Button type="submit" disabled={saving}>
                   {saving ? (
                     <Spinner data-icon="inline-start" />
@@ -589,6 +630,7 @@ export function MerchantCatalogStudio({
                 </Button>
               </CardFooter>
             </form>
+            )
           ) : (
             <CardContent>
               <Alert>

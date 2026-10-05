@@ -260,10 +260,9 @@ productRoutes.post("/", requireAuth, async (c) => {
   const defaultVariant = variants.find((v) => v.isDefault) ?? variants[0]!
   const specifications = applySpecValidation(input.specSchema, input.specifications)
 
-  let marketplaceTags: { id: string; name: string }[] = []
   if (input.marketplaceTagIds !== undefined) {
     try {
-      marketplaceTags = await assertMarketplaceTags(input.marketplaceTagIds)
+      await assertMarketplaceTags(input.marketplaceTagIds)
     } catch (e) {
       return fail(c, 400, "INVALID_TAGS", (e as Error).message)
     }

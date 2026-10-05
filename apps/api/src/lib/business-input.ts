@@ -17,9 +17,6 @@ export function businessPatchFromInput(input: BusinessInput) {
   if (input.category !== undefined) patch.category = input.category
   if (input.latitude !== undefined) patch.latitude = input.latitude
   if (input.longitude !== undefined) patch.longitude = input.longitude
-  if (input.province !== undefined) patch.province = input.province || null
-  if (input.canton !== undefined) patch.canton = input.canton || null
-  if (input.district !== undefined) patch.district = input.district || null
   if (input.address !== undefined) patch.address = input.address || null
   if (input.whatsappNumber !== undefined) patch.whatsapp_number = input.whatsappNumber || null
   if (input.website !== undefined) patch.website = socialUrl(input.website)

@@ -273,9 +273,6 @@ export const CreateBusinessSchema = z.object({
     }),
   latitude: latitudeSchema.optional(),
   longitude: longitudeSchema.optional(),
-  province: z.string().trim().max(60).optional(),
-  canton: z.string().trim().max(60).optional(),
-  district: z.string().trim().max(60).optional(),
   address: z.string().trim().max(300).optional(),
   whatsappNumber: optionalNormalizedPhoneSchema,
   website: businessSocialUrlSchema.optional(),
@@ -348,7 +345,7 @@ export const SearchBusinessesSchema = z.object({
   radiusKm: z.number().positive().max(MAX_SEARCH_RADIUS_KM).default(10),
   limit: z.number().int().min(1).max(50).default(20),
   cursor: z.string().max(400).optional(),
-  provinces: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+  administrativeDivisionIds: z.array(uuidSchema).max(8).optional(),
   catalogKind: CatalogOfferKindSchema.optional(),
   catalogLabel: z.string().trim().min(1).max(120).optional(),
 })
@@ -741,6 +738,52 @@ export const AuditLogSchema = z.object({
 })
 
 // --------------------------------------------------------------------------
+// Admin — taxonomía marketplace (solo super admin)
+// --------------------------------------------------------------------------
+
+/** Slug URL-safe: `comida-rapida`, `videojuegos`. */
+export const taxonomySlugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Slug invalido (solo a-z, 0-9 y guiones)")
+
+export const CreateMarketplaceBusinessCategorySchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(80),
+  slug: taxonomySlugSchema.optional(),
+  legacyLabel: z.string().trim().min(1, "La etiqueta legacy es obligatoria").max(60),
+  parentId: uuidSchema.nullable().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+})
+
+export const UpdateMarketplaceBusinessCategorySchema =
+  CreateMarketplaceBusinessCategorySchema.partial()
+
+export const CreateMarketplaceCatalogTagSchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(80),
+  slug: taxonomySlugSchema.optional(),
+  parentId: uuidSchema.nullable().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+})
+
+export const UpdateMarketplaceCatalogTagSchema = CreateMarketplaceCatalogTagSchema.partial()
+
+export const AdminBusinessStatusFilterSchema = z.enum(["all", "active", "draft", "suspended"])
+
+export const AdminBusinessStatusActionSchema = z.object({
+  action: z.enum(["suspend", "activate"]),
+})
+
+export const ListAdminBusinessesSchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  status: AdminBusinessStatusFilterSchema.optional().default("all"),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(40),
+  cursor: z.string().trim().min(1).optional(),
+})
+
+// --------------------------------------------------------------------------
 // Tipos inferidos de inputs
 // --------------------------------------------------------------------------
 
@@ -773,3 +816,13 @@ export type UpdateReviewInput = z.infer<typeof UpdateReviewSchema>
 export type CreateEventInput = z.infer<typeof CreateEventSchema>
 export type SendMessageInput = z.infer<typeof SendMessageSchema>
 export type ChatOrderDecisionInput = z.infer<typeof ChatOrderDecisionSchema>
+export type CreateMarketplaceBusinessCategoryInput = z.infer<
+  typeof CreateMarketplaceBusinessCategorySchema
+>
+export type UpdateMarketplaceBusinessCategoryInput = z.infer<
+  typeof UpdateMarketplaceBusinessCategorySchema
+>
+export type CreateMarketplaceCatalogTagInput = z.infer<typeof CreateMarketplaceCatalogTagSchema>
+export type UpdateMarketplaceCatalogTagInput = z.infer<typeof UpdateMarketplaceCatalogTagSchema>
+export type AdminBusinessStatusActionInput = z.infer<typeof AdminBusinessStatusActionSchema>
+export type ListAdminBusinessesInput = z.infer<typeof ListAdminBusinessesSchema>

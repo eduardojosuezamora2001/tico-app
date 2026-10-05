@@ -152,9 +152,6 @@ export interface Business {
   category: string
   latitude: number | null
   longitude: number | null
-  province: string | null
-  canton: string | null
-  district: string | null
   address: string | null
   whatsappNumber: string | null
   website: string | null
@@ -282,6 +279,7 @@ export interface MarketplaceTag {
   name: string
   parentId?: string | null
   sortOrder?: number
+  isActive?: boolean
 }
 
 export interface MarketplaceBusinessCategory {
@@ -291,6 +289,54 @@ export interface MarketplaceBusinessCategory {
   legacyLabel: string
   parentId?: string | null
   sortOrder?: number
+  isActive?: boolean
+}
+
+/** Contadores del panel super admin. */
+export interface AdminStats {
+  businesses: {
+    total: number
+    active: number
+    draft: number
+    inactive: number
+  }
+  users: {
+    total: number
+    admin: number
+    businessOwner: number
+    businessEmployee: number
+    client: number
+  }
+  catalog: {
+    products: number
+    services: number
+    menuItems: number
+    marketplaceTags: number
+    businessCategories: number
+  }
+}
+
+export type AdminBusinessPlatformStatus = "active" | "draft" | "suspended"
+
+export interface AdminBusinessListItem {
+  id: string
+  name: string
+  slug: string
+  category: string
+  locationLabel: string | null
+  logoUrl: string | null
+  phone: string | null
+  whatsappNumber: string | null
+  isActive: boolean
+  isDraft: boolean
+  platformStatus: AdminBusinessPlatformStatus
+  modules: ModuleName[]
+  owner: {
+    id: string
+    fullName: string | null
+    email: string
+  } | null
+  createdAt: ISODateString
 }
 
 export interface Product {
@@ -393,6 +439,7 @@ export interface Review {
   /** 1..5 */
   rating: number
   comment: string | null
+  authorName?: string | null
   createdAt: ISODateString
   updatedAt: ISODateString
 }

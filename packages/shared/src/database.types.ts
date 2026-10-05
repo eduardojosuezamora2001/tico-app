@@ -598,7 +598,6 @@ export type Database = {
           address: string | null
           address_id: string | null
           banner_url: string | null
-          canton: string | null
           category: string
           chain_id: string | null
           chat_retention_days: number
@@ -606,7 +605,6 @@ export type Database = {
           delivery_cost: number | null
           delivery_radius_km: number | null
           description: string | null
-          district: string | null
           email: string | null
           facebook_url: string | null
           iban: string | null
@@ -626,7 +624,6 @@ export type Database = {
           payment_iban: boolean
           payment_sinpe: boolean
           phone: string | null
-          province: string | null
           sinpe_holder: string | null
           sinpe_phone: string | null
           slug: string
@@ -640,7 +637,6 @@ export type Database = {
           address?: string | null
           address_id?: string | null
           banner_url?: string | null
-          canton?: string | null
           category: string
           chain_id?: string | null
           chat_retention_days?: number
@@ -648,7 +644,6 @@ export type Database = {
           delivery_cost?: number | null
           delivery_radius_km?: number | null
           description?: string | null
-          district?: string | null
           email?: string | null
           facebook_url?: string | null
           iban?: string | null
@@ -668,7 +663,6 @@ export type Database = {
           payment_iban?: boolean
           payment_sinpe?: boolean
           phone?: string | null
-          province?: string | null
           sinpe_holder?: string | null
           sinpe_phone?: string | null
           slug?: string
@@ -682,7 +676,6 @@ export type Database = {
           address?: string | null
           address_id?: string | null
           banner_url?: string | null
-          canton?: string | null
           category?: string
           chain_id?: string | null
           chat_retention_days?: number
@@ -690,7 +683,6 @@ export type Database = {
           delivery_cost?: number | null
           delivery_radius_km?: number | null
           description?: string | null
-          district?: string | null
           email?: string | null
           facebook_url?: string | null
           iban?: string | null
@@ -710,7 +702,6 @@ export type Database = {
           payment_iban?: boolean
           payment_sinpe?: boolean
           phone?: string | null
-          province?: string | null
           sinpe_holder?: string | null
           sinpe_phone?: string | null
           slug?: string
@@ -1654,7 +1645,7 @@ export type Database = {
           cursor_distance?: number | null
           cursor_name?: string | null
           cursor_id?: string | null
-          provinces?: string[] | null
+          administrative_division_ids?: string[] | null
           catalog_kind?: string | null
           catalog_label?: string | null
         }
@@ -1719,7 +1710,7 @@ export type Database = {
           cursor_distance?: number | null
           cursor_name?: string | null
           cursor_id?: string | null
-          provinces?: string[] | null
+          administrative_division_ids?: string[] | null
         }
         Returns: {
           id: string
