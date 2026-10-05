@@ -1,6 +1,7 @@
 import type {
   AdminBusinessListItem,
   AdminBusinessStatusActionInput,
+  AdminCreateUserInput,
   AdminStats,
   AdminUpdateUserRoleInput,
   AdminUserListItem,
@@ -30,6 +31,10 @@ export function updateAdminBusinessStatus(id: string, input: AdminBusinessStatus
 
 export function listAdminUsers(params?: Partial<ListAdminUsersInput>) {
   return getPage<AdminUserListItem[]>("/admin/users", params)
+}
+
+export function createAdminUser(input: AdminCreateUserInput) {
+  return postData<AdminUserListItem>("/admin/users", input)
 }
 
 export function updateAdminUserRole(id: string, input: AdminUpdateUserRoleInput) {

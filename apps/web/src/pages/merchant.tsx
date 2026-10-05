@@ -4,6 +4,7 @@ import type { Business, MarketplaceTag, MenuItem, ModuleName, Product, Service }
 
 import { BusinessProfileWizard } from "@/components/business-profile-wizard"
 import { MerchantHomeDashboard } from "@/components/merchant-home-dashboard"
+import { MerchantSalesDashboard } from "@/components/merchant-sales-dashboard"
 import { SiteHeader } from "@/components/site-header"
 import { GalleryPanel } from "@/components/gallery-panel"
 import { ModulesPanel, useBusinessModules } from "@/components/modules-panel"
@@ -220,12 +221,17 @@ export function MerchantBusinessPage() {
           <div className="-mx-4 overflow-x-auto overflow-y-hidden border-b border-border px-4 sm:mx-0 sm:px-0">
             <TabsList variant="line" className="h-11 w-max bg-transparent">
               <TabsTrigger value="ficha" className="data-active:text-primary after:bg-primary">Ficha del negocio</TabsTrigger>
+              <TabsTrigger value="ventas" className="data-active:text-primary after:bg-primary">Ventas</TabsTrigger>
               <TabsTrigger value="galeria" className="data-active:text-primary after:bg-primary">Galería</TabsTrigger>
               <TabsTrigger value="modulos" className="data-active:text-primary after:bg-primary">Módulos</TabsTrigger>
               <TabsTrigger value="catalogo" className="data-active:text-primary after:bg-primary">Catálogo</TabsTrigger>
               <TabsTrigger value="equipo" className="data-active:text-primary after:bg-primary">Equipo</TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="ventas" className="pt-4">
+            {id ? <MerchantSalesDashboard businessId={id} /> : null}
+          </TabsContent>
 
           <TabsContent value="ficha" className="pt-4">
             {id ? (

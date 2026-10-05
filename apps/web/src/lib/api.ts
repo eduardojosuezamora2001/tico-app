@@ -34,6 +34,12 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
     if (typeof message === "string" && message.trim()) {
       return path ? `${message} (${path})` : message
     }
+    if (!error.response) {
+      if (error.code === "ECONNABORTED") {
+        return "La API tardó demasiado en responder. Intentá de nuevo."
+      }
+      return `No se pudo conectar con la API (${env.VITE_API_URL}). ¿Está corriendo \`pnpm dev\`?`
+    }
   }
   return fallback
 }

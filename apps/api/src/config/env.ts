@@ -30,6 +30,7 @@ const envSchema = z.object({
   // Integraciones de fases posteriores (opcionales en Fase 1).
   REDIS_URL: z.string().optional(),
   DEEPSEEK_API_KEY: z.string().optional(),
+  VOYAGE_API_KEY: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
 
   /** Secreto para hashear códigos de retiro (mín. 16 caracteres en producción). */

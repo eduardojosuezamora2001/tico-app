@@ -1,5 +1,6 @@
 import {
   AdminBusinessStatusActionSchema,
+  AdminCreateUserSchema,
   AdminUpdateUserRoleSchema,
   CreateMarketplaceBusinessCategorySchema,
   CreateMarketplaceCatalogTagSchema,
@@ -634,6 +635,61 @@ adminRoutes.get("/users", async (c) => {
     data: page.map((row) => mapAdminUser(row, counts.get(row.id) ?? 0)),
     nextCursor,
   })
+})
+
+adminRoutes.post("/users", async (c) => {
+  const parsed = AdminCreateUserSchema.safeParse(await c.req.json())
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const { email, password, fullName, role, emailConfirm } = parsed.data
+
+  const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: emailConfirm,
+    user_metadata: { full_name: fullName },
+  })
+  if (createError) {
+    const message = createError.message.toLowerCase()
+    if (message.includes("already") || message.includes("registered") || message.includes("exists")) {
+      return fail(c, 409, "CONFLICT", "Ya existe una cuenta con ese correo")
+    }
+    return fail(c, 400, "VALIDATION_ERROR", createError.message)
+  }
+
+  const userId = created.user?.id
+  if (!userId) {
+    return fail(c, 500, "INTERNAL", "No se pudo crear el usuario en Auth")
+  }
+
+  // El trigger handle_new_user crea la fila; sincronizamos nombre y rol.
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .update({
+      full_name: fullName,
+      role,
+    })
+    .eq("id", userId)
+    .select("id, email, full_name, avatar_url, role, created_at")
+    .single()
+
+  if (error) {
+    // Si el trigger aún no corrió, insertamos el perfil.
+    const { data: inserted, error: insertError } = await supabaseAdmin
+      .from("users")
+      .upsert({
+        id: userId,
+        email,
+        full_name: fullName,
+        role,
+      })
+      .select("id, email, full_name, avatar_url, role, created_at")
+      .single()
+    if (insertError) return dbFail(c, insertError)
+    return c.json({ data: mapAdminUser(inserted, 0) }, 201)
+  }
+
+  return c.json({ data: mapAdminUser(data, 0) }, 201)
 })
 
 adminRoutes.patch("/users/:id/role", async (c) => {

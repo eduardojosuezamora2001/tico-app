@@ -2,14 +2,30 @@ import { useEffect, useState, startTransition, useTransition } from "react"
 import { Link, useSearchParams } from "react-router"
 import type { AdminUserListItem, UserRole } from "@workspace/shared"
 import { ROLES } from "@workspace/shared"
-import { Search01Icon } from "@hugeicons/core-free-icons"
+import { Add01Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { toast } from "sonner"
 
-import { listAdminUsers, updateAdminUserRole } from "@/services/admin.service"
+import { createAdminUser, listAdminUsers, updateAdminUserRole } from "@/services/admin.service"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import { Checkbox } from "@workspace/ui/components/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@workspace/ui/components/field"
+import { Input } from "@workspace/ui/components/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { Spinner } from "@workspace/ui/components/spinner"
@@ -92,6 +108,7 @@ export function AdminUsuariosPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [, startPending] = useTransition()
 
   useEffect(() => {
@@ -183,13 +200,28 @@ export function AdminUsuariosPage() {
     })
   }
 
+  function handleCreated(user: AdminUserListItem) {
+    setItems((prev) => [user, ...prev.filter((row) => row.id !== user.id)])
+    setCreateOpen(false)
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight text-white">Usuarios & dueños</h2>
-        <p className="mt-1 text-sm text-[oklch(0.7_0.02_280)]">
-          Cuentas de la plataforma, roles globales y negocios que cada dueño tiene registrados.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Usuarios & dueños</h2>
+          <p className="mt-1 text-sm text-[oklch(0.7_0.02_280)]">
+            Cuentas de la plataforma, roles globales y negocios que cada dueño tiene registrados.
+          </p>
+        </div>
+        <Button
+          type="button"
+          className="rounded-full bg-[oklch(0.55_0.22_285)] text-white hover:bg-[oklch(0.5_0.22_285)]"
+          onClick={() => setCreateOpen(true)}
+        >
+          <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+          Crear cuenta
+        </Button>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -337,6 +369,164 @@ export function AdminUsuariosPage() {
           </Button>
         </div>
       ) : null}
+
+      <CreateUserDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={handleCreated}
+      />
     </div>
+  )
+}
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onCreated: (user: AdminUserListItem) => void
+}) {
+  const [fullName, setFullName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [role, setRole] = useState<UserRole>(ROLES.CLIENT)
+  const [emailConfirm, setEmailConfirm] = useState(true)
+  const [pending, setPending] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setFullName("")
+    setEmail("")
+    setPassword("")
+    setRole(ROLES.CLIENT)
+    setEmailConfirm(true)
+    setFormError(null)
+    setPending(false)
+  }, [open])
+
+  async function onSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setPending(true)
+    setFormError(null)
+    try {
+      const created = await createAdminUser({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+        role,
+        emailConfirm,
+      })
+      toast.success("Cuenta creada")
+      onCreated(created)
+    } catch (reason) {
+      setFormError(errorMessage(reason, "No se pudo crear la cuenta"))
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[min(100%-2rem,28rem)] border-[oklch(0.3_0.03_275)] bg-[oklch(0.18_0.03_275)] text-[oklch(0.96_0.01_280)]">
+        <DialogHeader>
+          <DialogTitle className="text-white">Crear cuenta</DialogTitle>
+          <DialogDescription className="text-[oklch(0.7_0.02_280)]">
+            Alta manual en Auth y perfil de plataforma. La persona podrá iniciar sesión con el
+            correo y la contraseña que indiques.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="flex flex-col gap-4" onSubmit={(event) => void onSubmit(event)}>
+          <FieldGroup className="gap-4">
+            <Field>
+              <FieldLabel htmlFor="admin-create-name">Nombre</FieldLabel>
+              <Input
+                id="admin-create-name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="border-[oklch(0.35_0.04_285)] bg-[oklch(0.2_0.03_275)]"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="admin-create-email">Correo</FieldLabel>
+              <Input
+                id="admin-create-email"
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-[oklch(0.35_0.04_285)] bg-[oklch(0.2_0.03_275)]"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="admin-create-password">Contraseña</FieldLabel>
+              <Input
+                id="admin-create-password"
+                required
+                type="password"
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="border-[oklch(0.35_0.04_285)] bg-[oklch(0.2_0.03_275)]"
+              />
+              <FieldDescription className="text-[oklch(0.6_0.02_280)]">
+                Mínimo 8 caracteres.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="admin-create-role">Rol de plataforma</FieldLabel>
+              <select
+                id="admin-create-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                className="h-9 w-full rounded-lg border border-[oklch(0.35_0.04_285)] bg-[oklch(0.2_0.03_275)] px-3 text-sm"
+              >
+                {ASSIGNABLE_ROLES.map((value) => (
+                  <option key={value} value={value}>
+                    {ROLE_LABEL[value]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field orientation="horizontal" className="items-start">
+              <Checkbox
+                checked={emailConfirm}
+                onCheckedChange={(checked) => setEmailConfirm(checked === true)}
+                aria-label="Confirmar correo automáticamente"
+                className="mt-0.5"
+              />
+              <div className="flex flex-col gap-1">
+                <FieldLabel className="font-normal">Confirmar correo automáticamente</FieldLabel>
+                <FieldDescription className="text-[oklch(0.6_0.02_280)]">
+                  Si está activo, la cuenta puede entrar sin verificar el email.
+                </FieldDescription>
+              </div>
+            </Field>
+          </FieldGroup>
+          {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-[oklch(0.85_0.02_280)]"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={pending}
+              className="rounded-full bg-[oklch(0.55_0.22_285)] text-white"
+            >
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              {pending ? "Creando…" : "Crear cuenta"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

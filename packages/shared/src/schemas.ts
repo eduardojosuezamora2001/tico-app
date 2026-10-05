@@ -802,6 +802,14 @@ export const AdminUpdateUserRoleSchema = z.object({
   role: userRoleSchema,
 })
 
+export const AdminCreateUserSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(8, "Minimo 8 caracteres").max(72),
+  fullName: z.string().trim().min(1, "Requerido").max(120),
+  role: userRoleSchema.optional().default(ROLES.CLIENT),
+  emailConfirm: z.boolean().optional().default(true),
+})
+
 // --------------------------------------------------------------------------
 // Tipos inferidos de inputs
 // --------------------------------------------------------------------------
@@ -847,3 +855,28 @@ export type AdminBusinessStatusActionInput = z.infer<typeof AdminBusinessStatusA
 export type ListAdminBusinessesInput = z.infer<typeof ListAdminBusinessesSchema>
 export type ListAdminUsersInput = z.infer<typeof ListAdminUsersSchema>
 export type AdminUpdateUserRoleInput = z.infer<typeof AdminUpdateUserRoleSchema>
+export type AdminCreateUserInput = z.infer<typeof AdminCreateUserSchema>
+export type AssistantChatInput = z.infer<typeof AssistantChatSchema>
+export type SupportSendInput = z.infer<typeof SupportSendSchema>
+export type AssistantEmbedSyncInput = z.infer<typeof AssistantEmbedSyncSchema>
+
+// --------------------------------------------------------------------------
+// Asistente RAG + soporte
+// --------------------------------------------------------------------------
+
+export const AssistantChatSchema = z.object({
+  threadId: z.uuid().optional(),
+  message: z.string().trim().min(1).max(2000),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+})
+
+export const SupportSendSchema = z.object({
+  threadId: z.uuid().optional(),
+  message: z.string().trim().min(1).max(4000),
+  closeThread: z.boolean().optional(),
+})
+
+export const AssistantEmbedSyncSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(2000).optional().default(500),
+})
