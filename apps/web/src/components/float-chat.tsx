@@ -235,7 +235,7 @@ export function FloatChat() {
     }
   }
 
-  if (status === "loading" || pathname.startsWith("/mensajes")) return null
+  if (status === "loading" || pathname.startsWith("/mensajes") || pathname.startsWith("/admin")) return null
 
   if (status !== "authenticated") {
     return (

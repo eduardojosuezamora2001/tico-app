@@ -13,7 +13,12 @@ import { MerchantBusinessPage, MerchantHomePage } from "@/pages/merchant"
 import { NewBusinessPage } from "@/pages/new-business"
 import { LocalChatPage, MessageThreadPage, MessagesPage } from "@/pages/messages"
 import { OrdersPage } from "@/pages/orders"
+import { AdminResumenPage } from "@/pages/admin"
+import { AdminCatalogoPage } from "@/pages/admin/catalogo"
+import { AdminComerciosPage } from "@/pages/admin/comercios"
+import { AdminShell } from "@/components/admin/admin-shell"
 import { NotFoundPage } from "@/pages/not-found"
+import { ROLES } from "@workspace/shared"
 
 /**
  * Arbol de rutas (React Router v7, data mode).
@@ -42,6 +47,20 @@ export const router = createBrowserRouter([
           { path: "mi-negocio/nuevo", element: <NewBusinessPage /> },
           { path: "mi-negocio/nuevo/:draftId", element: <NewBusinessPage /> },
           { path: "mi-negocio/:id", element: <MerchantBusinessPage /> },
+        ],
+      },
+      {
+        path: "admin",
+        element: <ProtectedRoute roles={[ROLES.ADMIN]} />,
+        children: [
+          {
+            element: <AdminShell />,
+            children: [
+              { index: true, element: <AdminResumenPage /> },
+              { path: "comercios", element: <AdminComerciosPage /> },
+              { path: "catalogo", element: <AdminCatalogoPage /> },
+            ],
+          },
         ],
       },
       { path: "*", element: <NotFoundPage /> },

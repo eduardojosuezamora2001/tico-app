@@ -30,7 +30,9 @@ Cada negocio controla su catálogo y sus precios. El cliente ve la oferta de un 
 ## Capabilities and Constraints
 
 - Fase 2: login y registro, alta y edición del negocio, módulos Productos, Servicios y Menú, directorio y página pública del negocio.
-- Fuera de esta fase: chat, empleados, citas, eventos, reseñas, traducción, mapa de Google y panel de administración.
+- Panel super admin (`/admin`): métricas globales y CRUD de taxonomía marketplace (rubros de negocio y tags de producto). No hay registro de admin; se promueve por SQL (`docs/guides/admin-bootstrap.md`).
+- Fuera de esta fase: chat avanzado, citas, eventos, traducción, mapa de Google y el resto de módulos del mock Master Admin (comercios/usuarios/finanzas).
+- Los comercios no crean categorías ni subcategorías: solo eligen las que define el super admin.
 - Los datos de negocio pasan por la API (Hono). Supabase Auth y la subida de imágenes usan el cliente de Supabase. RLS sigue aplicando.
 - El repositorio se llama `tico-app`. El nombre público es TicoApp.
 

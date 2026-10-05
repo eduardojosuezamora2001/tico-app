@@ -28,7 +28,7 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps) {
   }
 
   if (roles && (!profile || !roles.includes(profile.role))) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/cuenta" replace />
   }
 
   return <Outlet />
