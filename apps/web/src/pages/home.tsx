@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs"
+import { parseAsArrayOf, parseAsInteger, parseAsString, useQueryState } from "nuqs"
 import { Link } from "react-router"
 
 import { ListFilter } from "@/components/list-filter"
@@ -29,9 +29,13 @@ const fallbackProvinces = [
   { id: "d1c10007-0007-4007-8007-000000000007", label: "Limón" },
 ] as const
 
+const PAGE_SIZE = 20
+
 export function HomePage() {
   const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""))
   const [category, setCategory] = useQueryState("category", parseAsArrayOf(parseAsString).withDefault([]))
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(0))
+  const [cursor, setCursor] = useQueryState("cursor", parseAsString)
   const [draft, setDraft] = useState(query)
   const [provinceOptions, setProvinceOptions] = useState<{ id: string; label: string }[]>([
     { id: "todos", label: "Todas las provincias" },
@@ -39,11 +43,13 @@ export function HomePage() {
   ])
   const [selectedDivisionIds, setSelectedDivisionIds] = useState<string[]>([])
   const [items, setItems] = useState<BusinessSummary[]>([])
-  const [page, setPage] = useState(0)
   const [hasNext, setHasNext] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const cursors = useRef<(string | null)[]>([null])
+  /** Cursor de la siguiente página (misma sesión, no va en la URL hasta que avanzás). */
+  const nextCursorRef = useRef<string | null>(null)
+  /** Cursor usado por página, para volver atrás sin recargar. */
+  const cursorByPageRef = useRef(new Map<number, string>())
   const provinceNames = provinceOptions
     .filter((option) => option.id !== "todos")
     .map((option) => option.label)
@@ -84,33 +90,52 @@ export function HomePage() {
     q: query || undefined,
     category: category.length > 0 ? category.join(",") : undefined,
     divisionId: selectedDivisionIds.length > 0 ? selectedDivisionIds.join(",") : undefined,
-    limit: 6,
+    limit: PAGE_SIZE,
   }
 
   const filterKey = `${query}|${category.join(",")}|${selectedDivisionIds.join(",")}`
+  const filterKeyRef = useRef(filterKey)
 
   useEffect(() => {
-    cursors.current = [null]
-    setPage(0)
-  }, [filterKey])
+    if (filterKeyRef.current === filterKey) return
+    filterKeyRef.current = filterKey
+    nextCursorRef.current = null
+    cursorByPageRef.current = new Map()
+    void setPage(0)
+    void setCursor(null)
+  }, [filterKey, setPage, setCursor])
 
   useEffect(() => {
-    const cursor = page === 0 ? undefined : cursors.current[page]
-    if (page > 0 && !cursor) return
+    const safePage = page < 0 ? 0 : page
+    if (safePage !== page) {
+      void setPage(0)
+      void setCursor(null)
+      return
+    }
+    const apiCursor = safePage === 0 ? undefined : (cursor ?? undefined)
+    if (safePage > 0 && !apiCursor) {
+      void setPage(0)
+      void setCursor(null)
+      return
+    }
+
     const handle = window.setTimeout(() => {
       setLoading(true)
-      void searchBusinesses({ ...searchParams, cursor: cursor ?? undefined })
+      void searchBusinesses({ ...searchParams, cursor: apiCursor })
         .then((response) => {
           setItems(response.data)
           setHasNext(Boolean(response.nextCursor))
-          if (response.nextCursor) cursors.current[page + 1] = response.nextCursor
+          nextCursorRef.current = response.nextCursor ?? null
+          if (safePage > 0 && apiCursor) {
+            cursorByPageRef.current.set(safePage, apiCursor)
+          }
           setError(null)
         })
         .catch(() => setError("No se pudo cargar el directorio."))
         .finally(() => setLoading(false))
     }, 250)
     return () => window.clearTimeout(handle)
-  }, [filterKey, page])
+  }, [filterKey, page, cursor, query, category, selectedDivisionIds, setPage, setCursor])
 
   return (
     <div className="min-h-svh bg-background text-foreground">
@@ -199,10 +224,22 @@ export function HomePage() {
               })
               setSelectedDivisionIds(ids)
             }}
+            pageSize={PAGE_SIZE}
             page={page}
             hasPrevious={page > 0}
             hasNext={hasNext}
-            onPageChange={setPage}
+            onPageChange={(next) => {
+              const target = Math.max(0, next)
+              if (target > page) {
+                const nextCursor = nextCursorRef.current
+                if (!nextCursor) return
+                void setPage(target)
+                void setCursor(nextCursor)
+                return
+              }
+              void setPage(target)
+              void setCursor(target === 0 ? null : (cursorByPageRef.current.get(target) ?? null))
+            }}
             lists={[
               {
                 id: "todas",
