@@ -17,11 +17,15 @@ import { canClaim, canOpen, canTake, conversationTitle } from "@/lib/chat-events
 import { OnlineDot } from "@/lib/presence"
 import type { CartLine } from "@/stores/cart-store"
 import { cartTotal } from "@/stores/cart-store"
+import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
+import { Separator } from "@workspace/ui/components/separator"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
+import { cn } from "cn"
 
 export function MessagesConversationSidebar({
   items,
@@ -59,23 +63,34 @@ export function MessagesConversationSidebar({
   const activeCount = activeConversationCount(items)
 
   return (
-    <aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden border-border bg-card/50 md:w-80 lg:w-[22rem] md:border-r xl:w-[24rem]">
-      <div className="flex flex-col gap-4 border-b border-border px-4 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-xl font-semibold tracking-tight">Mis conversaciones</h1>
-          <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
+    <aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden border-border bg-background md:w-80 md:border-r md:bg-card/50 lg:w-[22rem] xl:w-[24rem]">
+      <div className="flex flex-col gap-3 border-b border-border px-3 pt-3 pb-3 sm:gap-4 sm:px-4 sm:pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">Mensajes</h1>
+            <p className="text-xs text-muted-foreground md:hidden">
+              {activeCount === 1 ? "1 conversación activa" : `${activeCount} conversaciones activas`}
+            </p>
+          </div>
+          <Badge variant="secondary" className="hidden shrink-0 md:inline-flex">
             {activeCount} activas
-          </span>
+          </Badge>
         </div>
 
-        <div className="flex rounded-full border border-border bg-background p-1">
-          <TabButton active={tab === "active"} onClick={() => onTabChange("active")}>
-            Activos
-          </TabButton>
-          <TabButton active={tab === "history"} onClick={() => onTabChange("history")}>
-            Historial
-          </TabButton>
-        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => onTabChange(value as ConversationTab)}
+          className="w-full gap-0"
+        >
+          <TabsList className="grid h-10 w-full grid-cols-2 rounded-full">
+            <TabsTrigger value="active" className="rounded-full">
+              Activos
+            </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-full">
+              Historial
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <InputGroup className="h-10 rounded-full bg-background">
           <InputGroupAddon>
@@ -84,23 +99,28 @@ export function MessagesConversationSidebar({
           <InputGroupInput
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar sodas, pedidos, #..."
+            placeholder="Buscar chats…"
             aria-label="Buscar conversaciones"
           />
         </InputGroup>
 
-        <AssistantHubEntry />
+        <div className="md:hidden">
+          <AssistantHubEntry compact />
+        </div>
+        <div className="hidden md:block">
+          <AssistantHubEntry />
+        </div>
       </div>
 
       <ScrollArea className="min-h-0 flex-1" viewportClassName="h-full">
         {loading ? (
-          <div className="flex flex-col gap-3 p-4">
-            {Array.from({ length: 4 }, (_, index) => (
-              <Skeleton key={index} className="h-24 w-full rounded-2xl" />
+          <div className="flex flex-col gap-2 p-3 sm:gap-3 sm:p-4">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton key={index} className="h-16 w-full rounded-xl sm:h-24 sm:rounded-2xl" />
             ))}
           </div>
         ) : visible.length === 0 ? (
-          <Empty className="border-0 py-10">
+          <Empty className="border-0 py-12">
             <EmptyHeader>
               <EmptyTitle>{tab === "active" ? "Sin conversaciones activas" : "Sin historial"}</EmptyTitle>
               <EmptyDescription>
@@ -111,8 +131,8 @@ export function MessagesConversationSidebar({
             </EmptyHeader>
           </Empty>
         ) : (
-          <ul className="flex flex-col gap-2 p-3 pb-4">
-            {visible.map((item) => (
+          <ul className="flex flex-col md:gap-2 md:p-3 md:pb-4">
+            {visible.map((item, index) => (
               <ConversationCard
                 key={item.id}
                 item={item}
@@ -121,13 +141,14 @@ export function MessagesConversationSidebar({
                 cartLines={cartByBusiness[item.businessId] ?? []}
                 onClaim={onClaim}
                 onTake={onTake}
+                showDivider={index < visible.length - 1}
               />
             ))}
           </ul>
         )}
       </ScrollArea>
 
-      <div className="border-t border-border p-4">
+      <div className="hidden border-t border-border p-4 md:block">
         <div className="rounded-2xl border border-dashed border-border bg-background/60 px-4 py-3">
           <p className="flex items-center gap-2 text-sm font-medium">
             <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} className="size-4 text-primary" />
@@ -142,30 +163,6 @@ export function MessagesConversationSidebar({
   )
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        active
-          ? "flex-1 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-          : "flex-1 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-      }
-    >
-      {children}
-    </button>
-  )
-}
-
 function ConversationCard({
   item,
   selected,
@@ -173,6 +170,7 @@ function ConversationCard({
   cartLines,
   onClaim,
   onTake,
+  showDivider,
 }: {
   item: Conversation
   selected: boolean
@@ -180,94 +178,119 @@ function ConversationCard({
   cartLines: CartLine[]
   onClaim: (id: string) => void
   onTake: (id: string) => void
+  showDivider: boolean
 }) {
   const unread = item.unreadCount > 0
   const status = conversationPreviewStatus(item, cartLines)
   const total = cartTotal(cartLines)
   const title = conversationTitle(item)
+  const claimable = canClaim(item)
+  const takeable = canTake(item)
 
-  const card = (
+  const body = (
     <div
-      className={
+      className={cn(
+        "flex items-start gap-3 px-3 py-3 transition-colors md:rounded-2xl md:border md:p-3",
         selected
-          ? "rounded-2xl border border-primary/40 bg-primary/10 p-3 shadow-[0_8px_24px_-20px_var(--color-primary)]"
-          : "rounded-2xl border border-border bg-card p-3 transition-colors hover:border-primary/25 hover:bg-muted/30"
-      }
+          ? "bg-primary/10 md:border-primary/40 md:shadow-[0_8px_24px_-20px_var(--color-primary)]"
+          : "active:bg-muted/70 md:border-border md:bg-card md:hover:border-primary/25 md:hover:bg-muted/30",
+      )}
     >
-      <div className="flex items-start gap-3">
-        <PersonAvatar name={title} size="default" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className={`truncate text-sm ${unread ? "font-semibold" : "font-medium"}`}>{title}</p>
-            <span className="shrink-0 text-[11px] text-muted-foreground">{formatRelativeTime(item.lastAt)}</span>
-          </div>
-          <StatusPill tone={status.tone}>{status.label}</StatusPill>
-          <p className={`mt-2 line-clamp-2 text-xs ${unread ? "text-foreground" : "text-muted-foreground"}`}>
+      <PersonAvatar name={title} size="default" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className={cn("truncate text-sm", unread ? "font-semibold" : "font-medium")}>{title}</p>
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+            {formatRelativeTime(item.lastAt)}
+          </span>
+        </div>
+
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+          {item.viewerRole === "customer" && total > 0 ? (
+            <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-medium">
+              {formatColones(total)}
+            </Badge>
+          ) : null}
+        </div>
+
+        <div className="mt-1.5 flex items-end gap-2">
+          <p
+            className={cn(
+              "min-w-0 flex-1 truncate text-xs leading-snug",
+              unread ? "font-medium text-foreground" : "text-muted-foreground",
+            )}
+          >
             {messagePreviewText(item.lastText)}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {total > 0 ? (
-              <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums">
-                {formatColones(total)}
-              </span>
-            ) : null}
-            {item.viewerRole === "customer" && total > 0 ? (
-              <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
-                Pedido en chat
-              </span>
-            ) : null}
-            {unread ? (
-              <span className="ms-auto grid size-5 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                {item.unreadCount > 9 ? "9+" : item.unreadCount}
-              </span>
-            ) : (
-              <span className="ms-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                <OnlineDot on={online && item.viewerRole !== "customer" && item.viewerRole !== "assignee"} />
-              </span>
-            )}
-          </div>
+          {unread ? (
+            <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[10px]">
+              {item.unreadCount > 9 ? "9+" : item.unreadCount}
+            </Badge>
+          ) : (
+            <span className="mb-0.5 inline-flex shrink-0 items-center">
+              <OnlineDot on={online && item.viewerRole !== "customer" && item.viewerRole !== "assignee"} />
+            </span>
+          )}
         </div>
       </div>
     </div>
   )
 
   return (
-    <li className="flex flex-col gap-2">
+    <li className="flex flex-col">
       {canOpen(item) ? (
         <Link to={`/mensajes/${item.id}`} aria-current={selected ? "page" : undefined}>
-          {card}
+          {body}
         </Link>
       ) : (
-        card
+        body
       )}
-      <div className="flex gap-2 px-1">
-        {canClaim(item) ? (
-          <Button type="button" size="sm" className="h-8 flex-1 rounded-full" onClick={() => onClaim(item.id)}>
-            Atender
-          </Button>
-        ) : null}
-        {canTake(item) ? (
-          <Button type="button" size="sm" variant="outline" className="h-8 flex-1 rounded-full" onClick={() => onTake(item.id)}>
-            Tomar
-          </Button>
-        ) : null}
-      </div>
+
+      {claimable || takeable ? (
+        <div className="flex gap-2 px-3 pb-3 md:px-1 md:pb-0">
+          {claimable ? (
+            <Button type="button" size="sm" className="h-8 flex-1 rounded-full" onClick={() => onClaim(item.id)}>
+              Atender
+            </Button>
+          ) : null}
+          {takeable ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 flex-1 rounded-full"
+              onClick={() => onTake(item.id)}
+            >
+              Tomar
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showDivider ? <Separator className="md:hidden" /> : null}
     </li>
   )
 }
 
-function StatusPill({
+function StatusBadge({
   tone,
   children,
 }: {
   tone: "success" | "primary" | "muted"
   children: React.ReactNode
 }) {
-  const styles =
-    tone === "success"
-      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-      : tone === "primary"
-        ? "bg-primary/15 text-primary"
-        : "bg-muted text-muted-foreground"
-  return <span className={`mt-1 inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${styles}`}>{children}</span>
+  return (
+    <Badge
+      variant={tone === "muted" ? "secondary" : "outline"}
+      className={cn(
+        "h-5 px-1.5 text-[10px] font-medium",
+        tone === "success" &&
+          "border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+        tone === "primary" && "border-transparent bg-primary/15 text-primary",
+      )}
+    >
+      {children}
+    </Badge>
+  )
 }

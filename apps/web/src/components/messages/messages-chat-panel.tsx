@@ -2,6 +2,7 @@ import { useState, type SubmitEventHandler } from "react"
 import { Link } from "react-router"
 import type { Business, ChatOrder, Conversation, Message } from "@workspace/shared"
 import {
+  ArrowLeft01Icon,
   Attachment01Icon,
   Location01Icon,
   Mic01Icon,
@@ -25,8 +26,10 @@ import {
 import { OnlineDot } from "@/lib/presence"
 import type { CartLine } from "@/stores/cart-store"
 import { cartTotal } from "@/stores/cart-store"
+import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@workspace/ui/components/input-group"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import {
   Sheet,
@@ -35,6 +38,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
+import { cn } from "cn"
 
 export function MessagesChatPanel({
   conversationId,
@@ -234,15 +238,13 @@ export function MessagesChatPanel({
           ) : null}
 
           {active?.viewerRole === "customer" && cartLines.length > 0 ? (
-            <div className="border-b border-primary/20 bg-primary/5 px-4 py-3 sm:px-5">
-              <p className="text-sm font-medium text-primary">
-                Pedido #{orderNumberFromConversation(active.id)} · {cartLines.length} ítem
-                {cartLines.length === 1 ? "" : "s"} en carrito
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Total estimado ₡{cartTotalAmount.toLocaleString("es-CR")}. Confirma detalles y pago con el comercio.
-              </p>
-            </div>
+            <CartSummaryBanner
+              orderNumber={orderNumberFromConversation(active.id)}
+              itemCount={cartLines.length}
+              total={cartTotalAmount}
+              interactive={showOrderSheet}
+              onOpen={() => setOrderSheetOpen(true)}
+            />
           ) : null}
 
           {active?.viewerRole === "owner" && active.assigneeName ? (
@@ -322,6 +324,58 @@ function OrderSheet({
   )
 }
 
+function CartSummaryBanner({
+  orderNumber,
+  itemCount,
+  total,
+  interactive,
+  onOpen,
+}: {
+  orderNumber: string
+  itemCount: number
+  total: number
+  interactive: boolean
+  onOpen: () => void
+}) {
+  const content = (
+    <>
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+        <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-primary">
+          Pedido #{orderNumber}
+          <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+            {itemCount} ítem{itemCount === 1 ? "" : "s"}
+          </Badge>
+        </span>
+        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+          Total ₡{total.toLocaleString("es-CR")}
+          {interactive ? " · Tocá para ver el pedido" : null}
+        </span>
+      </span>
+    </>
+  )
+
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 border-b border-primary/20 bg-primary/5 px-3 py-2.5 text-left sm:px-5 sm:py-3"
+        onClick={onOpen}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex w-full items-center gap-3 border-b border-primary/20 bg-primary/5 px-3 py-2.5 sm:px-5 sm:py-3">
+      {content}
+    </div>
+  )
+}
+
 function ChatHeader({
   title,
   subtitle,
@@ -336,23 +390,24 @@ function ChatHeader({
   actions?: React.ReactNode
 }) {
   return (
-    <header className="flex items-center gap-2 border-b border-border bg-card/40 px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
-      <Link
-        className="shrink-0 rounded-full px-2 py-1 text-sm font-medium text-primary md:hidden"
-        to={backHref}
+    <header className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border bg-background/95 px-2 py-2 backdrop-blur-md sm:gap-3 sm:px-5 sm:py-3 md:static md:bg-card/40 md:backdrop-blur-none">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 rounded-full md:hidden"
+        aria-label="Volver a chats"
+        render={<Link to={backHref} />}
       >
-        ← Chats
-      </Link>
+        <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
+      </Button>
       <PersonAvatar name={typeof title === "string" ? title : "Chat"} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold sm:text-base">{title}</p>
         {subtitle ? (
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate text-xs text-muted-foreground sm:text-sm">
-            {subtitle}
-          </p>
+          <div className="truncate text-xs text-muted-foreground sm:text-sm">{subtitle}</div>
         ) : null}
       </div>
-      <div className="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none sm:gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {actions}
         {wa ? (
           <Button
@@ -373,10 +428,18 @@ function ChatHeader({
 function ChatSkeleton({ backHref = "/mensajes" }: { backHref?: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-border px-4 py-3">
-        <Link className="text-sm text-primary md:hidden" to={backHref}>
-          ← Chats
-        </Link>
+      <header className="flex items-center gap-2 border-b border-border px-2 py-2 md:px-4 md:py-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full md:hidden"
+          aria-label="Volver a chats"
+          render={<Link to={backHref} />}
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
+        </Button>
+        <Skeleton className="size-8 rounded-full" />
+        <Skeleton className="h-4 w-32 rounded-full" />
       </header>
       <div className="flex flex-1 flex-col gap-3 p-4">
         <Skeleton className="h-12 w-2/3 rounded-2xl" />
@@ -398,24 +461,37 @@ function RichComposer({
   onSubmit: SubmitEventHandler<HTMLFormElement>
   placeholder: string
 }) {
+  const canSend = Boolean(value.trim())
+
   return (
     <form
-      className="shrink-0 border-t border-border bg-card/30 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:py-3"
+      className="shrink-0 border-t border-border bg-background px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:bg-card/30 sm:px-5 sm:py-3"
       onSubmit={onSubmit}
     >
-      <div className="flex items-end gap-1.5 rounded-2xl border border-border bg-background p-1.5 sm:gap-2 sm:p-2">
-        <div className="hidden shrink-0 gap-1 pb-1 sm:flex">
-          <IconButton label="Adjuntar archivo" icon={Attachment01Icon} disabled />
-          <IconButton label="Compartir ubicación" icon={Location01Icon} disabled />
-          <IconButton label="Mensaje de voz" icon={Mic01Icon} disabled />
-        </div>
-        <textarea
+      <InputGroup
+        className={cn(
+          "h-auto min-h-12 items-end rounded-2xl bg-muted/40 py-1",
+          "sm:bg-background",
+        )}
+      >
+        <InputGroupAddon align="inline-start" className="hidden self-end sm:flex">
+          <InputGroupButton size="icon-sm" variant="ghost" disabled aria-label="Adjuntar archivo">
+            <HugeiconsIcon icon={Attachment01Icon} strokeWidth={2} />
+          </InputGroupButton>
+          <InputGroupButton size="icon-sm" variant="ghost" disabled aria-label="Compartir ubicación">
+            <HugeiconsIcon icon={Location01Icon} strokeWidth={2} />
+          </InputGroupButton>
+          <InputGroupButton size="icon-sm" variant="ghost" disabled aria-label="Mensaje de voz">
+            <HugeiconsIcon icon={Mic01Icon} strokeWidth={2} />
+          </InputGroupButton>
+        </InputGroupAddon>
+        <InputGroupTextarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           rows={1}
           aria-label="Mensaje"
-          className="max-h-32 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground"
+          className="max-h-32 min-h-10 resize-none py-2.5"
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault()
@@ -423,38 +499,18 @@ function RichComposer({
             }
           }}
         />
-        <Button
-          type="submit"
-          className="shrink-0 rounded-full px-3 sm:px-4"
-          size="sm"
-          disabled={!value.trim()}
-          aria-label="Enviar mensaje"
-        >
-          <HugeiconsIcon icon={SentIcon} strokeWidth={2} data-icon="inline-start" />
-          <span className="hidden sm:inline">Enviar</span>
-        </Button>
-      </div>
+        <InputGroupAddon align="inline-end" className="self-end">
+          <Button
+            type="submit"
+            size="icon"
+            className="rounded-full"
+            disabled={!canSend}
+            aria-label="Enviar mensaje"
+          >
+            <HugeiconsIcon icon={SentIcon} strokeWidth={2} />
+          </Button>
+        </InputGroupAddon>
+      </InputGroup>
     </form>
-  )
-}
-
-function IconButton({
-  label,
-  icon,
-  disabled,
-}: {
-  label: string
-  icon: typeof SentIcon
-  disabled?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-label={label}
-      className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
-    >
-      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-4" />
-    </button>
   )
 }

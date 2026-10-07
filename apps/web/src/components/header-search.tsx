@@ -87,7 +87,7 @@ export function HeaderSearch() {
   const showList = open && (loading || items.length > 0 || term.trim().length >= 2)
 
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1 sm:max-w-md">
+    <div ref={rootRef} className="relative min-w-0 flex-1 lg:max-w-md xl:max-w-xl">
       <form onSubmit={onSubmit}>
         <InputGroup className="h-10 rounded-full">
           <InputGroupAddon>

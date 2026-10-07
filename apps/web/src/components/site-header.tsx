@@ -1,206 +1,324 @@
-import { Link, useLocation } from "react-router"
+import { Link, useLocation, useNavigate } from "react-router"
+import {
+  AccessibilityIcon,
+  Add01Icon,
+  Home01Icon,
+  Logout01Icon,
+  Message01Icon,
+  Moon02Icon,
+  ShoppingBag01Icon,
+  Store01Icon,
+  Sun03Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
 import { AccessibilityMenu } from "@/components/accessibility-menu"
 import { HeaderCategoryExplorerDesktop, HeaderCategoryExplorerMobile } from "@/components/header-category-explorer"
 import { HeaderSearch } from "@/components/header-search"
-
-import { Menu01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
-
 import { OrderTabBadge } from "@/components/orders/order-tab-badge"
 import { useTheme } from "@/components/theme-provider"
-import { useOrdersInboxStore } from "@/stores/orders-inbox-store"
+import { useAccessibilityStore } from "@/stores/accessibility-store"
 import { useAuthStore } from "@/stores/auth-store"
+import { useOrdersInboxStore } from "@/stores/orders-inbox-store"
+import { Avatar, AvatarBadge, AvatarFallback } from "@workspace/ui/components/avatar"
+import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@workspace/ui/components/sheet"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
+import { Separator } from "@workspace/ui/components/separator"
+import { cn } from "cn"
 
-const links = [
-  { to: "/", label: "Inicio", icon: HomeIcon, match: (path: string) => path === "/" },
-  { to: "/mi-negocio", label: "Para negocios", icon: StoreIcon, match: (path: string) => path.startsWith("/mi-negocio") },
-  { to: "/mensajes", label: "Mensajes", icon: MessageIcon, match: (path: string) => path.startsWith("/mensajes") },
+const navLinks = [
+  {
+    to: "/",
+    label: "Inicio",
+    icon: Home01Icon,
+    match: (path: string) => path === "/",
+  },
+  {
+    to: "/mi-negocio",
+    label: "Para negocios",
+    icon: Store01Icon,
+    match: (path: string) => path.startsWith("/mi-negocio"),
+  },
+  {
+    to: "/mensajes",
+    label: "Mensajes",
+    icon: Message01Icon,
+    match: (path: string) => path.startsWith("/mensajes"),
+  },
 ] as const
 
 export function SiteHeader() {
+  const status = useAuthStore((s) => s.status)
+  const signedIn = status === "authenticated"
+  const { pathname } = useLocation()
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-md">
+      <div className="flex h-14 items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-5">
+        <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
+          <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm text-primary-foreground">
+            T
+          </span>
+          <span className="hidden sm:inline">TicoApp</span>
+        </Link>
+
+        <HeaderCategoryExplorerDesktop />
+        <HeaderSearch />
+        <HeaderCategoryExplorerMobile />
+
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
+          {navLinks.map((item) => {
+            const active = item.match(pathname)
+            const href = authHref(item.to, signedIn)
+            return (
+              <Button
+                key={item.to}
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "rounded-full",
+                  active ? "bg-muted text-foreground" : "text-muted-foreground",
+                )}
+                render={<Link to={href} aria-current={active ? "page" : undefined} />}
+              >
+                <HugeiconsIcon icon={item.icon} strokeWidth={2} data-icon="inline-start" />
+                {item.label}
+              </Button>
+            )
+          })}
+        </nav>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="lg:hidden">
+            <AccountMenu variant="compact" />
+          </div>
+
+          <div className="hidden items-center gap-1 sm:gap-2 lg:flex">
+            <AccessibilityMenu variant="icon" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              aria-label="Mensajes"
+              render={<Link to={authHref("/mensajes", signedIn)} />}
+            >
+              <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
+            </Button>
+            <AccountMenu variant="desktop" />
+            <Button
+              className="rounded-full"
+              render={<Link to={signedIn ? "/mi-negocio/nuevo" : "/registro"} />}
+            >
+              Publicar negocio
+            </Button>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function AccountMenu({ variant }: { variant: "compact" | "desktop" }) {
+  const navigate = useNavigate()
   const status = useAuthStore((s) => s.status)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const signedIn = status === "authenticated"
   const userId = useAuthStore((s) => s.session?.user.id)
   const ordersNavCount = useOrdersInboxStore((s) => s.navBadgeCount(userId))
-  const { pathname } = useLocation()
   const { theme, setTheme } = useTheme()
   const isDark =
     theme === "dark" ||
     (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+  const increaseFontScale = useAccessibilityStore((s) => s.increaseFontScale)
+  const resetFontScale = useAccessibilityStore((s) => s.resetFontScale)
 
   const mark = initials(profile?.fullName ?? null, profile?.email)
+  const displayName = profile?.fullName?.trim() || profile?.email || "Cuenta"
+  const messagesHref = authHref("/mensajes", signedIn)
+  const isCompact = variant === "compact"
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-md">
-      <div className="flex h-16 items-center gap-3 px-3 sm:gap-4 sm:px-5">
-        <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm text-primary-foreground">T</span>
-          <span className="hidden sm:inline">TicoApp</span>
-        </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            className={cn("rounded-full", isCompact ? "size-9 p-0" : "h-10 gap-2 px-2")}
+            aria-label={signedIn ? "Menú de cuenta" : "Menú"}
+          />
+        }
+      >
+        <Avatar size="default">
+          <AvatarFallback className="bg-primary/15 font-semibold text-primary">{mark}</AvatarFallback>
+          {ordersNavCount > 0 ? <AvatarBadge className="top-0 right-0 bottom-auto size-2.5" /> : null}
+        </Avatar>
+        {isCompact ? null : (
+          <span className="max-w-28 truncate text-sm font-medium">
+            {signedIn ? "Mi cuenta" : "Menú"}
+          </span>
+        )}
+      </DropdownMenuTrigger>
 
-        <HeaderCategoryExplorerMobile />
-        <HeaderCategoryExplorerDesktop />
-        <HeaderSearch />
-
-        <nav className="hidden items-center gap-1 lg:flex">
-          {links.map((item) => {
-            const active = item.match(pathname)
-            const href = authHref(item.to, signedIn)
-            return (
-              <Link
-                key={item.to}
-                to={href}
-                aria-current={active ? "page" : undefined}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm ${
-                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <item.icon />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <Sheet>
-          <SheetTrigger
-            className="ml-auto md:ml-0 md:hidden"
-            render={<Button variant="ghost" size="icon" aria-label="Abrir menú" />}
-          >
-            <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
-          </SheetTrigger>
-          <SheetContent side="right">
-            <SheetHeader>
-              <SheetTitle>TicoApp</SheetTitle>
-              <SheetDescription>Directorio de comercios locales</SheetDescription>
-            </SheetHeader>
-            <nav className="flex flex-col gap-1 px-4">
-              {links.map((item) => {
-                const href = authHref(item.to, signedIn)
-                return (
-                  <Button key={item.to} variant="ghost" className="justify-start" render={<Link to={href} />}>
-                    <item.icon />
-                    {item.label}
-                  </Button>
-                )
-              })}
-              {signedIn ? (
-                <Button variant="ghost" className="justify-start" render={<Link to="/pedidos" />}>
-                  <BagIcon />
-                  Pedidos
-                  <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
-                </Button>
-              ) : null}
-            </nav>
-            <SheetFooter className="flex-col items-stretch gap-2">
-              <AccessibilityMenu variant="full" className="w-full" />
-              <Button variant="outline" onClick={() => setTheme(isDark ? "light" : "dark")}>
-                {isDark ? "Usar tema claro" : "Usar tema oscuro"}
-              </Button>
-              {signedIn ? (
-                <>
-                  <Button variant="ghost" render={<Link to="/cuenta" />}>
-                    Mi cuenta
-                  </Button>
-                  <Button variant="ghost" onClick={() => void signOut()}>
-                    Salir
-                  </Button>
-                </>
-              ) : (
-                <Button render={<Link to="/login" />}>Entrar</Button>
-              )}
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
-
-        <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
-          <div className="hidden lg:block">
-            <AccessibilityMenu variant="icon" />
+      <DropdownMenuContent align="end" sideOffset={8} className="w-80 min-w-72 p-0">
+        <div className="flex items-center gap-3 px-3 py-3">
+          <Avatar size="lg">
+            <AvatarFallback className="bg-primary/15 text-sm font-semibold text-primary">
+              {mark}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{signedIn ? displayName : "Invitado"}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {signedIn ? (profile?.email ?? "Tu cuenta en TicoApp") : "Entrá para guardar pedidos y chats"}
+            </p>
           </div>
-          <Link
-            to={signedIn ? "/mensajes" : "/login"}
-            aria-label="Mensajes"
-            className="grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-          >
-            <MessageIcon />
-          </Link>
-          <Link
-            to={signedIn ? "/mensajes" : "/login"}
-            aria-label="Avisos"
-            className="hidden size-10 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground sm:grid"
-          >
-            <BellIcon />
-          </Link>
-
-          {signedIn ? (
-            <details className="group relative">
-              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full py-1 pr-1 pl-1 hover:bg-muted [&::-webkit-details-marker]:hidden">
-                <span className="grid size-8 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                  {mark}
-                </span>
-                <span className="hidden text-sm md:inline">Mi cuenta</span>
-                <ChevronIcon />
-              </summary>
-              <div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-popover p-1 text-sm shadow-[0_16px_40px_-24px_oklch(0.2_0.04_275)]">
-                <Link className="block rounded-lg px-3 py-2 hover:bg-muted" to="/cuenta">
-                  Mi cuenta
-                </Link>
-                <Link className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 hover:bg-muted" to="/pedidos">
-                  <span>Pedidos</span>
-                  <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
-                </Link>
-                <button
-                  type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left hover:bg-muted"
-                  onClick={() => setTheme(isDark ? "light" : "dark")}
-                >
-                  {isDark ? "Usar tema claro" : "Usar tema oscuro"}
-                </button>
-                <button
-                  type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left hover:bg-muted"
-                  onClick={() => void signOut()}
-                >
-                  Salir
-                </button>
-              </div>
-            </details>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label={isDark ? "Usar tema claro" : "Usar tema oscuro"}
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-              >
-                {isDark ? <SunIcon /> : <MoonIcon />}
-              </button>
-              <Button variant="ghost" className="rounded-full" render={<Link to="/login" />}>
-                Entrar
-              </Button>
-            </>
-          )}
-
+          {isCompact ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 rounded-full"
+              render={<Link to={messagesHref} />}
+            >
+              <HugeiconsIcon icon={Message01Icon} strokeWidth={2} data-icon="inline-start" />
+              Mensajes
+            </Button>
+          ) : null}
         </div>
-        <Button className="shrink-0 rounded-full px-3 sm:px-4" render={<Link to={signedIn ? "/mi-negocio/nuevo" : "/registro"} />}>
-          <span className="sm:hidden">Publicar</span>
-          <span className="hidden sm:inline">Publicar negocio</span>
-        </Button>
-      </div>
-    </header>
+
+        {isCompact ? (
+          <>
+            <Separator />
+            <div className="grid grid-cols-3 gap-1 px-2 py-3">
+              <QuickAction
+                to={signedIn ? "/pedidos" : "/login"}
+                label="Pedidos"
+                icon={ShoppingBag01Icon}
+                badge={ordersNavCount}
+              />
+              <QuickAction to="/mi-negocio" label="Negocios" icon={Store01Icon} />
+              <QuickAction
+                to={signedIn ? "/mi-negocio/nuevo" : "/registro"}
+                label={signedIn ? "Publicar" : "Registro"}
+                icon={Add01Icon}
+              />
+            </div>
+            <Separator />
+            <DropdownMenuGroup className="p-1">
+              <DropdownMenuLabel>Navegación</DropdownMenuLabel>
+              {navLinks.map((item) => (
+                <DropdownMenuItem key={item.to} onClick={() => navigate(authHref(item.to, signedIn))}>
+                  <HugeiconsIcon icon={item.icon} strokeWidth={2} />
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+          </>
+        ) : (
+          <Separator />
+        )}
+
+        <DropdownMenuGroup className="p-1">
+          <DropdownMenuLabel>Cuenta</DropdownMenuLabel>
+          {signedIn ? (
+            <DropdownMenuItem onClick={() => navigate("/cuenta")}>
+              <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+              Mi cuenta
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => navigate("/login")}>
+              <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+              Entrar
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => navigate(signedIn ? "/pedidos" : "/login")}>
+            <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} />
+            Tus pedidos
+            <OrderTabBadge count={ordersNavCount} highlight={ordersNavCount > 0} />
+          </DropdownMenuItem>
+          {isCompact ? null : (
+            <DropdownMenuItem onClick={() => navigate(signedIn ? "/mi-negocio/nuevo" : "/registro")}>
+              <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
+              {signedIn ? "Publicar negocio" : "Crear cuenta"}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup className="p-1">
+          <DropdownMenuLabel>Preferencias</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+            <HugeiconsIcon icon={isDark ? Sun03Icon : Moon02Icon} strokeWidth={2} />
+            {isDark ? "Usar tema claro" : "Usar tema oscuro"}
+          </DropdownMenuItem>
+          {isCompact ? (
+            <>
+              <DropdownMenuItem onClick={increaseFontScale}>
+                <HugeiconsIcon icon={AccessibilityIcon} strokeWidth={2} />
+                Aumentar tamaño de letra
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={resetFontScale}>
+                <HugeiconsIcon icon={AccessibilityIcon} strokeWidth={2} />
+                Restablecer tamaño de letra
+              </DropdownMenuItem>
+            </>
+          ) : null}
+        </DropdownMenuGroup>
+
+        {signedIn ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup className="p-1">
+              <DropdownMenuItem variant="destructive" onClick={() => void signOut()}>
+                <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function QuickAction({
+  to,
+  label,
+  icon,
+  badge = 0,
+}: {
+  to: string
+  label: string
+  icon: typeof Home01Icon
+  badge?: number
+}) {
+  return (
+    <Link
+      to={to}
+      className="relative flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-center text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+    >
+      <span className="relative grid size-10 place-items-center rounded-full bg-muted text-foreground">
+        <HugeiconsIcon icon={icon} strokeWidth={2} />
+        {badge > 0 ? (
+          <Badge className="absolute -top-1 -right-1 min-w-5 justify-center px-1 py-0 text-[10px]">
+            {badge > 99 ? "99+" : badge}
+          </Badge>
+        ) : null}
+      </span>
+      {label}
+    </Link>
   )
 }
 
@@ -213,72 +331,4 @@ function initials(name: string | null, email: string | undefined) {
   const source = (name?.trim() || email?.split("@")[0] || "C").replace(/[._-]+/g, " ")
   const parts = source.split(/\s+/).slice(0, 2)
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "C"
-}
-
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function StoreIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M4 9.5 6 4h12l2 5.5" strokeLinejoin="round" />
-      <path d="M4 9.5h16V20H4z" strokeLinejoin="round" />
-      <path d="M9 20v-5h6v5" />
-    </svg>
-  )
-}
-
-function MessageIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M5 6.5h14v9H8l-3 2.5z" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function BagIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M7 8V6.5A2.5 2.5 0 0 1 9.5 4h5A2.5 2.5 0 0 1 17 6.5V8" strokeLinecap="round" />
-      <path d="M6 8h12l-1 13H7z" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M6 16.5h12l-1.2-2V10a4.8 4.8 0 0 0-9.6 0v4.5z" strokeLinejoin="round" />
-      <path d="M10 16.5a2 2 0 0 0 4 0" />
-    </svg>
-  )
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M16 3.5A8 8 0 1 0 20.5 14 6.5 6.5 0 0 1 16 3.5Z" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <circle cx="12" cy="12" r="3.5" />
-      <path d="M12 3.5v2M12 18.5v2M4.5 12h2M17.5 12h2" strokeLinecap="round" />
-    </svg>
-  )
-}
-function ChevronIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
 }

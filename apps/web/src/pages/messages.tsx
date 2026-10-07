@@ -357,7 +357,7 @@ function Inbox() {
       <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
         <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
           <aside
-            className={`${open ? "hidden md:flex" : "flex"} min-h-0 h-full shrink-0 overflow-hidden`}
+            className={`${open ? "hidden md:flex" : "flex"} h-full min-h-0 w-full shrink-0 overflow-hidden md:w-auto`}
           >
             <MessagesConversationSidebar
               items={items}

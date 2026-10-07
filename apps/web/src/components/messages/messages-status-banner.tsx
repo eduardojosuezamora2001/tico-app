@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 export function MessagesStatusBanner() {
   return (
-    <div className="border-b border-border/80 bg-card/80 px-4 py-2 text-xs text-muted-foreground sm:px-6">
+    <div className="hidden border-b border-border/80 bg-card/80 px-4 py-2 text-xs text-muted-foreground sm:block sm:px-6">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-4 gap-y-1">
         <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
           <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} className="size-3.5 text-primary" />
