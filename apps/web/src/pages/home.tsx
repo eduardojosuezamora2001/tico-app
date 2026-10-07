@@ -267,36 +267,6 @@ export function HomePage() {
           />
         </section>
 
-        <section className="mt-14">
-          <h2 className="text-2xl font-semibold">Explorá por provincia</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Los comercios publicados cuya dirección cae en esa provincia.</p>
-          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-            {provinceOptions
-              .filter((option) => option.id !== "todos")
-              .map((option) => {
-                const selected = selectedDivisionIds.includes(option.id)
-                return (
-                  <li key={option.id}>
-                    <button
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() =>
-                        setSelectedDivisionIds(
-                          selected
-                            ? selectedDivisionIds.filter((id) => id !== option.id)
-                            : [...selectedDivisionIds, option.id],
-                        )
-                      }
-                      className={`w-full rounded-2xl border px-3 py-4 text-left ${selected ? "border-primary bg-accent" : "border-border bg-card"}`}
-                    >
-                      <span className="block text-sm font-medium">{option.label}</span>
-                    </button>
-                  </li>
-                )
-              })}
-          </ul>
-        </section>
-
         <section className="mt-14 overflow-hidden rounded-3xl bg-primary px-6 py-8 text-primary-foreground md:flex md:items-center md:justify-between md:px-10">
           <div className="max-w-xl">
             <h2 className="text-2xl font-semibold text-balance">Publicá tu local y recibí pedidos directos</h2>
