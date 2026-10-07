@@ -11,6 +11,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { AccessibilityMenu } from "@/components/accessibility-menu"
 import { useAuthStore } from "@/stores/auth-store"
 import { Badge } from "@workspace/ui/components/badge"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
@@ -103,6 +104,7 @@ export function AdminShell() {
               />
             </InputGroup>
           </form>
+          <AccessibilityMenu variant="icon" />
           <Badge variant="outline" className="border-[oklch(0.35_0.08_180)] text-[oklch(0.82_0.08_180)]">
             Sistemas CR: Operativo
           </Badge>

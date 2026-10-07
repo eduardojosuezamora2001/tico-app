@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router"
 
+import { AccessibilityMenu } from "@/components/accessibility-menu"
 import { HeaderCategoryExplorerDesktop, HeaderCategoryExplorerMobile } from "@/components/header-category-explorer"
 import { HeaderSearch } from "@/components/header-search"
 
@@ -104,7 +105,8 @@ export function SiteHeader() {
                 </Button>
               ) : null}
             </nav>
-            <SheetFooter>
+            <SheetFooter className="flex-col items-stretch gap-2">
+              <AccessibilityMenu variant="full" className="w-full" />
               <Button variant="outline" onClick={() => setTheme(isDark ? "light" : "dark")}>
                 {isDark ? "Usar tema claro" : "Usar tema oscuro"}
               </Button>
@@ -125,6 +127,9 @@ export function SiteHeader() {
         </Sheet>
 
         <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
+          <div className="hidden lg:block">
+            <AccessibilityMenu variant="icon" />
+          </div>
           <Link
             to={signedIn ? "/mensajes" : "/login"}
             aria-label="Mensajes"

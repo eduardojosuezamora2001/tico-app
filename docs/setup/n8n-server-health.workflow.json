@@ -1,0 +1,85 @@
+{
+  "name": "Server Health Proxy",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "server-health",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "id": "webhook-server-health",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "server-health"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3001/api/health",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-backend-health",
+      "name": "GET health del servidor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0],
+      "notes": "URL fija del backend. No usar el webhook ni la página /health como destino. Si n8n corre en Docker y la API en el host, usa http://host.docker.internal:3001/api/health"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst networkError =\n  Boolean(input.error) ||\n  typeof input.statusCode !== 'number' ||\n  input.statusCode === 0;\n\nif (networkError) {\n  const message =\n    (typeof input.error === 'object' && input.error && 'message' in input.error\n      ? String(input.error.message)\n      : null) ||\n    (typeof input.message === 'string' ? input.message : null) ||\n    'Sin conexión o timeout hacia el backend';\n\n  return [\n    {\n      json: {\n        statusCode: 503,\n        body: {\n          status: 'unavailable',\n          reason: 'backend_unreachable',\n          message,\n        },\n      },\n    },\n  ];\n}\n\nlet payload = input.body;\n\nif (typeof payload === 'string') {\n  try {\n    payload = JSON.parse(payload);\n  } catch {\n    return [\n      {\n        json: {\n          statusCode: 502,\n          body: {\n            status: 'bad_gateway',\n            reason: 'non_json_response',\n            upstreamStatus: input.statusCode,\n          },\n        },\n      },\n    ];\n  }\n}\n\nif (payload === null || typeof payload !== 'object') {\n  return [\n    {\n      json: {\n        statusCode: 502,\n        body: {\n          status: 'bad_gateway',\n          reason: 'non_json_response',\n          upstreamStatus: input.statusCode,\n        },\n      },\n    },\n  ];\n}\n\nreturn [\n  {\n    json: {\n      statusCode: input.statusCode,\n      body: payload,\n    },\n  },\n];"
+      },
+      "id": "normalize-health-response",
+      "name": "Normalizar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [780, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "GET health del servidor", "type": "main", "index": 0 }]]
+    },
+    "GET health del servidor": {
+      "main": [[{ "node": "Normalizar respuesta", "type": "main", "index": 0 }]]
+    },
+    "Normalizar respuesta": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

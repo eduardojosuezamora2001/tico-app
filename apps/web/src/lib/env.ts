@@ -9,6 +9,10 @@ const envSchema = z.object({
   VITE_SUPABASE_URL: z.url(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   VITE_GOOGLE_MAPS_API_KEY: z.string().optional(),
+  /** Production URL del webhook n8n que proxea GET /api/health del backend. */
+  VITE_SERVER_HEALTH_URL: z
+    .url()
+    .default("http://localhost:5678/webhook/server-health"),
 })
 
 const parsed = envSchema.safeParse(import.meta.env)
