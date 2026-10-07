@@ -10,12 +10,22 @@ import {
 } from "@workspace/shared"
 import { ShoppingBag01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
+import { Separator } from "@workspace/ui/components/separator"
 
 import { OrderPickupVerify } from "@/components/orders/order-pickup-verify"
 import { formatColones } from "@/lib/messages-ui"
 import { decideChatOrder } from "@/services/messages.service"
 import { advanceOrderStage } from "@/services/orders.service"
-import { Button } from "@workspace/ui/components/button"
 
 export function OrderMessageCard({
   messageId,
@@ -96,90 +106,86 @@ export function OrderMessageCard({
   }
 
   return (
-    <div
+    <Card
+      size="sm"
       className={
         mine
-          ? "w-full max-w-sm rounded-2xl border border-primary/30 bg-primary/10 p-4 text-foreground"
-          : "w-full max-w-sm rounded-2xl border border-border bg-card p-4 text-foreground shadow-sm"
+          ? "w-full max-w-sm border-primary/30 bg-primary/10 shadow-none"
+          : "w-full max-w-sm shadow-sm"
       }
     >
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
-          <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Pedido #{shortId}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {resolved.lines.length} ítem{resolved.lines.length === 1 ? "" : "s"} · {formatColones(resolved.total)}
-          </p>
-          {pickupCode ? (
-            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Código de retiro
-              </p>
-              <p className="font-mono text-2xl font-bold tracking-[0.28em] text-foreground">{pickupCode}</p>
+      <CardHeader className="gap-3">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+            <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle>Pedido #{shortId}</CardTitle>
+              <OrderStatusBadge order={resolved} />
             </div>
-          ) : null}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant={open ? "secondary" : "default"}
-              className="rounded-full"
-              onClick={() => setOpen((value) => !value)}
-            >
-              {open ? "Ocultar pedido" : "Ver pedido"}
-            </Button>
-            <OrderStatusBadge order={resolved} />
+            <CardDescription>
+              {resolved.lines.length} ítem{resolved.lines.length === 1 ? "" : "s"} ·{" "}
+              {formatColones(resolved.total)}
+            </CardDescription>
           </div>
         </div>
-      </div>
+        {pickupCode ? (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Código de retiro
+            </p>
+            <p className="font-mono text-2xl font-bold tracking-[0.28em] text-foreground">{pickupCode}</p>
+          </div>
+        ) : null}
+      </CardHeader>
 
       {open ? (
-        <div className="mt-4 border-t border-border/80 pt-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {resolved.businessName}
-          </p>
-          <ul className="mt-2 flex flex-col gap-2 text-sm">
-            {resolved.lines.map((line) => (
-              <li key={line.productId} className="flex items-start justify-between gap-3">
-                <span>
-                  {line.quantity}x {line.name}
-                </span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
-                  {formatColones(line.price * line.quantity)}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-sm font-semibold">Total: {formatColones(resolved.total)}</p>
+        <>
+          <Separator />
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {resolved.businessName}
+            </p>
+            <ul className="flex flex-col gap-2 text-sm">
+              {resolved.lines.map((line) => (
+                <li key={line.productId} className="flex items-start justify-between gap-3">
+                  <span>
+                    {line.quantity}x {line.name}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                    {formatColones(line.price * line.quantity)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm font-semibold">Total: {formatColones(resolved.total)}</p>
 
-          {canDecide ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                className="rounded-full"
-                disabled={pending}
-                onClick={() => void decide("accept")}
-              >
-                Aceptar pedido
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="rounded-full"
-                disabled={pending}
-                onClick={() => void decide("deny")}
-              >
-                Denegar
-              </Button>
-            </div>
-          ) : null}
+            {canDecide ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={pending}
+                  onClick={() => void decide("accept")}
+                >
+                  Aceptar pedido
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  disabled={pending}
+                  onClick={() => void decide("deny")}
+                >
+                  Denegar
+                </Button>
+              </div>
+            ) : null}
 
-          {showPickupVerify ? (
-            <div className="mt-4">
+            {showPickupVerify ? (
               <OrderPickupVerify
                 orderId={resolved.id}
                 disabled={pending}
@@ -188,11 +194,9 @@ export function OrderMessageCard({
                   onOrderUpdated?.(updated)
                 }}
               />
-            </div>
-          ) : null}
+            ) : null}
 
-          {canAdvance && nextStage ? (
-            <div className="mt-4">
+            {canAdvance && nextStage ? (
               <Button
                 type="button"
                 size="sm"
@@ -202,23 +206,35 @@ export function OrderMessageCard({
               >
                 {nextStage === "ready" ? "Listo para retiro" : "Marcar entregado"}
               </Button>
-            </div>
-          ) : null}
+            ) : null}
 
-          {error ? <p className="mt-2 text-xs text-destructive">{error}</p> : null}
+            {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
-          {resolved.status === "accepted" ? (
-            <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-300">
-              {orderStageLabel(resolved.fulfillmentStage) ?? "Pedido aceptado"}
-              {resolved.fulfillmentStage === "delivered" ? "." : " · Actualiza el estado cuando avance."}
-            </p>
-          ) : null}
-          {resolved.status === "denied" ? (
-            <p className="mt-3 text-xs text-destructive">Pedido denegado por el comercio.</p>
-          ) : null}
-        </div>
+            {resolved.status === "accepted" ? (
+              <p className="text-xs text-muted-foreground">
+                {orderStageLabel(resolved.fulfillmentStage) ?? "Pedido aceptado"}
+                {resolved.fulfillmentStage === "delivered" ? "." : " · Actualiza el estado cuando avance."}
+              </p>
+            ) : null}
+            {resolved.status === "denied" ? (
+              <p className="text-xs text-destructive">Pedido denegado por el comercio.</p>
+            ) : null}
+          </CardContent>
+        </>
       ) : null}
-    </div>
+
+      <CardFooter className="justify-start border-t">
+        <Button
+          type="button"
+          size="sm"
+          variant={open ? "secondary" : "default"}
+          className="rounded-full"
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? "Ocultar pedido" : "Ver pedido"}
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -245,22 +261,10 @@ function payloadAsOrder(order: ChatOrderPayload): ChatOrder {
 function OrderStatusBadge({ order }: { order: ChatOrder }) {
   if (order.status === "accepted") {
     const label = orderStageLabel(order.fulfillmentStage) ?? "Aceptado"
-    return (
-      <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-        {label}
-      </span>
-    )
+    return <Badge variant="secondary">{label}</Badge>
   }
   if (order.status === "denied") {
-    return (
-      <span className="rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-medium text-destructive">
-        Denegado
-      </span>
-    )
+    return <Badge variant="destructive">Denegado</Badge>
   }
-  return (
-    <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200">
-      Pendiente
-    </span>
-  )
+  return <Badge variant="outline">Pendiente</Badge>
 }

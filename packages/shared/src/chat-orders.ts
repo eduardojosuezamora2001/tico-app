@@ -72,13 +72,25 @@ export function encodeChatOrderMessage(order: ChatOrderPayload) {
 }
 
 export function parseMessageContent(text: string): ParsedMessageContent {
-  if (!text.startsWith(CHAT_ORDER_PREFIX)) {
-    return { kind: "text", text }
+  const raw = typeof text === "string" ? text.trim() : ""
+  const prefixAt = raw.indexOf(CHAT_ORDER_PREFIX)
+  if (prefixAt < 0) {
+    return { kind: "text", text: raw || text }
   }
+  const payload = raw.slice(prefixAt + CHAT_ORDER_PREFIX.length)
   try {
-    const parsed = JSON.parse(text.slice(CHAT_ORDER_PREFIX.length)) as ChatOrderPayload
+    const parsed = JSON.parse(payload) as ChatOrderPayload
     if (!parsed?.orderId || !Array.isArray(parsed.lines)) {
-      return { kind: "text", text }
+      return {
+        kind: "order",
+        order: {
+          orderId: "00000000-0000-0000-0000-000000000000",
+          businessName: "Negocio",
+          lines: [],
+          total: 0,
+          status: "pending",
+        },
+      }
     }
     return {
       kind: "order",
@@ -94,7 +106,16 @@ export function parseMessageContent(text: string): ParsedMessageContent {
       },
     }
   } catch {
-    return { kind: "text", text }
+    return {
+      kind: "order",
+      order: {
+        orderId: "00000000-0000-0000-0000-000000000000",
+        businessName: "Negocio",
+        lines: [],
+        total: 0,
+        status: "pending",
+      },
+    }
   }
 }
 
@@ -119,8 +140,14 @@ export function createChatOrderPayload(input: SendChatOrderInput, orderId: strin
 export function messagePreviewText(text: string) {
   const parsed = parseMessageContent(text)
   if (parsed.kind === "order") {
+    if (!parsed.order.lines.length && parsed.order.total <= 0) {
+      return "Pedido nuevo"
+    }
     const shortId = parsed.order.orderId.slice(-4).padStart(4, "0")
     return `Pedido #${shortId} · ₡${parsed.order.total.toLocaleString("es-CR")}`
+  }
+  if (typeof text === "string" && text.includes(CHAT_ORDER_PREFIX)) {
+    return "Pedido nuevo"
   }
   return text
 }

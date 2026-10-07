@@ -1,7 +1,24 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useLocation } from "react-router"
-import type { ChatOrder, Conversation, Message } from "@workspace/shared"
+import {
+  messagePreviewText,
+  parseMessageContent,
+  type ChatOrder,
+  type Conversation,
+  type Message,
+} from "@workspace/shared"
+import { ShoppingBag01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@workspace/ui/components/empty"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Skeleton } from "@workspace/ui/components/skeleton"
@@ -58,7 +75,14 @@ export function FloatChat() {
   const [threadReady, setThreadReady] = useState(false)
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<{ id: string; title: string; body: string } | null>(null)
+  const [notice, setNotice] = useState<{
+    id: string
+    conversationId: string
+    title: string
+    body: string
+    kind: "text" | "order"
+    orderSummary?: string
+  } | null>(null)
   const openRef = useRef(open)
   const activeRef = useRef(active)
   openRef.current = open
@@ -121,9 +145,21 @@ export function FloatChat() {
           event.conversation.viewerRole === "customer"
             ? event.conversation.businessName
             : `${event.conversation.customerName ?? "Cliente"} · ${event.conversation.businessName}`
-        setNotice({ id: event.message.id, title, body: event.message.text })
+        const parsed = parseMessageContent(event.message.text)
+        const preview = messagePreviewText(event.message.text)
+        setNotice({
+          id: event.message.id,
+          conversationId: event.conversation.id,
+          title,
+          body: preview,
+          kind: parsed.kind,
+          orderSummary:
+            parsed.kind === "order"
+              ? `${parsed.order.lines.length} ítem${parsed.order.lines.length === 1 ? "" : "s"} · ${preview}`
+              : undefined,
+        })
         if (document.hidden && typeof Notification !== "undefined" && Notification.permission === "granted") {
-          new Notification(title, { body: event.message.text })
+          new Notification(title, { body: preview })
         }
       }
       const onConversation = (conversation: Conversation) => {
@@ -254,10 +290,50 @@ export function FloatChat() {
   return (
     <>
       {notice ? (
-        <p role="status" className="fixed right-4 bottom-20 z-40 max-w-xs rounded-2xl border border-border bg-card px-4 py-3 text-sm shadow-lg">
-          <span className="block font-medium">{notice.title}</span>
-          <span className="mt-1 block text-muted-foreground">{notice.body}</span>
-        </p>
+        <Card
+          role="status"
+          size="sm"
+          className="fixed right-4 bottom-20 z-40 w-[min(20rem,calc(100vw-2rem))] shadow-lg"
+        >
+          <CardHeader className="gap-2">
+            <div className="flex items-start gap-3">
+              {notice.kind === "order" ? (
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+                  <HugeiconsIcon icon={ShoppingBag01Icon} strokeWidth={2} />
+                </span>
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <CardTitle className="truncate">{notice.title}</CardTitle>
+                <CardDescription className="mt-0.5">
+                  {notice.kind === "order" ? "Nuevo pedido en el chat" : notice.body}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          {notice.kind === "order" ? (
+            <CardContent className="pt-0">
+              <Badge variant="secondary">{notice.orderSummary ?? notice.body}</Badge>
+            </CardContent>
+          ) : null}
+          <CardFooter className="justify-end gap-2 border-t">
+            <Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => setNotice(null)}>
+              Cerrar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                const conversation = items.find((item) => item.id === notice.conversationId)
+                setNotice(null)
+                setOpen(true)
+                if (conversation && canOpen(conversation)) setActive(conversation)
+              }}
+            >
+              {notice.kind === "order" ? "Ver pedido" : "Abrir chat"}
+            </Button>
+          </CardFooter>
+        </Card>
       ) : null}
       <Sheet
         open={open}
@@ -432,6 +508,10 @@ function FloatSection({
 }
 
 function RowBody({ item, online }: { item: Conversation; online: boolean }) {
+  const preview = messagePreviewText(item.lastText ?? "")
+  const isOrder = parseMessageContent(item.lastText ?? "").kind === "order"
+  const place = item.viewerRole === "customer" ? null : statusLine(item)
+
   return (
     <>
       <PersonAvatar name={conversationTitle(item)} size="sm" />
@@ -440,8 +520,16 @@ function RowBody({ item, online }: { item: Conversation; online: boolean }) {
           <OnlineDot on={online && item.viewerRole !== "customer" && item.viewerRole !== "assignee"} />
           <span className="truncate">{conversationTitle(item)}</span>
         </span>
-        <span className="block truncate text-sm text-muted-foreground">
-          {item.viewerRole === "customer" ? item.lastText : `${statusLine(item)} · ${item.lastText}`}
+        <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+          {place ? <span className="truncate">{place}</span> : null}
+          {place && isOrder ? <span className="shrink-0">·</span> : null}
+          {isOrder ? (
+            <Badge variant="secondary" className="max-w-[11rem] truncate">
+              {preview}
+            </Badge>
+          ) : (
+            <span className="truncate">{preview}</span>
+          )}
         </span>
       </span>
       {item.unreadCount > 0 ? (
