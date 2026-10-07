@@ -3,6 +3,7 @@ import {
   CreateBusinessSchema,
   DiscoverMatchSchema,
   NearbyBusinessesSchema,
+  SalesInsightRequestSchema,
   SearchBusinessesSchema,
   ToggleBusinessModuleSchema,
   UpdateBusinessSchema,
@@ -36,6 +37,7 @@ import { isChainAdmin } from "../lib/chain-access.js"
 import { requireEditableBusiness } from "../lib/business-access.js"
 import { businessPatchFromInput } from "../lib/business-input.js"
 import { dbFail, fail, validationError } from "../lib/http.js"
+import { generateSalesInsight } from "../lib/sales-insight.js"
 import { createUserClient, supabaseAdmin } from "../lib/supabase.js"
 import { requireAuth } from "../middleware/auth.js"
 import type { AppEnv } from "../types.js"
@@ -479,6 +481,18 @@ businessRoutes.put("/:id/modules/:module", requireAuth, async (c) => {
     .single()
   if (error) return dbFail(c, error)
   return c.json({ data: toBusinessModule(data) })
+})
+
+businessRoutes.post("/:id/sales-insight", requireAuth, async (c) => {
+  const businessId = c.req.param("id")
+  const access = await requireEditableBusiness(c, businessId)
+  if (access.error) return access.error
+
+  const parsed = SalesInsightRequestSchema.safeParse(await c.req.json())
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const data = await generateSalesInsight(parsed.data)
+  return c.json({ data })
 })
 
 businessRoutes.post("/:id/media/upload-url", requireAuth, async (c) => {

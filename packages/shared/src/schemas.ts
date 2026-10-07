@@ -859,6 +859,8 @@ export type AdminCreateUserInput = z.infer<typeof AdminCreateUserSchema>
 export type AssistantChatInput = z.infer<typeof AssistantChatSchema>
 export type SupportSendInput = z.infer<typeof SupportSendSchema>
 export type AssistantEmbedSyncInput = z.infer<typeof AssistantEmbedSyncSchema>
+export type SalesInsightRequest = z.infer<typeof SalesInsightRequestSchema>
+export type SalesInsightResponse = z.infer<typeof SalesInsightResponseSchema>
 
 // --------------------------------------------------------------------------
 // Asistente RAG + soporte
@@ -879,4 +881,25 @@ export const SupportSendSchema = z.object({
 
 export const AssistantEmbedSyncSchema = z.object({
   limit: z.coerce.number().int().min(1).max(2000).optional().default(500),
+})
+
+// --------------------------------------------------------------------------
+// Predicción de ventas (merchant dashboard)
+// --------------------------------------------------------------------------
+
+export const SalesInsightRequestSchema = z.object({
+  acceptedSales: z.number().nonnegative(),
+  acceptedOrders: z.number().int().nonnegative(),
+  pendingSales: z.number().nonnegative(),
+  pendingOrders: z.number().int().nonnegative(),
+  deniedOrders: z.number().int().nonnegative(),
+  avgDailySales: z.number().nonnegative(),
+  projectedNext7: z.number().nonnegative(),
+  projectedMonth: z.number().nonnegative(),
+  conversionRate: z.number().min(0).max(1),
+})
+
+export const SalesInsightResponseSchema = z.object({
+  text: z.string().trim().min(1).max(2000),
+  source: z.enum(["ai", "heuristic"]),
 })
