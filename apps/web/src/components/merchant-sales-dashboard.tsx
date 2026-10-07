@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-import type { OrderListItem } from "@workspace/shared"
+import type { OrderListItem, SalesInsightResponse } from "@workspace/shared"
 import {
   AnalyticsUpIcon,
   ShoppingBag01Icon,
@@ -15,6 +15,8 @@ import {
   colones,
 } from "@/lib/sales-analytics"
 import { listOrders } from "@/services/orders.service"
+import { fetchSalesInsight } from "@/services/sales.service"
+import { Badge } from "@workspace/ui/components/badge"
 import {
   Card,
   CardContent,
@@ -46,11 +48,14 @@ export function MerchantSalesDashboard({ businessId }: { businessId: string }) {
   const [orders, setOrders] = useState<OrderListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [insight, setInsight] = useState<SalesInsightResponse | null>(null)
+  const [insightLoading, setInsightLoading] = useState(false)
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setError(null)
+    setInsight(null)
     void listOrders(businessId)
       .then((rows) => {
         if (!active) return
@@ -70,6 +75,58 @@ export function MerchantSalesDashboard({ businessId }: { businessId: string }) {
 
   const summary = useMemo(() => buildSalesSummary(orders), [orders])
   const series = useMemo(() => buildSalesSeries(orders), [orders])
+  const hasSales = summary.acceptedOrders > 0 || summary.pendingOrders > 0
+
+  useEffect(() => {
+    if (loading || error || !hasSales) {
+      setInsight(null)
+      setInsightLoading(false)
+      return
+    }
+
+    let active = true
+    setInsightLoading(true)
+    setInsight(null)
+    void fetchSalesInsight(businessId, {
+      acceptedSales: summary.acceptedSales,
+      acceptedOrders: summary.acceptedOrders,
+      pendingSales: summary.pendingSales,
+      pendingOrders: summary.pendingOrders,
+      deniedOrders: summary.deniedOrders,
+      avgDailySales: summary.avgDailySales,
+      projectedNext7: summary.projectedNext7,
+      projectedMonth: summary.projectedMonth,
+      conversionRate: summary.conversionRate,
+    })
+      .then((data) => {
+        if (!active) return
+        setInsight(data)
+        setInsightLoading(false)
+      })
+      .catch(() => {
+        if (!active) return
+        setInsight(null)
+        setInsightLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [
+    businessId,
+    loading,
+    error,
+    hasSales,
+    summary.acceptedSales,
+    summary.acceptedOrders,
+    summary.pendingSales,
+    summary.pendingOrders,
+    summary.deniedOrders,
+    summary.avgDailySales,
+    summary.projectedNext7,
+    summary.projectedMonth,
+    summary.conversionRate,
+  ])
 
   if (loading) {
     return (
@@ -91,8 +148,6 @@ export function MerchantSalesDashboard({ businessId }: { businessId: string }) {
       </p>
     )
   }
-
-  const hasSales = summary.acceptedOrders > 0 || summary.pendingOrders > 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -211,21 +266,57 @@ export function MerchantSalesDashboard({ businessId }: { businessId: string }) {
         </CardContent>
       </Card>
 
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Proyección mensual</CardTitle>
-          <CardDescription>
-            Estimación simple: promedio diario de los últimos 14 días × 30.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-semibold tabular-nums">{colones(summary.projectedMonth)}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Basado en {summary.acceptedOrders} pedido{summary.acceptedOrders === 1 ? "" : "s"}{" "}
-            aceptado{summary.acceptedOrders === 1 ? "" : "s"} en el historial reciente.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Proyección mensual</CardTitle>
+            <CardDescription>
+              Estimación simple: promedio diario de los últimos 14 días × 30.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold tabular-nums">{colones(summary.projectedMonth)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Basado en {summary.acceptedOrders} pedido{summary.acceptedOrders === 1 ? "" : "s"}{" "}
+              aceptado{summary.acceptedOrders === 1 ? "" : "s"} en el historial reciente.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card size="sm">
+          <CardHeader className="flex flex-row items-start justify-between gap-2">
+            <div>
+              <CardTitle>Predicción</CardTitle>
+              <CardDescription>
+                Lectura de métricas futuras para orientar decisiones del negocio.
+              </CardDescription>
+            </div>
+            {insight?.source === "ai" ? (
+              <Badge variant="secondary">Generado con IA</Badge>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            {!hasSales ? (
+              <p className="text-sm text-muted-foreground">
+                Cuando haya pedidos aceptados o pendientes, aquí aparecerá una predicción de las
+                próximas métricas.
+              </p>
+            ) : insightLoading ? (
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-11/12" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            ) : insight ? (
+              <p className="text-sm leading-relaxed text-foreground">{insight.text}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No se pudo generar la predicción en este momento. Revisá las métricas de arriba.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

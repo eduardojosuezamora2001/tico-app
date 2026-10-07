@@ -19,6 +19,7 @@ import { AdminComerciosPage } from "@/pages/admin/comercios"
 import { AdminUsuariosPage } from "@/pages/admin/usuarios"
 import { AdminSoportePage } from "@/pages/admin/soporte"
 import { AdminShell } from "@/components/admin/admin-shell"
+import { HealthPage } from "@/pages/health"
 import { NotFoundPage } from "@/pages/not-found"
 import { ROLES } from "@workspace/shared"
 
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { path: "registro", element: <RegisterPage /> },
       { path: "auth/callback", element: <AuthCallbackPage /> },
       { path: "n/:id", element: <BusinessPage /> },
+      { path: "health", element: <HealthPage /> },
       {
         element: <ProtectedRoute />,
         children: [

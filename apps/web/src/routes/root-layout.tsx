@@ -2,6 +2,8 @@ import { useEffect } from "react"
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7"
 import { Outlet } from "react-router"
 
+import { AccessibilityBootstrap } from "@/components/accessibility-bootstrap"
+import { AccessibilityFloatingTrigger } from "@/components/accessibility-menu"
 import { AssistantMessengerFab } from "@/components/assistant-messenger-fab"
 import { FloatChat } from "@/components/float-chat"
 import { OrdersInboxSync } from "@/components/orders-inbox-sync"
@@ -15,8 +17,10 @@ export function RootLayout() {
 
   return (
     <NuqsAdapter>
+      <AccessibilityBootstrap />
       <OrdersInboxSync />
       <Outlet />
+      <AccessibilityFloatingTrigger />
       <AssistantMessengerFab />
       <FloatChat />
     </NuqsAdapter>
