@@ -18,7 +18,7 @@ import { Button } from "@workspace/ui/components/button"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 
-import { colones, OrderBoard, type Offer } from "@/components/business-cart"
+import { colones, OrderBar, OrderBoard, type Offer } from "@/components/business-cart"
 import { BusinessReviewsPanel } from "@/components/business-reviews-panel"
 import { ListFilter } from "@/components/list-filter"
 import { SiteHeader } from "@/components/site-header"
@@ -35,6 +35,9 @@ import { listGalleryImages } from "@/services/gallery.service"
 import { getBusinessHours } from "@/services/hours.service"
 import { listBusinessReviews } from "@/services/reviews.service"
 import { useAuthStore } from "@/stores/auth-store"
+import { useCartStore, type CartLine } from "@/stores/cart-store"
+
+const emptyCartLines: CartLine[] = []
 
 type Payload = {
   business: Business
@@ -100,6 +103,8 @@ export function BusinessPage() {
   const business = payload?.business
   const whatsapp = business?.whatsappNumber?.replace(/\D/g, "")
   const userId = useAuthStore((s) => s.session?.user.id)
+  const cartLines = useCartStore((s) => (business ? s.carts[business.id] : undefined)) ?? emptyCartLines
+  const canOrder = Boolean(business && business.ownerId !== userId)
   const hero = gallery[0]?.imageUrl ?? business?.bannerUrl ?? null
   const mapsHref =
     business?.latitude != null && business.longitude != null
@@ -299,6 +304,7 @@ export function BusinessPage() {
                     <TabsContent value="oferta">
                       <ListFilter
                         placeholder="Buscar producto, servicio o plato"
+                        lead={canOrder ? <OrderBar business={business} lines={cartLines} sticky /> : null}
                         lists={[
                           {
                             id: "productos",

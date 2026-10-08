@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router"
+import { Delete02Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import type { Business } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -113,7 +115,7 @@ export function OrderBoard({
         </div>
       )}
 
-      {canOrder ? <OrderBar business={business} lines={lines} /> : null}
+      {canOrder && !hideChrome ? <OrderBar business={business} lines={lines} /> : null}
 
       {hideChrome ? null : (
       <div className="flex items-baseline justify-between gap-3">
@@ -250,8 +252,17 @@ function SimpleOfferCard({
   )
 }
 
-function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }) {
+export function OrderBar({
+  business,
+  lines,
+  sticky = false,
+}: {
+  business: Business
+  lines: CartLine[]
+  sticky?: boolean
+}) {
   const clear = useCartStore((s) => s.clear)
+  const setQuantity = useCartStore((s) => s.setQuantity)
   const signedIn = useAuthStore((s) => s.status) === "authenticated"
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [sending, setSending] = useState(false)
@@ -259,6 +270,10 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
   const [error, setError] = useState<string | null>(null)
   const count = lines.reduce((sum, line) => sum + line.quantity, 0)
   const total = cartTotal(lines)
+
+  useEffect(() => {
+    if (confirmOpen && lines.length === 0 && !sending) setConfirmOpen(false)
+  }, [confirmOpen, lines.length, sending])
 
   async function send() {
     if (lines.length === 0) return
@@ -291,7 +306,13 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
 
   return (
     <>
-      <div className="rounded-2xl border border-primary/30 bg-accent px-4 py-3">
+      <div
+        className={
+          sticky
+            ? "sticky top-14 z-10 rounded-2xl border border-primary/30 bg-accent/95 px-4 py-3 shadow-sm backdrop-blur-md sm:top-16"
+            : "rounded-2xl border border-primary/30 bg-accent px-4 py-3"
+        }
+      >
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">Mi pedido en {business.name}</p>
@@ -330,22 +351,59 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
           <DialogHeader>
             <DialogTitle>Confirmar pedido</DialogTitle>
             <DialogDescription>
-              Revisa los productos y precios antes de enviar el pedido al chat de {business.name}.
+              Revisa o ajusta los productos antes de enviar el pedido al chat de {business.name}.
             </DialogDescription>
           </DialogHeader>
 
-          <ul className="flex max-h-60 flex-col gap-3 overflow-y-auto border-y border-border py-4">
-            {lines.map((line) => (
-              <li key={line.lineKey} className="flex items-start justify-between gap-3 text-sm">
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    {line.quantity}x {line.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{colones(line.price)} c/u</p>
-                </div>
-                <span className="shrink-0 tabular-nums font-medium">{colones(line.price * line.quantity)}</span>
-              </li>
-            ))}
+          <ul className="flex max-h-72 flex-col gap-3 overflow-y-auto border-y border-border py-4">
+            {lines.map((line) => {
+              const capped = line.stock !== null && line.quantity >= line.stock
+              return (
+                <li key={line.lineKey} className="flex items-start justify-between gap-3 text-sm">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div>
+                      <p className="font-medium">{line.name}</p>
+                      <p className="text-xs text-muted-foreground">{colones(line.price)} c/u</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1 rounded-full bg-muted px-1 py-0.5">
+                        <button
+                          type="button"
+                          className="grid size-7 place-items-center rounded-full bg-background text-base disabled:opacity-40"
+                          aria-label={`Quitar uno de ${line.name}`}
+                          disabled={sending}
+                          onClick={() => setQuantity(business.id, line.lineKey, line.quantity - 1, line.stock)}
+                        >
+                          −
+                        </button>
+                        <span className="min-w-6 text-center tabular-nums text-xs font-medium">{line.quantity}</span>
+                        <button
+                          type="button"
+                          className="grid size-7 place-items-center rounded-full bg-background text-base disabled:opacity-40"
+                          aria-label={`Agregar otro ${line.name}`}
+                          disabled={sending || capped}
+                          onClick={() => setQuantity(business.id, line.lineKey, line.quantity + 1, line.stock)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
+                        aria-label={`Eliminar ${line.name} del pedido`}
+                        disabled={sending}
+                        onClick={() => setQuantity(business.id, line.lineKey, 0, line.stock)}
+                      >
+                        <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <span className="shrink-0 pt-0.5 tabular-nums font-medium">
+                    {colones(line.price * line.quantity)}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
 
           <div className="flex items-center justify-between text-sm">
@@ -362,7 +420,7 @@ function OrderBar({ business, lines }: { business: Business; lines: CartLine[] }
             <Button
               type="button"
               className="rounded-full bg-[#128C7E] text-white hover:bg-[#0f7a6e]"
-              disabled={sending}
+              disabled={sending || lines.length === 0}
               onClick={() => void send()}
             >
               {sending ? "Enviando…" : "Confirmar y enviar"}

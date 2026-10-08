@@ -50,6 +50,7 @@ export function ListFilter<T>({
   groups: controlledGroups,
   showCount = true,
   loading = false,
+  lead,
   footer,
   pageSize = 6,
   page: controlledPage,
@@ -73,6 +74,8 @@ export function ListFilter<T>({
   groups?: string[]
   showCount?: boolean
   loading?: boolean
+  /** Renders above the results scroll area (outside scroll). */
+  lead?: ReactNode
   footer?: ReactNode
   pageSize?: number
   /** Remote pages: the parent already sliced `items`. */
@@ -194,6 +197,8 @@ export function ListFilter<T>({
           placeholder={placeholder}
         />
       </InputGroup>
+
+      {lead}
 
       {loading && rows.length === 0 ? (
         <div className="grid gap-3 sm:grid-cols-2">

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useLocation } from "react-router"
 import {
+  isPickupOtpEnabled,
   messagePreviewText,
+  MODULES,
   parseMessageContent,
   type ChatOrder,
   type Conversation,
@@ -42,6 +44,7 @@ import {
   sendMessage,
   takeConversation,
 } from "@/services/messages.service"
+import { listBusinessModules } from "@/services/modules.service"
 import {
   canClaim,
   canCompose,
@@ -75,6 +78,7 @@ export function FloatChat() {
   const [threadReady, setThreadReady] = useState(false)
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [pickupOtpEnabled, setPickupOtpEnabled] = useState(false)
   const [notice, setNotice] = useState<{
     id: string
     conversationId: string
@@ -229,6 +233,27 @@ export function FloatChat() {
       cancelled = true
     }
   }, [active?.id, active?.viewerRole])
+
+  useEffect(() => {
+    const businessId = active?.businessId
+    if (!businessId || active?.viewerRole === "member") {
+      setPickupOtpEnabled(false)
+      return
+    }
+    let cancelled = false
+    void listBusinessModules(businessId)
+      .then((rows) => {
+        if (cancelled) return
+        const products = rows.find((row) => row.moduleName === MODULES.PRODUCTS)
+        setPickupOtpEnabled(isPickupOtpEnabled(products))
+      })
+      .catch(() => {
+        if (!cancelled) setPickupOtpEnabled(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [active?.businessId, active?.viewerRole])
 
   async function claim(id: string) {
     setError(null)
@@ -405,6 +430,19 @@ export function FloatChat() {
                   nameFor={(message) => senderName(active, message.senderId)}
                   viewerRole={active.viewerRole}
                   ordersByMessageId={Object.fromEntries(orders.map((order) => [order.messageId, order]))}
+                  pickupOtpEnabled={pickupOtpEnabled}
+                  onOrderUpdated={(messageId, text) => {
+                    setMessages((current) =>
+                      current.map((item) => (item.id === messageId ? { ...item, text } : item)),
+                    )
+                  }}
+                  onOrderRecordUpdated={(order) => {
+                    setOrders((current) => {
+                      const index = current.findIndex((item) => item.id === order.id)
+                      if (index === -1) return [...current, order]
+                      return current.map((item) => (item.id === order.id ? order : item))
+                    })
+                  }}
                 />
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">

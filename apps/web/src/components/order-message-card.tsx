@@ -58,7 +58,7 @@ export function OrderMessageCard({
       ? nextFulfillmentStage(resolved.fulfillmentStage)
       : null
   const showPickupVerify =
-    pickupOtpEnabled &&
+    pickupOtpEnabled === true &&
     resolved.fulfillmentStage === "ready" &&
     nextStage === "delivered" &&
     (viewerRole === "assignee" || viewerRole === "owner")
