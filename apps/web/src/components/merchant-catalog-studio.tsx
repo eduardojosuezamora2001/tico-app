@@ -9,7 +9,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  BUSINESS_CATEGORY_COMBO_OPTIONS,
   MAX_BUSINESS_CATEGORIES,
   MODULES,
   serializeBusinessCategories,
@@ -30,7 +29,12 @@ import {
   type StudioItem,
 } from "@/lib/catalog-studio"
 import { MODULE_CATALOG } from "@/lib/module-catalog"
+import { useMarketplaceBusinessCategories } from "@/hooks/use-marketplace-business-categories"
 import { useMarketplaceTags } from "@/hooks/use-marketplace-tags"
+import {
+  businessCategoryComboOptions,
+  marketplaceTagComboOptions,
+} from "@/lib/marketplace-taxonomy-options"
 import { setBusinessModule } from "@/services/modules.service"
 import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert"
 import { Badge } from "@workspace/ui/components/badge"
@@ -181,9 +185,14 @@ export function MerchantCatalogStudio({
   const [price, setPrice] = useState("")
   const [offerLimit, setOfferLimit] = useState(OFFER_PAGE)
   const marketplaceTags = useMarketplaceTags()
+  const marketplaceCategories = useMarketplaceBusinessCategories()
   const tagOptions = useMemo(
-    () => (marketplaceTags ?? []).map((tag) => ({ id: tag.id, label: tag.name })),
+    () => marketplaceTagComboOptions(marketplaceTags ?? []),
     [marketplaceTags],
+  )
+  const businessCategoryOptions = useMemo(
+    () => businessCategoryComboOptions(marketplaceCategories ?? []),
+    [marketplaceCategories],
   )
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -564,7 +573,7 @@ export function MerchantCatalogStudio({
                         options={
                           selectedConfig.quick.groupMode === "marketplace"
                             ? tagOptions
-                            : BUSINESS_CATEGORY_COMBO_OPTIONS
+                            : businessCategoryOptions
                         }
                         allowCreate={false}
                         maxItems={

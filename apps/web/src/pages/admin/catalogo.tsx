@@ -24,7 +24,10 @@ import {
   updateAdminBusinessCategory,
   updateAdminMarketplaceTag,
 } from "@/services/admin.service"
-import { clearMarketplaceTagsCache } from "@/services/catalog.service"
+import {
+  clearMarketplaceBusinessCategoriesCache,
+  clearMarketplaceTagsCache,
+} from "@/services/catalog.service"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -117,6 +120,7 @@ function BusinessCategoriesPanel() {
   async function reload() {
     const data = await listAdminBusinessCategories()
     setItems(data)
+    clearMarketplaceBusinessCategoriesCache()
   }
 
   useEffect(() => {
@@ -141,7 +145,7 @@ function BusinessCategoriesPanel() {
     <TaxonomyPanel
       kind="business"
       title="Rubros y subrubros"
-      description="Se usan en el explorador y en el alta de negocios (legacy_label)."
+      description="Se reflejan en Categorías del negocio (/mi-negocio) y en el explorador."
       loading={loading}
       error={error}
       tree={tree}

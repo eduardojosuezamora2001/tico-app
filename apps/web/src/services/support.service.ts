@@ -12,8 +12,28 @@ export async function sendSupportMessage(input: {
     message: SupportMessage
   }>("support-send", { body: input })
   if (error) throw error
-  if (!data) throw new Error("Respuesta vacía de soporte")
-  return data
+  if (!data?.threadId || !data.message?.id) {
+    throw new Error("Respuesta vacía de soporte")
+  }
+  return {
+    threadId: data.threadId,
+    message: {
+      id: data.message.id,
+      threadId: data.message.threadId ?? data.threadId,
+      senderId: data.message.senderId,
+      body: data.message.body,
+      isRead: Boolean(data.message.isRead),
+      createdAt: data.message.createdAt,
+    } satisfies SupportMessage,
+  }
+}
+
+/** Une mensajes por id (envío local + realtime / refetch). */
+export function upsertSupportMessage(list: SupportMessage[], next: SupportMessage) {
+  if (list.some((item) => item.id === next.id)) return list
+  return [...list, next].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )
 }
 
 export async function getMySupportThread() {
@@ -52,15 +72,97 @@ export async function listSupportThreadsForAdmin() {
     .order("last_at", { ascending: false })
     .limit(100)
   if (error) throw error
-  return (data ?? []).map((row) => {
-    const userRaw = row.users as { email: string; full_name: string | null } | { email: string; full_name: string | null }[] | null
+
+  const threads = (data ?? []).map((row) => {
+    const userRaw = row.users as
+      | { email: string; full_name: string | null }
+      | { email: string; full_name: string | null }[]
+      | null
     const user = Array.isArray(userRaw) ? userRaw[0] : userRaw
     return {
       ...mapThread(row),
       userEmail: user?.email ?? null,
       userName: user?.full_name ?? null,
+      unreadCount: 0,
     } satisfies SupportThread
   })
+
+  if (threads.length === 0) return threads
+
+  const { data: unreadRows, error: unreadError } = await supabase
+    .from("support_messages")
+    .select("thread_id, sender_id")
+    .eq("is_read", false)
+    .in(
+      "thread_id",
+      threads.map((thread) => thread.id),
+    )
+  if (unreadError) throw unreadError
+
+  const unreadByThread = new Map<string, number>()
+  for (const row of unreadRows ?? []) {
+    const thread = threads.find((item) => item.id === row.thread_id)
+    if (!thread || row.sender_id !== thread.userId) continue
+    unreadByThread.set(row.thread_id, (unreadByThread.get(row.thread_id) ?? 0) + 1)
+  }
+
+  return threads.map((thread) => ({
+    ...thread,
+    unreadCount: unreadByThread.get(thread.id) ?? 0,
+  }))
+}
+
+/** Total de mensajes de usuarios aún no leídos por soporte. */
+export async function countSupportUnreadForAdmin() {
+  const threads = await listSupportThreadsForAdmin()
+  return threads.reduce((sum, thread) => sum + (thread.unreadCount ?? 0), 0)
+}
+
+/** Marca como leídos los mensajes del usuario en el hilo (vista admin). */
+export async function markSupportThreadRead(threadId: string, userId: string) {
+  const { error } = await supabase
+    .from("support_messages")
+    .update({ is_read: true })
+    .eq("thread_id", threadId)
+    .eq("sender_id", userId)
+    .eq("is_read", false)
+  if (error) throw error
+}
+
+/** No leídos del usuario: respuestas de soporte (sender ≠ yo). */
+export async function countMySupportUnread() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return 0
+
+  const thread = await getMySupportThread()
+  if (!thread) return 0
+
+  const { count, error } = await supabase
+    .from("support_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("thread_id", thread.id)
+    .eq("is_read", false)
+    .neq("sender_id", user.id)
+  if (error) throw error
+  return count ?? 0
+}
+
+/** Marca como leídas las respuestas del equipo en el hilo del usuario. */
+export async function markMySupportRepliesRead(threadId: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { error } = await supabase
+    .from("support_messages")
+    .update({ is_read: true })
+    .eq("thread_id", threadId)
+    .neq("sender_id", user.id)
+    .eq("is_read", false)
+  if (error) throw error
 }
 
 function mapThread(row: {

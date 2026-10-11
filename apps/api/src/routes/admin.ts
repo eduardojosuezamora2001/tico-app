@@ -7,6 +7,7 @@ import {
   ListAdminBusinessesSchema,
   ListAdminUsersSchema,
   MODULES,
+  PlatformGrowthInsightRequestSchema,
   ROLES,
   UpdateMarketplaceBusinessCategorySchema,
   UpdateMarketplaceCatalogTagSchema,
@@ -17,12 +18,14 @@ import {
   type MarketplaceBusinessCategory,
   type MarketplaceTag,
   type ModuleName,
+  type PlatformGrowthSeries,
   type TablesUpdate,
   type UserRole,
 } from "@workspace/shared"
 import { Hono } from "hono"
 
 import { dbFail, fail, validationError } from "../lib/http.js"
+import { generatePlatformGrowthInsight } from "../lib/platform-growth-insight.js"
 import { slugifyTaxonomy } from "../lib/slugify.js"
 import { supabaseAdmin } from "../lib/supabase.js"
 import { requireAdmin } from "../middleware/admin.js"
@@ -152,6 +155,101 @@ adminRoutes.get("/stats", async (c) => {
   }
 
   return c.json({ data: stats })
+})
+
+const GROWTH_HISTORY_DAYS = 14
+
+function dayKeyUtc(date: Date) {
+  const y = date.getUTCFullYear()
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0")
+  const d = String(date.getUTCDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
+function startOfUtcDay(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+}
+
+function addUtcDays(date: Date, days: number) {
+  const next = new Date(date)
+  next.setUTCDate(next.getUTCDate() + days)
+  return next
+}
+
+function bucketByDay(timestamps: string[], historyDays: number, today: Date): number[] {
+  const start = addUtcDays(startOfUtcDay(today), -(historyDays - 1))
+  const counts = Array.from({ length: historyDays }, () => 0)
+  const indexByKey = new Map<string, number>()
+  for (let i = 0; i < historyDays; i++) {
+    indexByKey.set(dayKeyUtc(addUtcDays(start, i)), i)
+  }
+  for (const ts of timestamps) {
+    const key = dayKeyUtc(new Date(ts))
+    const idx = indexByKey.get(key)
+    if (idx !== undefined) counts[idx] = (counts[idx] ?? 0) + 1
+  }
+  return counts
+}
+
+adminRoutes.get("/stats/growth", async (c) => {
+  const historyDays = GROWTH_HISTORY_DAYS
+  const today = new Date()
+  const since = addUtcDays(startOfUtcDay(today), -(historyDays - 1)).toISOString()
+  const head = { count: "exact" as const, head: true }
+
+  const [clientsRes, ownersRes, businessesRes, clientsTotal, ownersTotal, businessesTotal] =
+    await Promise.all([
+      supabaseAdmin
+        .from("users")
+        .select("created_at")
+        .eq("role", ROLES.CLIENT)
+        .gte("created_at", since),
+      supabaseAdmin
+        .from("users")
+        .select("created_at")
+        .eq("role", ROLES.BUSINESS_OWNER)
+        .gte("created_at", since),
+      supabaseAdmin.from("businesses").select("created_at").gte("created_at", since),
+      supabaseAdmin.from("users").select("id", head).eq("role", ROLES.CLIENT),
+      supabaseAdmin.from("users").select("id", head).eq("role", ROLES.BUSINESS_OWNER),
+      supabaseAdmin.from("businesses").select("id", head),
+    ])
+
+  for (const res of [clientsRes, ownersRes, businessesRes, clientsTotal, ownersTotal, businessesTotal]) {
+    if (res.error) return dbFail(c, res.error)
+  }
+
+  const data: PlatformGrowthSeries = {
+    historyDays,
+    clientsByDay: bucketByDay(
+      (clientsRes.data ?? []).map((row) => row.created_at),
+      historyDays,
+      today,
+    ),
+    ownersByDay: bucketByDay(
+      (ownersRes.data ?? []).map((row) => row.created_at),
+      historyDays,
+      today,
+    ),
+    businessesByDay: bucketByDay(
+      (businessesRes.data ?? []).map((row) => row.created_at),
+      historyDays,
+      today,
+    ),
+    clientsTotal: clientsTotal.count ?? 0,
+    ownersTotal: ownersTotal.count ?? 0,
+    businessesTotal: businessesTotal.count ?? 0,
+  }
+
+  return c.json({ data })
+})
+
+adminRoutes.post("/growth-insight", async (c) => {
+  const parsed = PlatformGrowthInsightRequestSchema.safeParse(await c.req.json())
+  if (!parsed.success) return validationError(c, parsed.error)
+
+  const data = await generatePlatformGrowthInsight(parsed.data)
+  return c.json({ data })
 })
 
 // --------------------------------------------------------------------------

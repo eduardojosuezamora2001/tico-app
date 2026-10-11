@@ -581,6 +581,8 @@ export interface SupportThread {
   lastAt: ISODateString
   userEmail?: string | null
   userName?: string | null
+  /** Mensajes del usuario aún no leídos por soporte. */
+  unreadCount?: number
 }
 
 export interface SupportMessage {

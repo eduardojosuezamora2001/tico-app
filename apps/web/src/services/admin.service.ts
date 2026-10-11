@@ -11,6 +11,9 @@ import type {
   ListAdminUsersInput,
   MarketplaceBusinessCategory,
   MarketplaceTag,
+  PlatformGrowthInsightRequest,
+  PlatformGrowthInsightResponse,
+  PlatformGrowthSeries,
   UpdateMarketplaceBusinessCategoryInput,
   UpdateMarketplaceCatalogTagInput,
 } from "@workspace/shared"
@@ -19,6 +22,17 @@ import { deleteData, getData, getPage, patchData, postData } from "@/services/ht
 
 export function getAdminStats() {
   return getData<AdminStats>("/admin/stats")
+}
+
+export function getAdminGrowthSeries() {
+  return getData<PlatformGrowthSeries>("/admin/stats/growth")
+}
+
+export function fetchPlatformGrowthInsight(metrics: PlatformGrowthInsightRequest) {
+  return postData<PlatformGrowthInsightResponse, PlatformGrowthInsightRequest>(
+    "/admin/growth-insight",
+    metrics,
+  )
 }
 
 export function listAdminBusinesses(params?: Partial<ListAdminBusinessesInput>) {

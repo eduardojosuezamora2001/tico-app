@@ -23,14 +23,20 @@ import {
   getMySupportThread,
   listSupportMessages,
   sendSupportMessage,
+  upsertSupportMessage,
 } from "@/services/support.service"
 import { registerAssistantSheetOpen, type AssistantSheetTab } from "@/lib/assistant-sheet"
+import { supabase } from "@/lib/supabase"
 import { useAuthStore } from "@/stores/auth-store"
+import { useSupportInboxStore } from "@/stores/support-inbox-store"
+import { Badge } from "@workspace/ui/components/badge"
 
 export function AssistantMessengerFab() {
   const { pathname } = useLocation()
   const status = useAuthStore((s) => s.status)
   const userId = useAuthStore((s) => s.session?.user.id)
+  const supportUnread = useSupportInboxStore((s) => s.unread)
+  const setSupportViewing = useSupportInboxStore((s) => s.setViewing)
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<AssistantSheetTab>("assistant")
 
@@ -41,6 +47,11 @@ export function AssistantMessengerFab() {
     })
     return () => registerAssistantSheetOpen(null)
   }, [])
+
+  useEffect(() => {
+    setSupportViewing(open && tab === "support")
+    return () => setSupportViewing(false)
+  }, [open, tab, setSupportViewing])
 
   if (status === "loading" || status !== "authenticated" || pathname.startsWith("/admin")) {
     return null
@@ -60,7 +71,14 @@ export function AssistantMessengerFab() {
         >
           <TabsList className="mx-4 grid w-auto grid-cols-2">
             <TabsTrigger value="assistant">Asistente</TabsTrigger>
-            <TabsTrigger value="support">Soporte</TabsTrigger>
+            <TabsTrigger value="support" className="gap-1.5">
+              Soporte
+              {supportUnread > 0 ? (
+                <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[10px]">
+                  {supportUnread > 9 ? "9+" : supportUnread}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="assistant" className="flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden">
             <AssistantPanel userId={userId!} open={open && tab === "assistant"} />
@@ -229,6 +247,8 @@ function SupportPanel({ userId, open }: { userId: string; open: boolean }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const markSupportRead = useSupportInboxStore((s) => s.markRead)
+
   useEffect(() => {
     if (!open) return
     let live = true
@@ -243,7 +263,10 @@ function SupportPanel({ userId, open }: { userId: string; open: boolean }) {
         }
         setThreadId(thread.id)
         const rows = await listSupportMessages(thread.id)
-        if (live) setMessages(rows)
+        if (live) {
+          setMessages(rows)
+          void markSupportRead()
+        }
       })
       .catch(() => {
         if (live) setError("No se pudo cargar soporte.")
@@ -251,7 +274,48 @@ function SupportPanel({ userId, open }: { userId: string; open: boolean }) {
     return () => {
       live = false
     }
-  }, [open])
+  }, [open, markSupportRead])
+
+  useEffect(() => {
+    if (!open || !threadId) return
+    const channel = supabase
+      .channel(`user-support:${threadId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "support_messages",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            id: string
+            thread_id: string
+            sender_id: string
+            body: string
+            is_read: boolean
+            created_at: string
+          }
+          if (!row?.id) return
+          setMessages((prev) =>
+            upsertSupportMessage(prev, {
+              id: row.id,
+              threadId: row.thread_id,
+              senderId: row.sender_id,
+              body: row.body,
+              isRead: row.is_read,
+              createdAt: row.created_at,
+            }),
+          )
+          if (row.sender_id !== userId) void markSupportRead()
+        },
+      )
+      .subscribe()
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [open, threadId, userId, markSupportRead])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -263,6 +327,7 @@ function SupportPanel({ userId, open }: { userId: string; open: boolean }) {
     try {
       const res = await sendSupportMessage({ threadId, message: body })
       setThreadId(res.threadId)
+      setMessages((prev) => upsertSupportMessage(prev, res.message))
       const rows = await listSupportMessages(res.threadId)
       setMessages(rows)
     } catch {

@@ -9,6 +9,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { AdminGrowthDashboard } from "@/components/admin/admin-growth-dashboard"
 import { getAdminStats } from "@/services/admin.service"
 import { Button } from "@workspace/ui/components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card"
@@ -137,6 +138,8 @@ export function AdminResumenPage() {
           ]}
         />
       </div>
+
+      <AdminGrowthDashboard />
     </div>
   )
 }

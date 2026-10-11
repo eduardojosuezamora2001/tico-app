@@ -5,11 +5,7 @@
 
 import { z } from "zod"
 
-import {
-  BUSINESS_CATEGORY_OPTIONS,
-  MAX_BUSINESS_CATEGORIES,
-  parseBusinessCategories,
-} from "./business-categories.js"
+import { MAX_BUSINESS_CATEGORIES, parseBusinessCategories } from "./business-categories.js"
 import {
   APPOINTMENT_STATUS,
   BUSINESS_ROLES,
@@ -594,13 +590,6 @@ export const CreateServiceSchema = z.object({
           message: `Máximo ${MAX_BUSINESS_CATEGORIES} categorías`,
         })
       }
-      const allowed = new Set<string>(BUSINESS_CATEGORY_OPTIONS)
-      if (parts.some((part) => !allowed.has(part))) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Usa una categoría del catálogo de rubros.",
-        })
-      }
     })
     .optional(),
   imageUrl: urlSchema.optional(),
@@ -861,6 +850,8 @@ export type SupportSendInput = z.infer<typeof SupportSendSchema>
 export type AssistantEmbedSyncInput = z.infer<typeof AssistantEmbedSyncSchema>
 export type SalesInsightRequest = z.infer<typeof SalesInsightRequestSchema>
 export type SalesInsightResponse = z.infer<typeof SalesInsightResponseSchema>
+export type PlatformGrowthInsightRequest = z.infer<typeof PlatformGrowthInsightRequestSchema>
+export type PlatformGrowthInsightResponse = z.infer<typeof PlatformGrowthInsightResponseSchema>
 
 // --------------------------------------------------------------------------
 // Asistente RAG + soporte
@@ -903,3 +894,41 @@ export const SalesInsightResponseSchema = z.object({
   text: z.string().trim().min(1).max(2000),
   source: z.enum(["ai", "heuristic"]),
 })
+
+// --------------------------------------------------------------------------
+// Crecimiento de plataforma (admin dashboard)
+// --------------------------------------------------------------------------
+
+export const PlatformGrowthInsightRequestSchema = z.object({
+  clientsTotal: z.number().int().nonnegative(),
+  ownersTotal: z.number().int().nonnegative(),
+  businessesTotal: z.number().int().nonnegative(),
+  clientsLast14: z.number().int().nonnegative(),
+  ownersLast14: z.number().int().nonnegative(),
+  businessesLast14: z.number().int().nonnegative(),
+  avgDailyClients: z.number().nonnegative(),
+  avgDailyOwners: z.number().nonnegative(),
+  projectedClientsNext7: z.number().nonnegative(),
+  projectedOwnersNext7: z.number().nonnegative(),
+  projectedClientsMonth: z.number().nonnegative(),
+  projectedOwnersMonth: z.number().nonnegative(),
+  clientsGrowthRate: z.number(),
+  ownersGrowthRate: z.number(),
+})
+
+export const PlatformGrowthInsightResponseSchema = z.object({
+  text: z.string().trim().min(1).max(2000),
+  source: z.enum(["ai", "heuristic"]),
+})
+
+export const PlatformGrowthSeriesSchema = z.object({
+  historyDays: z.number().int().positive(),
+  clientsByDay: z.array(z.number().int().nonnegative()),
+  ownersByDay: z.array(z.number().int().nonnegative()),
+  businessesByDay: z.array(z.number().int().nonnegative()),
+  clientsTotal: z.number().int().nonnegative(),
+  ownersTotal: z.number().int().nonnegative(),
+  businessesTotal: z.number().int().nonnegative(),
+})
+
+export type PlatformGrowthSeries = z.infer<typeof PlatformGrowthSeriesSchema>

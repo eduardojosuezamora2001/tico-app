@@ -11,6 +11,7 @@ import {
 
 import { CatalogImageUpload } from "@/components/catalog-image-upload"
 import { CategoryMultiCombobox } from "@/components/category-multi-combobox"
+import { marketplaceTagComboOptions } from "@/lib/marketplace-taxonomy-options"
 import { createProduct, listMarketplaceTags, updateProduct } from "@/services/catalog.service"
 import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert"
 import { Button } from "@workspace/ui/components/button"
@@ -99,7 +100,7 @@ export function ProductEditorForm({
 
   useEffect(() => {
     void listMarketplaceTags()
-      .then((tags) => setTagOptions(tags.map((tag) => ({ id: tag.id, label: tag.name }))))
+      .then((tags) => setTagOptions(marketplaceTagComboOptions(tags)))
       .catch(() => setTagOptions([]))
   }, [])
 

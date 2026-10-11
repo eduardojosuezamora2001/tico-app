@@ -12,6 +12,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { AccessibilityMenu } from "@/components/accessibility-menu"
+import { useSupportUnread } from "@/hooks/use-support-unread"
 import { useAuthStore } from "@/stores/auth-store"
 import { Badge } from "@workspace/ui/components/badge"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/input-group"
@@ -30,6 +31,7 @@ export function AdminShell() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [query, setQuery] = useState(searchParams.get("q") ?? "")
+  const supportUnread = useSupportUnread()
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "")
@@ -76,7 +78,12 @@ export function AdminShell() {
               }
             >
               <HugeiconsIcon icon={item.icon} strokeWidth={2} className="size-4 shrink-0" />
-              {item.label}
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              {item.to === "/admin/soporte" && supportUnread > 0 ? (
+                <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[10px]">
+                  {supportUnread > 99 ? "99+" : supportUnread}
+                </Badge>
+              ) : null}
             </NavLink>
           ))}
         </nav>

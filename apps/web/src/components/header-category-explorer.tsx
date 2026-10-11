@@ -222,10 +222,16 @@ function ProductExplore({
 
   const viewAllHref =
     activeId === "destacado"
-      ? "/buscar?kind=product"
+      ? tree[0]
+        ? exploreHref("productos", { slug: tree[0].slug, label: tree[0].name })
+        : "/"
       : (() => {
           const node = tree.find((item) => item.id === activeId)
-          return node ? exploreHref("productos", { slug: node.slug, label: node.name }) : "/buscar?kind=product"
+          return node
+            ? exploreHref("productos", { slug: node.slug, label: node.name })
+            : tree[0]
+              ? exploreHref("productos", { slug: tree[0].slug, label: tree[0].name })
+              : "/"
         })()
 
   return (

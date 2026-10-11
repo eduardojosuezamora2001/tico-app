@@ -16,6 +16,7 @@ import { deleteData, getData, getPage, patchData, postData } from "@/services/ht
 import type { CatalogKind } from "@/services/types"
 
 let marketplaceTagsRequest: Promise<MarketplaceTag[]> | null = null
+let marketplaceBusinessCategoriesRequest: Promise<MarketplaceBusinessCategory[]> | null = null
 
 /** Una sola petición en vuelo para toda la sesión (dedup tipo SWR). */
 export function listMarketplaceTags() {
@@ -35,6 +36,24 @@ export function prefetchMarketplaceTags() {
   void listMarketplaceTags().catch(() => undefined)
 }
 
+export function listMarketplaceBusinessCategories() {
+  marketplaceBusinessCategoriesRequest ??= getData<MarketplaceBusinessCategory[]>(
+    "/catalog/business-categories",
+  ).catch((error: unknown) => {
+    marketplaceBusinessCategoriesRequest = null
+    throw error
+  })
+  return marketplaceBusinessCategoriesRequest
+}
+
+export function clearMarketplaceBusinessCategoriesCache() {
+  marketplaceBusinessCategoriesRequest = null
+}
+
+export function prefetchMarketplaceBusinessCategories() {
+  void listMarketplaceBusinessCategories().catch(() => undefined)
+}
+
 export type SellableCatalogItem = {
   itemType: "product" | "service" | "menu"
   itemId: string
@@ -47,10 +66,6 @@ export type SellableCatalogItem = {
 
 export function listSellableCatalog(businessId: string, cursor?: string, limit = 50) {
   return getPage<SellableCatalogItem[]>(`/businesses/${businessId}/catalog`, { cursor, limit })
-}
-
-export async function listMarketplaceBusinessCategories() {
-  return getData<MarketplaceBusinessCategory[]>("/catalog/business-categories")
 }
 
 export async function listProducts(

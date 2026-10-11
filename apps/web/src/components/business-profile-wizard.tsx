@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router"
-import { type CreateBusinessInput, type UpdateBusinessInput } from "@workspace/shared"
+import { MAX_BUSINESS_CATEGORIES, type CreateBusinessInput, type UpdateBusinessInput } from "@workspace/shared"
 
 import {
   deepestDivisionId,
@@ -14,7 +14,8 @@ import {
   syncModulesForBusiness,
   type BusinessProfileFormState,
 } from "@/lib/business-profile"
-import { BUSINESS_CATEGORY_COMBO_OPTIONS, MAX_BUSINESS_CATEGORIES } from "@workspace/shared"
+import { useMarketplaceBusinessCategories } from "@/hooks/use-marketplace-business-categories"
+import { businessCategoryComboOptions } from "@/lib/marketplace-taxonomy-options"
 
 import { CategoryMultiCombobox } from "@/components/category-multi-combobox"
 import {
@@ -103,6 +104,11 @@ export function BusinessProfileWizard({
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
+  const marketplaceCategories = useMarketplaceBusinessCategories()
+  const categoryOptions = useMemo(
+    () => businessCategoryComboOptions(marketplaceCategories ?? []),
+    [marketplaceCategories],
+  )
 
   useEffect(() => {
     const id = initialBusinessId
@@ -414,10 +420,16 @@ export function BusinessProfileWizard({
               label="Categorías del negocio"
               value={form.categories}
               onChange={(categories) => patchForm("categories", categories)}
-              options={BUSINESS_CATEGORY_COMBO_OPTIONS}
+              options={categoryOptions}
               allowCreate={false}
               maxItems={MAX_BUSINESS_CATEGORIES}
-              hint="Elige una o más rubros (gimnasio, farmacia, licorera, surf, entretenimiento, etc.)."
+              hint={
+                marketplaceCategories === null
+                  ? "Cargando rubros del catálogo…"
+                  : categoryOptions.length === 0
+                    ? "Aún no hay rubros activos. Pedile a un admin que los agregue en Catálogo Global."
+                    : "Elegí uno o más rubros del catálogo global (incluye subcategorías del admin)."
+              }
             />
           </Field>
           <Field label="Descripción completa">

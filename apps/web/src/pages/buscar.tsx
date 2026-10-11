@@ -24,13 +24,11 @@ export function BuscarPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!offerKind && !bcat && !tag) {
-      setItems([])
-      setLoading(false)
-      setError(null)
-      return
-    }
-    if (offerKind && !label && !tag) {
+    const isTagBrowse = Boolean(tag)
+    const isBcatBrowse = Boolean(bcat)
+    const isOfferBrowse = Boolean(offerKind && label) && !isTagBrowse && !isBcatBrowse
+
+    if (!isTagBrowse && !isBcatBrowse && !isOfferBrowse) {
       setItems([])
       setLoading(false)
       setError(null)
@@ -38,8 +36,9 @@ export function BuscarPage() {
     }
     setLoading(true)
     void searchBusinesses({
-      catalogKind: label && offerKind ? offerKind : undefined,
-      catalogLabel: label || undefined,
+      // tag/bcat and catalogLabel must stay mutually exclusive: discovery ANDs them.
+      catalogKind: isOfferBrowse ? offerKind! : undefined,
+      catalogLabel: isOfferBrowse ? label : undefined,
       tag: tag || undefined,
       bcat: bcat || undefined,
       limit: 24,

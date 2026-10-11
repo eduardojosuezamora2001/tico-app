@@ -180,7 +180,8 @@ export function exploreTagTint(slug: string) {
 
 export function exploreHref(tab: ExploreTab, item: { slug?: string; label: string }) {
   if (tab === "productos" && item.slug) {
-    const params = new URLSearchParams({ tag: item.slug, label: item.label, kind: "product" })
+    // label is display-only; discovery filters by tag slug, not product name.
+    const params = new URLSearchParams({ tag: item.slug, label: item.label })
     return `/buscar?${params.toString()}`
   }
   if (tab === "servicios") {

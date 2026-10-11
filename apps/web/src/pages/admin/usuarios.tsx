@@ -278,7 +278,7 @@ export function AdminUsuariosPage() {
               <TableHead className="text-[oklch(0.65_0.02_280)]">Usuario</TableHead>
               <TableHead className="text-[oklch(0.65_0.02_280)]">Rol</TableHead>
               <TableHead className="text-[oklch(0.65_0.02_280)]">Negocios</TableHead>
-              <TableHead className="text-[oklch(0.65_0.02_280)]">Alta</TableHead>
+              <TableHead className="text-[oklch(0.65_0.02_280)]">Creación</TableHead>
               <TableHead className="text-right text-[oklch(0.65_0.02_280)]">Rol plataforma</TableHead>
             </TableRow>
           </TableHeader>

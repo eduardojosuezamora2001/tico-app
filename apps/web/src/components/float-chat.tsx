@@ -60,8 +60,10 @@ import {
   type IncomingOrder,
 } from "@/lib/chat-events"
 import { OnlineDot, useOnlineUsers } from "@/lib/presence"
+import { openAssistantSheet } from "@/lib/assistant-sheet"
 import { chatSocket } from "@/lib/socket"
 import { useAuthStore } from "@/stores/auth-store"
+import { useSupportInboxStore } from "@/stores/support-inbox-store"
 
 export function FloatChat() {
   const { pathname } = useLocation()
@@ -84,9 +86,12 @@ export function FloatChat() {
     conversationId: string
     title: string
     body: string
-    kind: "text" | "order"
+    kind: "text" | "order" | "support"
     orderSummary?: string
   } | null>(null)
+  const supportUnread = useSupportInboxStore((s) => s.unread)
+  const bootSupportInbox = useSupportInboxStore((s) => s.boot)
+  const disposeSupportInbox = useSupportInboxStore((s) => s.dispose)
   const openRef = useRef(open)
   const activeRef = useRef(active)
   openRef.current = open
@@ -99,15 +104,35 @@ export function FloatChat() {
   }
 
   useEffect(() => {
-    if (status !== "authenticated") {
+    if (status !== "authenticated" || !userId) {
       setItems([])
+      disposeSupportInbox()
       return
     }
     void loadConversations()
+    void bootSupportInbox(userId)
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       void Notification.requestPermission().catch(() => undefined)
     }
-  }, [status])
+    const onSupport = (event: Event) => {
+      const detail = (event as CustomEvent<{ threadId: string; body: string }>).detail
+      if (!detail) return
+      setNotice({
+        id: `support:${detail.threadId}:${Date.now()}`,
+        conversationId: detail.threadId,
+        title: "Soporte TicoApp",
+        body: detail.body,
+        kind: "support",
+      })
+      if (document.hidden && typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Soporte TicoApp", { body: detail.body, tag: `support:${detail.threadId}` })
+      }
+    }
+    window.addEventListener("tico:support-message", onSupport)
+    return () => {
+      window.removeEventListener("tico:support-message", onSupport)
+    }
+  }, [status, userId, bootSupportInbox, disposeSupportInbox])
 
   useEffect(() => {
     if (!open || status !== "authenticated") return
@@ -307,7 +332,7 @@ export function FloatChat() {
     )
   }
 
-  const unread = items.reduce((sum, item) => sum + item.unreadCount, 0)
+  const unread = items.reduce((sum, item) => sum + item.unreadCount, 0) + supportUnread
   const staffView = items.some((item) => item.viewerRole !== "customer")
   const queue = items.filter((item) => item.status === "waiting" && item.viewerRole !== "customer")
   const ongoing = items.filter((item) => !queue.includes(item))
@@ -330,7 +355,11 @@ export function FloatChat() {
               <div className="min-w-0 flex-1">
                 <CardTitle className="truncate">{notice.title}</CardTitle>
                 <CardDescription className="mt-0.5">
-                  {notice.kind === "order" ? "Nuevo pedido en el chat" : notice.body}
+                  {notice.kind === "order"
+                    ? "Nuevo pedido en el chat"
+                    : notice.kind === "support"
+                      ? "Nueva respuesta de soporte"
+                      : notice.body}
                 </CardDescription>
               </div>
             </div>
@@ -338,6 +367,12 @@ export function FloatChat() {
           {notice.kind === "order" ? (
             <CardContent className="pt-0">
               <Badge variant="secondary">{notice.orderSummary ?? notice.body}</Badge>
+            </CardContent>
+          ) : notice.kind === "support" ? (
+            <CardContent className="pt-0">
+              <Badge variant="secondary" className="max-w-full truncate">
+                {notice.body}
+              </Badge>
             </CardContent>
           ) : null}
           <CardFooter className="justify-end gap-2 border-t">
@@ -349,13 +384,17 @@ export function FloatChat() {
               size="sm"
               className="rounded-full"
               onClick={() => {
-                const conversation = items.find((item) => item.id === notice.conversationId)
                 setNotice(null)
+                if (notice.kind === "support") {
+                  openAssistantSheet("support")
+                  return
+                }
                 setOpen(true)
+                const conversation = items.find((item) => item.id === notice.conversationId)
                 if (conversation && canOpen(conversation)) setActive(conversation)
               }}
             >
-              {notice.kind === "order" ? "Ver pedido" : "Abrir chat"}
+              {notice.kind === "order" ? "Ver pedido" : notice.kind === "support" ? "Ver soporte" : "Abrir chat"}
             </Button>
           </CardFooter>
         </Card>
