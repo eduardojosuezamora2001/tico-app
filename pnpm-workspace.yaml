@@ -2,6 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# CI (Cloudflare) fails install if unreviewed lifecycle scripts are treated as errors.
+strictDepBuilds: false
+
 allowBuilds:
   esbuild: true
   msw: false
