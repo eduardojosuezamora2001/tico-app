@@ -36,7 +36,8 @@ export type ListFilterEntry<T> = {
   render: (items: T[]) => ReactNode
 }
 
-export function ListFilter<T>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- lists may mix item shapes (productos/servicios/menú)
+export function ListFilter({
   lists,
   placeholder = "Buscar en esta lista",
   listLabel = "Lista",
@@ -58,7 +59,7 @@ export function ListFilter<T>({
   hasPrevious,
   onPageChange,
 }: {
-  lists: ListFilterEntry<T>[]
+  lists: ListFilterEntry<any>[]
   placeholder?: string
   listLabel?: string
   groupLabel?: string

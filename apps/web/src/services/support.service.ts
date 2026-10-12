@@ -74,7 +74,7 @@ export async function listSupportThreadsForAdmin() {
   if (error) throw error
 
   const threads = (data ?? []).map((row) => {
-    const userRaw = row.users as
+    const userRaw = row.users as unknown as
       | { email: string; full_name: string | null }
       | { email: string; full_name: string | null }[]
       | null

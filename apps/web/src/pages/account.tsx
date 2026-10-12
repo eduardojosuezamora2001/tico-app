@@ -40,7 +40,9 @@ export function AccountPage() {
   const signOut = useAuthStore((s) => s.signOut)
   const refreshProfile = useAuthStore((s) => s.refreshProfile)
   const [fullName, setFullName] = useState(profile?.fullName ?? "")
-  const [language, setLanguage] = useState(profile?.preferredLanguage ?? "es")
+  const [language, setLanguage] = useState<"es" | "en">(
+    profile?.preferredLanguage === "en" ? "en" : "es",
+  )
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [threads, setThreads] = useState<ListedThread[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,7 +52,7 @@ export function AccountPage() {
 
   useEffect(() => {
     setFullName(profile?.fullName ?? "")
-    setLanguage(profile?.preferredLanguage ?? "es")
+    setLanguage(profile?.preferredLanguage === "en" ? "en" : "es")
   }, [profile?.fullName, profile?.preferredLanguage])
 
   useEffect(() => {
@@ -188,7 +190,10 @@ export function AccountPage() {
                     Idioma
                     <select
                       value={language}
-                      onChange={(event) => setLanguage(event.target.value)}
+                      onChange={(event) => {
+                        const next = event.target.value
+                        if (next === "es" || next === "en") setLanguage(next)
+                      }}
                       className="h-11 rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
                       <option value="es">Español</option>

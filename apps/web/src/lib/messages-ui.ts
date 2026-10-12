@@ -158,7 +158,7 @@ export type OrderStep = {
 }
 
 function orderFulfillmentStage(order: ChatOrder | ChatOrderPayload) {
-  return "fulfillmentStage" in order ? order.fulfillmentStage : (order.fulfillmentStage ?? null)
+  return order.fulfillmentStage ?? null
 }
 
 function orderDecidedAt(order: ChatOrder | ChatOrderPayload) {
@@ -208,7 +208,7 @@ export function orderStepsFromOrder(order: ChatOrder | ChatOrderPayload): OrderS
       id: "prep",
       label: "En preparación",
       state: prepState,
-      at: prepState === "pending" ? null : (decidedAt ?? createdAt),
+      at: decidedAt ?? createdAt,
     },
     {
       id: "ready",
@@ -235,7 +235,7 @@ export function orderStepsFromOrder(order: ChatOrder | ChatOrderPayload): OrderS
 export function orderStatusLabel(order: ChatOrder | ChatOrderPayload) {
   if (order.status === "pending") return "Esperando confirmación"
   if (order.status === "denied") return "Denegado"
-  const stage = orderFulfillmentStage(order)
+  const stage = orderFulfillmentStage(order) ?? null
   return orderStageLabel(stage) ?? "En preparación"
 }
 

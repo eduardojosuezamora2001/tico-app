@@ -19,6 +19,10 @@ dist-ssr
 # turbo
 .turbo
 
+# Cloudflare Wrangler
+.wrangler
+.dev.vars
+
 # SQL batches generados (scripts/split-mx-jal-colonies-batches.mjs)
 tmp-mx-jal-colony-batches/
 

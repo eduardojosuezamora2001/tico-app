@@ -17,4 +17,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    // Route-level lazy loading already splits pages. Manual vendor groups
+    // (esp. React) can break module init order → "t is not a function".
+    chunkSizeWarningLimit: 900,
+  },
 })

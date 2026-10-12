@@ -24,7 +24,7 @@ import { useAuthStore } from "@/stores/auth-store"
 
 const emptyLines: CartLine[] = []
 
-export type Offer = ProductOffer | {
+export type SimpleOffer = {
   id: string
   name: string
   description: string | null
@@ -33,6 +33,8 @@ export type Offer = ProductOffer | {
   imageUrl: string | null
   category: string | null
 }
+
+export type Offer = ProductOffer | SimpleOffer
 
 function isProductOffer(offer: Offer): offer is ProductOffer {
   return "productKind" in offer && typeof offer.productKind === "string"
@@ -162,7 +164,7 @@ function SimpleOfferCard({
   setQuantity,
 }: {
   business: Business
-  offer: Extract<Offer, { productKind?: never }>
+  offer: SimpleOffer
   canOrder: boolean
   lines: CartLine[]
   add: ReturnType<typeof useCartStore.getState>["add"]

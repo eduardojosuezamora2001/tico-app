@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState, startTransition } from "react"
+import { useEffect, useState, startTransition, type FormEvent } from "react"
 import { Link, NavLink, Outlet, useNavigate, useSearchParams } from "react-router"
 import {
   Building03Icon,

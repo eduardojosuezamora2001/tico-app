@@ -12,7 +12,7 @@ export async function listConversationOrders(conversationId: string) {
   return getData<ChatOrder[]>(`/orders/conversations/${conversationId}`)
 }
 
-export async function advanceOrderStage(orderId: string, stage: Extract<OrderFulfillmentStage, "ready" | "delivered">) {
+export async function advanceOrderStage(orderId: string, stage: OrderFulfillmentStage) {
   return postData<ChatOrder>(`/orders/${orderId}/stage`, { stage })
 }
 

@@ -1,0 +1,22 @@
+/**
+ * Cloudflare Workers — static assets for the Vite SPA (`apps/web`).
+ *
+ * Build first: `pnpm --filter web build`
+ * Deploy:      `pnpm --filter web deploy`
+ *
+ * The API stays on a Node host (Railway/etc.); set VITE_API_URL at build time
+ * to that public API origin. Secrets for Supabase/Maps also go in VITE_* build env.
+ */
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tico-web",
+  "compatibility_date": "2026-10-12",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

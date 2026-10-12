@@ -46,9 +46,6 @@ function sameCategoryIds(a: string[], b: string[]) {
   return a.every((id, index) => id === b[index])
 }
 
-const itemToStringLabel = (item: CategoryOption) => item.label
-const itemToStringValue = (item: CategoryOption) => item.id
-
 export function CategoryMultiCombobox({
   value,
   onChange,

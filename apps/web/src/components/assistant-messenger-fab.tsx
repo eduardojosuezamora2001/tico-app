@@ -92,7 +92,7 @@ export function AssistantMessengerFab() {
   )
 }
 
-function AssistantPanel({ userId, open }: { userId: string; open: boolean }) {
+function AssistantPanel({ open }: { userId: string; open: boolean }) {
   const [threadId, setThreadId] = useState<string | undefined>()
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [citations, setCitations] = useState<AssistantCitation[]>([])

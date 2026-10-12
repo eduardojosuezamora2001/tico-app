@@ -39,7 +39,10 @@ export async function upsertBusinessAddress(businessId: string, input: CreateAdd
 
 export async function createMediaUploadUrl(
   businessId: string,
-  input: { kind: "gallery" | "banner" | "logo"; contentType: string },
+  input: {
+    kind: "gallery" | "banner" | "logo" | "product" | "service" | "menu"
+    contentType: string
+  },
 ) {
   return postData<MediaUploadUrl>(`/businesses/${businessId}/media/upload-url`, input)
 }

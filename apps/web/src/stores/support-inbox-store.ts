@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import type { RealtimeChannel } from "@supabase/supabase-js"
 
 import { supabase } from "@/lib/supabase"
 import {
@@ -18,8 +19,17 @@ type SupportInboxState = {
   dispose: () => void
 }
 
-let channel: ReturnType<typeof supabase.channel> | null = null
+let channel: RealtimeChannel | null = null
 let bootedFor: string | null = null
+let bootSeq = 0
+
+async function tearDownChannel() {
+  const current = channel
+  channel = null
+  if (current) {
+    await supabase.removeChannel(current)
+  }
+}
 
 export const useSupportInboxStore = create<SupportInboxState>((set, get) => ({
   unread: 0,
@@ -33,15 +43,23 @@ export const useSupportInboxStore = create<SupportInboxState>((set, get) => ({
       set({ unread: total, ready: true })
       return
     }
-    get().dispose()
+
+    const seq = ++bootSeq
+    await tearDownChannel()
+    if (seq !== bootSeq) return
+
     bootedFor = userId
 
     const thread = await getMySupportThread().catch(() => null)
+    if (seq !== bootSeq) return
     const total = await countMySupportUnread().catch(() => 0)
+    if (seq !== bootSeq) return
+
     set({ threadId: thread?.id ?? null, unread: total, ready: true })
 
-    channel = supabase
-      .channel(`my-support-inbox:${userId}`)
+    // Unique topic avoids reusing a channel that is still subscribed during teardown races.
+    const next = supabase.channel(`my-support-inbox:${userId}:${seq}`)
+    next
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "support_messages" },
@@ -80,11 +98,18 @@ export const useSupportInboxStore = create<SupportInboxState>((set, get) => ({
         { event: "UPDATE", schema: "public", table: "support_messages" },
         () => {
           void countMySupportUnread()
-            .then((next) => set({ unread: next }))
+            .then((nextUnread) => set({ unread: nextUnread }))
             .catch(() => undefined)
         },
       )
-      .subscribe()
+
+    if (seq !== bootSeq) {
+      await supabase.removeChannel(next)
+      return
+    }
+
+    channel = next
+    next.subscribe()
   },
 
   setViewing(viewing) {
@@ -107,11 +132,9 @@ export const useSupportInboxStore = create<SupportInboxState>((set, get) => ({
   },
 
   dispose() {
-    if (channel) {
-      void supabase.removeChannel(channel)
-      channel = null
-    }
+    bootSeq += 1
     bootedFor = null
+    void tearDownChannel()
     set({ unread: 0, threadId: null, viewing: false, ready: false })
   },
 }))

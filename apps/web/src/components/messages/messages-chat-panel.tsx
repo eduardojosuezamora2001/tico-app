@@ -97,7 +97,6 @@ export function MessagesChatPanel({
     orderPanel && (draftBusinessId || active?.viewerRole === "customer"),
   )
   const blocked = active?.viewerRole === "member"
-  const title = draftBusinessId ? draftName : active ? conversationTitle(active) : null
   const wa = whatsappUrl(business?.whatsappNumber)
   const cartTotalAmount = cartTotal(cartLines)
 

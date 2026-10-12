@@ -29,6 +29,7 @@ declare global {
         Marker: new (options: Record<string, unknown>) => {
           setMap: (map: unknown | null) => void
           setPosition: (value: LatLng) => void
+          setVisible: (visible: boolean) => void
           addListener: (event: string, handler: (event: { latLng?: { lat: () => number; lng: () => number } }) => void) => void
         }
         Geocoder: new () => {
@@ -103,7 +104,9 @@ export function BusinessMapPicker({
   const mapInstance = useRef<InstanceType<NonNullable<typeof window.google>["maps"]["Map"]> | null>(null)
   const markerInstance = useRef<InstanceType<NonNullable<typeof window.google>["maps"]["Marker"]> | null>(null)
   const geocoderRef = useRef<InstanceType<NonNullable<typeof window.google>["maps"]["Geocoder"]> | null>(null)
-  const autocompleteRef = useRef<InstanceType<NonNullable<typeof window.google>["maps"]["places"]["Autocomplete"]> | null>(null)
+  const autocompleteRef = useRef<InstanceType<
+    NonNullable<NonNullable<typeof window.google>["maps"]["places"]>["Autocomplete"]
+  > | null>(null)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [geocoding, setGeocoding] = useState(false)

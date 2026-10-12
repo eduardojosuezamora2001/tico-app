@@ -131,6 +131,7 @@ export function FloatChat() {
     window.addEventListener("tico:support-message", onSupport)
     return () => {
       window.removeEventListener("tico:support-message", onSupport)
+      disposeSupportInbox()
     }
   }, [status, userId, bootSupportInbox, disposeSupportInbox])
 
