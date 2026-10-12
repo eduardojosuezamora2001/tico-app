@@ -2,8 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# CI (Cloudflare) fails install if unreviewed lifecycle scripts are treated as errors.
+# Cloudflare Workers Builds (pnpm 12): unreviewed lifecycle scripts must not fail CI.
 strictDepBuilds: false
+dangerouslyAllowAllBuilds: true
 
 allowBuilds:
   esbuild: true
@@ -11,6 +12,7 @@ allowBuilds:
   "@parcel/watcher": true
   unrs-resolver: true
   workerd: true
+  sharp: true
 
 minimumReleaseAgeExclude:
   - hono@4.13.9

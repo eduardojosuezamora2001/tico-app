@@ -1,11 +1,16 @@
 /**
  * Cloudflare Workers — static assets for the Vite SPA (`apps/web`).
  *
- * Build first: `pnpm --filter web build`
- * Deploy:      `pnpm --filter web deploy`
+ * Workers Builds (dashboard) recommended settings:
+ * - Branch:          cloudflare
+ * - Root directory:  /
+ * - Build command:   pnpm cf:build
+ * - Deploy command:  pnpm cf:deploy
+ * - Build vars:      SKIP_DEPENDENCY_INSTALL=0 (or omit)
+ *                    PNPM_VERSION=12.6.0
+ *                    VITE_API_URL, VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, …
  *
- * The API stays on a Node host (Railway/etc.); set VITE_API_URL at build time
- * to that public API origin. Secrets for Supabase/Maps also go in VITE_* build env.
+ * Local: `pnpm --filter web deploy`
  */
 {
   "$schema": "./node_modules/wrangler/config-schema.json",

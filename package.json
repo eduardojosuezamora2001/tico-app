@@ -11,7 +11,9 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --project-id ceafdnvkfziidtgxflyw --schema public > packages/shared/src/database.types.ts"
+    "db:types": "supabase gen types typescript --project-id ceafdnvkfziidtgxflyw --schema public > packages/shared/src/database.types.ts",
+    "cf:build": "pnpm --filter web build",
+    "cf:deploy": "pnpm --filter web exec wrangler deploy"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
