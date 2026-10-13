@@ -90,6 +90,7 @@ export function SiteHeader() {
                   active ? "bg-muted text-foreground" : "text-muted-foreground",
                 )}
                 render={<Link to={href} aria-current={active ? "page" : undefined} />}
+                nativeButton={false}
               >
                 <HugeiconsIcon icon={item.icon} strokeWidth={2} data-icon="inline-start" />
                 {item.label}
@@ -111,6 +112,7 @@ export function SiteHeader() {
               className="rounded-full"
               aria-label="Mensajes"
               render={<Link to={authHref("/mensajes", signedIn)} />}
+              nativeButton={false}
             >
               <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
             </Button>
@@ -118,6 +120,7 @@ export function SiteHeader() {
             <Button
               className="rounded-full"
               render={<Link to={signedIn ? "/mi-negocio/nuevo" : "/registro"} />}
+              nativeButton={false}
             >
               Publicar negocio
             </Button>
@@ -189,6 +192,7 @@ function AccountMenu({ variant }: { variant: "compact" | "desktop" }) {
               variant="outline"
               className="shrink-0 rounded-full"
               render={<Link to={messagesHref} />}
+              nativeButton={false}
             >
               <HugeiconsIcon icon={Message01Icon} strokeWidth={2} data-icon="inline-start" />
               Mensajes

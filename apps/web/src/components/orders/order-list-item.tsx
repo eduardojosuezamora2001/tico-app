@@ -154,6 +154,7 @@ export function OrderListItemCard({
             variant="outline"
             className="rounded-full"
             render={<Link to={`/mensajes/${order.conversationId}`} onClick={() => notice && onAcknowledge?.(order)} />}
+            nativeButton={false}
           >
             <HugeiconsIcon icon={Message01Icon} strokeWidth={2} data-icon="inline-start" />
             Chat

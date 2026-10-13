@@ -308,6 +308,7 @@ export function AdminComerciosPage() {
                         variant="ghost"
                         className="text-[oklch(0.8_0.02_280)]"
                         render={<Link to={`/n/${row.id}`} target="_blank" rel="noreferrer" />}
+                        nativeButton={false}
                         title="Ver página pública"
                       >
                         <HugeiconsIcon icon={LinkSquare02Icon} strokeWidth={2} />

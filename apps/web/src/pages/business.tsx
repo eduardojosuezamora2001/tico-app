@@ -175,6 +175,7 @@ export function BusinessPage() {
                       variant="outline"
                       className="rounded-full"
                       render={<Link to={`/mi-negocio/${business.id}`} />}
+                      nativeButton={false}
                     >
                       Administrar
                     </Button>

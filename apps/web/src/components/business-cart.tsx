@@ -338,7 +338,11 @@ export function OrderBar({
             </Button>
           ) : null}
           {count > 0 && !signedIn ? (
-            <Button className="rounded-full px-4" render={<Link to={`/login?next=/n/${business.id}`} />}>
+            <Button
+              className="rounded-full px-4"
+              render={<Link to={`/login?next=/n/${business.id}`} />}
+              nativeButton={false}
+            >
               Entra para enviar
             </Button>
           ) : null}

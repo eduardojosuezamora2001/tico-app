@@ -200,7 +200,12 @@ export function MerchantBusinessPage() {
             {place ? <p className="mt-1 text-sm text-muted-foreground">{place}</p> : null}
           </div>
           {business ? (
-            <Button variant="outline" className="rounded-full" render={<Link to={`/n/${business.id}`} />}>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              render={<Link to={`/n/${business.id}`} />}
+              nativeButton={false}
+            >
               Ver página pública
             </Button>
           ) : null}

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router"
 import axios from "axios"
 import { SiteHeader } from "@/components/site-header"
+import { useConversationsQuery } from "@/hooks/use-conversations-query"
 import { getMe, updateProfile } from "@/services/me.service"
-import { listConversations } from "@/services/messages.service"
 import type { Membership } from "@/services/types"
 import { useAuthStore } from "@/stores/auth-store"
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar"
@@ -42,11 +42,13 @@ export function AccountPage() {
   const [fullName, setFullName] = useState(profile?.fullName ?? "")
   const [language, setLanguage] = useState(profile?.preferredLanguage ?? "es")
   const [memberships, setMemberships] = useState<Membership[]>([])
-  const [threads, setThreads] = useState<ListedThread[]>([])
-  const [loading, setLoading] = useState(true)
+  const [meLoading, setMeLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const conversationsQuery = useConversationsQuery(Boolean(session))
+  const threads = (conversationsQuery.data ?? []) as ListedThread[]
+  const loading = meLoading || conversationsQuery.isPending
 
   useEffect(() => {
     setFullName(profile?.fullName ?? "")
@@ -55,13 +57,17 @@ export function AccountPage() {
 
   useEffect(() => {
     let active = true
-    void Promise.allSettled([getMe(), listConversations()]).then(([me, conversations]) => {
-      if (!active) return
-      if (me.status === "fulfilled") setMemberships(me.value.memberships)
-      if (conversations.status === "fulfilled") setThreads(conversations.value)
-      if (me.status === "rejected") setError(errorMessage(me.reason, "No se pudo cargar tu cuenta."))
-      setLoading(false)
-    })
+    void getMe()
+      .then((me) => {
+        if (!active) return
+        setMemberships(me.memberships)
+      })
+      .catch((reason) => {
+        if (active) setError(errorMessage(reason, "No se pudo cargar tu cuenta."))
+      })
+      .finally(() => {
+        if (active) setMeLoading(false)
+      })
     return () => {
       active = false
     }
@@ -135,7 +141,7 @@ export function AccountPage() {
                 {since ? <span>Miembro desde {since}</span> : null}
               </p>
               {profile?.role === "admin" ? (
-                <Button className="mt-3" size="sm" render={<Link to="/admin" />}>
+                <Button className="mt-3" size="sm" render={<Link to="/admin" />} nativeButton={false}>
                   Abrir panel admin
                 </Button>
               ) : null}
@@ -292,7 +298,9 @@ function BusinessSection({ memberships, loading }: { memberships: Membership[]; 
           <h2 className="font-medium">Mis negocios asociados</h2>
           <p className="mt-1 text-sm text-muted-foreground">Locales que administras desde esta cuenta.</p>
         </div>
-        <Button variant="outline" className="rounded-full" render={<Link to="/mi-negocio/nuevo" />}>Nuevo local</Button>
+        <Button variant="outline" className="rounded-full" render={<Link to="/mi-negocio/nuevo" />} nativeButton={false}>
+          Nuevo local
+        </Button>
       </div>
       {loading ? <Skeleton className="mt-4 h-28 w-full" /> : memberships.length === 0 ? (
         <Empty className="border-0">

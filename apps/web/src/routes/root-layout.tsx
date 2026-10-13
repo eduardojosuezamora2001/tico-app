@@ -5,6 +5,7 @@ import { Outlet } from "react-router"
 import { AccessibilityBootstrap } from "@/components/accessibility-bootstrap"
 import { AccessibilityFloatingTrigger } from "@/components/accessibility-menu"
 import { AssistantMessengerFab } from "@/components/assistant-messenger-fab"
+import { ChatQuerySync } from "@/components/chat-query-sync"
 import { FloatChat } from "@/components/float-chat"
 import { OrdersInboxSync } from "@/components/orders-inbox-sync"
 import { useAuthStore } from "@/stores/auth-store"
@@ -19,6 +20,7 @@ export function RootLayout() {
     <NuqsAdapter>
       <AccessibilityBootstrap />
       <OrdersInboxSync />
+      <ChatQuerySync />
       <Outlet />
       <AccessibilityFloatingTrigger />
       <AssistantMessengerFab />

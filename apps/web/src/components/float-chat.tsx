@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { Link, useLocation } from "react-router"
 import {
   isPickupOtpEnabled,
   messagePreviewText,
   MODULES,
   parseMessageContent,
-  type ChatOrder,
   type Conversation,
-  type Message,
 } from "@workspace/shared"
 import { ShoppingBag01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -36,15 +34,18 @@ import {
 import { AssistantHubEntry } from "@/components/assistant-hub-entry"
 import { MessageComposer, MessageThread, PersonAvatar } from "@/components/message-thread"
 import {
-  claimConversation,
-  getConversation,
-  listConversations,
-  markConversationRead,
-  replyToConversation,
-  sendMessage,
-  takeConversation,
-} from "@/services/messages.service"
-import { listBusinessModules } from "@/services/modules.service"
+  useConversationThreadQuery,
+  useConversationsQuery,
+} from "@/hooks/use-conversations-query"
+import { setViewingConversation } from "@/lib/chat-view"
+import {
+  appendThreadMessage,
+  patchThreadMessageText,
+  patchThreadOrder,
+  updateConversationsCache,
+  upsertConversationInCaches,
+} from "@/lib/message-cache"
+import { messageKeys } from "@/lib/message-query-keys"
 import {
   canClaim,
   canCompose,
@@ -53,15 +54,21 @@ import {
   conversationTitle,
   errorMessage,
   foldConversation,
-  foldMessage,
   senderName,
   statusLine,
   type IncomingMessage,
-  type IncomingOrder,
 } from "@/lib/chat-events"
 import { OnlineDot, useOnlineUsers } from "@/lib/presence"
 import { openAssistantSheet } from "@/lib/assistant-sheet"
+import { queryClient } from "@/lib/query-client"
 import { chatSocket } from "@/lib/socket"
+import {
+  claimConversation,
+  replyToConversation,
+  sendMessage,
+  takeConversation,
+} from "@/services/messages.service"
+import { listBusinessModules } from "@/services/modules.service"
 import { useAuthStore } from "@/stores/auth-store"
 import { useSupportInboxStore } from "@/stores/support-inbox-store"
 
@@ -70,14 +77,9 @@ export function FloatChat() {
   const status = useAuthStore((s) => s.status)
   const userId = useAuthStore((s) => s.session?.user.id)
   const profile = useAuthStore((s) => s.profile)
-  const accessToken = useAuthStore((s) => s.session?.access_token)
   const online = useOnlineUsers()
   const [open, setOpen] = useState(false)
-  const [items, setItems] = useState<Conversation[]>([])
-  const [active, setActive] = useState<Conversation | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [orders, setOrders] = useState<ChatOrder[]>([])
-  const [threadReady, setThreadReady] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pickupOtpEnabled, setPickupOtpEnabled] = useState(false)
@@ -93,23 +95,29 @@ export function FloatChat() {
   const bootSupportInbox = useSupportInboxStore((s) => s.boot)
   const disposeSupportInbox = useSupportInboxStore((s) => s.dispose)
   const openRef = useRef(open)
-  const activeRef = useRef(active)
+  const activeIdRef = useRef(activeId)
   openRef.current = open
-  activeRef.current = active
+  activeIdRef.current = activeId
 
-  function loadConversations() {
-    return listConversations()
-      .then(setItems)
-      .catch(() => setError("No se pudieron cargar las conversaciones."))
-  }
+  const conversationsQuery = useConversationsQuery(status === "authenticated")
+  const items = conversationsQuery.data ?? []
+  const active = useMemo(
+    () => (activeId ? (items.find((item) => item.id === activeId) ?? null) : null),
+    [activeId, items],
+  )
+
+  const threadEnabled = Boolean(activeId) && active?.viewerRole !== "member"
+  const threadQuery = useConversationThreadQuery(activeId ?? "", threadEnabled)
+  const messages = threadQuery.data?.messages ?? []
+  const orders = threadQuery.data?.orders ?? []
+  const threadReady =
+    !activeId || active?.viewerRole === "member" || !threadQuery.isPending || Boolean(threadQuery.data)
 
   useEffect(() => {
     if (status !== "authenticated" || !userId) {
-      setItems([])
       disposeSupportInbox()
       return
     }
-    void loadConversations()
     void bootSupportInbox(userId)
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       void Notification.requestPermission().catch(() => undefined)
@@ -137,7 +145,7 @@ export function FloatChat() {
   useEffect(() => {
     if (!open || status !== "authenticated") return
     setError(null)
-    void loadConversations()
+    void queryClient.invalidateQueries({ queryKey: messageKeys.conversations() })
   }, [open, status])
 
   useEffect(() => {
@@ -145,6 +153,14 @@ export function FloatChat() {
     const timer = window.setTimeout(() => setNotice(null), 5000)
     return () => window.clearTimeout(timer)
   }, [notice])
+
+  useEffect(() => {
+    if (pathname.startsWith("/mensajes")) return
+    if (open && activeId && active?.viewerRole !== "member") {
+      setViewingConversation(activeId)
+      return () => setViewingConversation(null)
+    }
+  }, [open, activeId, active?.viewerRole, pathname])
 
   useEffect(() => {
     if (status !== "authenticated" || !userId) return
@@ -155,21 +171,9 @@ export function FloatChat() {
       const onMessage = (event: IncomingMessage) => {
         const viewing =
           openRef.current &&
-          activeRef.current?.id === event.conversation.id &&
+          activeIdRef.current === event.conversation.id &&
           event.conversation.viewerRole !== "member"
-        setItems((current) => foldMessage(current, event, userId, viewing ? event.conversation.id : null))
-        setActive((current) =>
-          current?.id === event.conversation.id ? { ...event.conversation, unreadCount: viewing ? 0 : current.unreadCount } : current,
-        )
-        if (viewing) {
-          setMessages((current) =>
-            current.some((item) => item.id === event.message.id) ? current : [...current, event.message],
-          )
-          const counts = event.conversation.viewerRole === "customer" || event.conversation.viewerRole === "assignee"
-          if (counts && event.message.senderId !== userId) void markConversationRead(event.conversation.id)
-          return
-        }
-        if (event.message.senderId === userId) return
+        if (viewing || event.message.senderId === userId) return
         const title =
           event.conversation.viewerRole === "customer"
             ? event.conversation.businessName
@@ -191,73 +195,32 @@ export function FloatChat() {
           new Notification(title, { body: preview })
         }
       }
-      const onConversation = (conversation: Conversation) => {
-        setItems((current) => foldConversation(current, conversation))
-        if (activeRef.current?.id === conversation.id && conversation.viewerRole === "member") setMessages([])
-        setActive((current) =>
-          current?.id === conversation.id ? { ...conversation, unreadCount: current.unreadCount } : current,
-        )
-      }
-      const onOrderUpdated = (event: IncomingOrder) => {
-        if (activeRef.current?.id !== event.conversation.id) return
-        setOrders((current) => {
-          const index = current.findIndex((item) => item.id === event.order.id)
-          const merge = (prev: ChatOrder, next: ChatOrder): ChatOrder => ({
-            ...prev,
-            ...next,
-            pickupCode: next.pickupCode ?? prev.pickupCode,
-          })
-          if (index === -1) return [...current, event.order]
-          return current.map((item) => (item.id === event.order.id ? merge(item, event.order) : item))
-        })
-      }
       socket.on("message:new", onMessage)
-      socket.on("conversation:updated", onConversation)
-      socket.on("order:updated", onOrderUpdated)
       detach = () => {
         socket.off("message:new", onMessage)
-        socket.off("conversation:updated", onConversation)
-        socket.off("order:updated", onOrderUpdated)
       }
     })
     return () => {
       live = false
       detach()
     }
-  }, [status, userId, accessToken])
+  }, [status, userId])
 
   useEffect(() => {
-    if (!active || active.viewerRole === "member") {
-      setMessages([])
-      setOrders([])
-      setThreadReady(Boolean(active))
-      return
+    if (!activeId || !threadQuery.data) return
+    updateConversationsCache(queryClient, (current) =>
+      foldConversation(current, threadQuery.data!.conversation).map((item) =>
+        item.id === activeId ? { ...item, unreadCount: 0 } : item,
+      ),
+    )
+    setNotice(null)
+  }, [activeId, threadQuery.data])
+
+  useEffect(() => {
+    if (threadQuery.isError) {
+      setError(errorMessage(threadQuery.error, "No se pudo abrir la conversación."))
     }
-    let cancelled = false
-    setThreadReady(false)
-    void getConversation(active.id)
-      .then((payload) => {
-        if (cancelled) return
-        setMessages(payload.messages)
-        setOrders(payload.orders ?? [])
-        setItems((current) =>
-          foldConversation(current, payload.conversation).map((item) =>
-            item.id === active.id ? { ...item, unreadCount: 0 } : item,
-          ),
-        )
-        setActive((current) => (current?.id === active.id ? { ...payload.conversation, unreadCount: 0 } : current))
-        setNotice(null)
-      })
-      .catch((caught) => {
-        if (!cancelled) setError(errorMessage(caught, "No se pudo abrir la conversación."))
-      })
-      .finally(() => {
-        if (!cancelled) setThreadReady(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [active?.id, active?.viewerRole])
+  }, [threadQuery.isError, threadQuery.error])
 
   useEffect(() => {
     const businessId = active?.businessId
@@ -284,8 +247,8 @@ export function FloatChat() {
     setError(null)
     try {
       const conversation = await claimConversation(id)
-      setItems((current) => foldConversation(current, conversation))
-      setActive(conversation)
+      upsertConversationInCaches(queryClient, conversation)
+      setActiveId(conversation.id)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo atender."))
     }
@@ -295,8 +258,8 @@ export function FloatChat() {
     setError(null)
     try {
       const conversation = await takeConversation(id)
-      setItems((current) => foldConversation(current, conversation))
-      setActive(conversation)
+      upsertConversationInCaches(queryClient, conversation)
+      setActiveId(conversation.id)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo tomar el chat."))
     }
@@ -313,9 +276,7 @@ export function FloatChat() {
         active.viewerRole === "customer"
           ? await sendMessage({ businessId: active.businessId, text: body })
           : await replyToConversation(active.id, body)
-      const message = result.message
-      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]))
-      setItems((current) => foldConversation(current, result.conversation))
+      appendThreadMessage(queryClient, active.id, result.message, result.conversation)
     } catch (caught) {
       setError(errorMessage(caught, "No se pudo enviar."))
       setText(body)
@@ -326,7 +287,11 @@ export function FloatChat() {
 
   if (status !== "authenticated") {
     return (
-      <Button className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg" render={<Link to="/login" />}>
+      <Button
+        className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg"
+        render={<Link to="/login" />}
+        nativeButton={false}
+      >
         Chat
       </Button>
     )
@@ -391,7 +356,7 @@ export function FloatChat() {
                 }
                 setOpen(true)
                 const conversation = items.find((item) => item.id === notice.conversationId)
-                if (conversation && canOpen(conversation)) setActive(conversation)
+                if (conversation && canOpen(conversation)) setActiveId(conversation.id)
               }}
             >
               {notice.kind === "order" ? "Ver pedido" : notice.kind === "support" ? "Ver soporte" : "Abrir chat"}
@@ -403,7 +368,7 @@ export function FloatChat() {
         open={open}
         onOpenChange={(next) => {
           setOpen(next)
-          if (!next) setActive(null)
+          if (!next) setActiveId(null)
         }}
       >
         <SheetTrigger
@@ -432,7 +397,7 @@ export function FloatChat() {
           {active ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center gap-2 px-4">
-                <Button type="button" variant="ghost" onClick={() => setActive(null)}>
+                <Button type="button" variant="ghost" onClick={() => setActiveId(null)}>
                   Chats
                 </Button>
                 {canClaim(active) ? (
@@ -470,17 +435,13 @@ export function FloatChat() {
                   viewerRole={active.viewerRole}
                   ordersByMessageId={Object.fromEntries(orders.map((order) => [order.messageId, order]))}
                   pickupOtpEnabled={pickupOtpEnabled}
-                  onOrderUpdated={(messageId, text) => {
-                    setMessages((current) =>
-                      current.map((item) => (item.id === messageId ? { ...item, text } : item)),
-                    )
+                  onOrderUpdated={(messageId, nextText) => {
+                    if (!activeId) return
+                    patchThreadMessageText(queryClient, activeId, messageId, nextText)
                   }}
                   onOrderRecordUpdated={(order) => {
-                    setOrders((current) => {
-                      const index = current.findIndex((item) => item.id === order.id)
-                      if (index === -1) return [...current, order]
-                      return current.map((item) => (item.id === order.id ? order : item))
-                    })
+                    if (!activeId) return
+                    patchThreadOrder(queryClient, activeId, order)
                   }}
                 />
               ) : (
@@ -501,7 +462,7 @@ export function FloatChat() {
                   title={staffView ? "Por atender" : undefined}
                   items={staffView ? queue : items}
                   online={online}
-                  onOpen={setActive}
+                  onOpen={(item) => setActiveId(item.id)}
                   onClaim={(id) => void claim(id)}
                   onTake={(id) => void take(id)}
                 />
@@ -510,7 +471,7 @@ export function FloatChat() {
                     title="En curso"
                     items={ongoing}
                     online={online}
-                    onOpen={setActive}
+                    onOpen={(item) => setActiveId(item.id)}
                     onClaim={(id) => void claim(id)}
                     onTake={(id) => void take(id)}
                   />

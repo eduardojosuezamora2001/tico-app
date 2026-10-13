@@ -39,6 +39,7 @@ export function MessagesConversationSidebar({
   onTabChange,
   onClaim,
   onTake,
+  onPrefetch,
 }: {
   items: Conversation[]
   selectedId: string
@@ -51,6 +52,7 @@ export function MessagesConversationSidebar({
   onTabChange: (tab: ConversationTab) => void
   onClaim: (id: string) => void
   onTake: (id: string) => void
+  onPrefetch?: (id: string) => void
 }) {
   const needle = query.trim().toLowerCase()
   const filtered = items.filter((item) => {
@@ -141,6 +143,7 @@ export function MessagesConversationSidebar({
                 cartLines={cartByBusiness[item.businessId] ?? []}
                 onClaim={onClaim}
                 onTake={onTake}
+                onPrefetch={onPrefetch}
                 showDivider={index < visible.length - 1}
               />
             ))}
@@ -170,6 +173,7 @@ function ConversationCard({
   cartLines,
   onClaim,
   onTake,
+  onPrefetch,
   showDivider,
 }: {
   item: Conversation
@@ -178,6 +182,7 @@ function ConversationCard({
   cartLines: CartLine[]
   onClaim: (id: string) => void
   onTake: (id: string) => void
+  onPrefetch?: (id: string) => void
   showDivider: boolean
 }) {
   const unread = item.unreadCount > 0
@@ -240,7 +245,12 @@ function ConversationCard({
   return (
     <li className="flex flex-col">
       {canOpen(item) ? (
-        <Link to={`/mensajes/${item.id}`} aria-current={selected ? "page" : undefined}>
+        <Link
+          to={`/mensajes/${item.id}`}
+          aria-current={selected ? "page" : undefined}
+          onMouseEnter={() => onPrefetch?.(item.id)}
+          onFocus={() => onPrefetch?.(item.id)}
+        >
           {body}
         </Link>
       ) : (

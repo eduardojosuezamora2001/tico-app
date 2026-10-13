@@ -93,7 +93,7 @@ export function MerchantHomeDashboard({
             <HugeiconsIcon icon={Building03Icon} strokeWidth={2} data-icon="inline-start" />
             Nueva cadena o sucursal
           </Button>
-          <Button className="rounded-full" render={<Link to="/mi-negocio/nuevo" />}>
+          <Button className="rounded-full" render={<Link to="/mi-negocio/nuevo" />} nativeButton={false}>
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
             Crear nuevo negocio
           </Button>
@@ -179,7 +179,7 @@ export function MerchantHomeDashboard({
                   Publica tu primer local o acepta una invitación del equipo para verlo aquí.
                 </EmptyDescription>
               </EmptyHeader>
-              <Button className="mt-2 rounded-full" render={<Link to="/mi-negocio/nuevo" />}>
+              <Button className="mt-2 rounded-full" render={<Link to="/mi-negocio/nuevo" />} nativeButton={false}>
                 Crear nuevo negocio
               </Button>
             </Empty>
@@ -192,7 +192,7 @@ export function MerchantHomeDashboard({
           <p className="text-sm text-muted-foreground">
             ¿Necesitas formalizar sucursales o transferir la administración de un local?
           </p>
-          <Button variant="outline" className="rounded-full" render={<Link to="/mensajes" />}>
+          <Button variant="outline" className="rounded-full" render={<Link to="/mensajes" />} nativeButton={false}>
             Contactar soporte
           </Button>
         </div>
@@ -319,7 +319,13 @@ function ChainLocationRow({ location }: { location: ChainLocation }) {
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge className={statusTone}>{status}</StatusBadge>
         <RoleBadge>{membershipRoleLabel(location.role)}</RoleBadge>
-        <Button variant="outline" size="sm" className="rounded-full" render={<Link to={`/mi-negocio/${location.businessId}`} />}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          render={<Link to={`/mi-negocio/${location.businessId}`} />}
+          nativeButton={false}
+        >
           Administrar
         </Button>
       </div>
@@ -360,7 +366,7 @@ function CollaboratorSection({ memberships, total }: { memberships: Membership[]
         title="Negocios donde colaboro (Empleado / Delegado)"
         subtitle={`${total} negocio${total === 1 ? "" : "s"} asignado${total === 1 ? "" : "s"}`}
         action={
-          <Button variant="outline" size="sm" className="rounded-full" render={<Link to="/cuenta" />}>
+          <Button variant="outline" size="sm" className="rounded-full" render={<Link to="/cuenta" />} nativeButton={false}>
             Unirme con código de invitación
           </Button>
         }
@@ -416,11 +422,23 @@ function OwnedBusinessCard({ membership }: { membership: Membership }) {
       </div>
 
       <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-        <Button variant="outline" size="sm" className="rounded-full" render={<Link to={`/mi-negocio/${membership.businessId}`} />}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          render={<Link to={`/mi-negocio/${membership.businessId}`} />}
+          nativeButton={false}
+        >
           Administrar
         </Button>
         {business ? (
-          <Button variant="ghost" size="sm" className="rounded-full" render={<Link to={`/n/${business.id}`} />}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full"
+            render={<Link to={`/n/${business.id}`} />}
+            nativeButton={false}
+          >
             <HugeiconsIcon icon={LinkSquare02Icon} strokeWidth={2} data-icon="inline-start" />
             Ver página
           </Button>
@@ -488,14 +506,23 @@ function CollaboratorBusinessCard({ membership }: { membership: Membership }) {
 
       <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
         {membership.isActive ? (
-          <Button className="rounded-full" render={<Link to={`/mi-negocio/${membership.businessId}`} />}>
+          <Button
+            className="rounded-full"
+            render={<Link to={`/mi-negocio/${membership.businessId}`} />}
+            nativeButton={false}
+          >
             Entrar al panel
           </Button>
         ) : (
           <p className="text-sm text-muted-foreground">Tu acceso a este local está inactivo.</p>
         )}
         {business ? (
-          <Button variant="outline" className="rounded-full" render={<Link to={`/n/${business.id}`} />}>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            render={<Link to={`/n/${business.id}`} />}
+            nativeButton={false}
+          >
             Ver ficha pública
           </Button>
         ) : null}

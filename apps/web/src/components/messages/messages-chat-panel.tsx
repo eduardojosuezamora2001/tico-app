@@ -397,6 +397,7 @@ function ChatHeader({
         className="shrink-0 rounded-full md:hidden"
         aria-label="Volver a chats"
         render={<Link to={backHref} />}
+        nativeButton={false}
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
       </Button>
@@ -416,6 +417,7 @@ function ChatHeader({
             variant="outline"
             className="rounded-full border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
             render={<a href={wa} target="_blank" rel="noreferrer" aria-label="Abrir WhatsApp" />}
+            nativeButton={false}
           >
             <HugeiconsIcon icon={WhatsappIcon} strokeWidth={2} />
           </Button>
@@ -435,6 +437,7 @@ function ChatSkeleton({ backHref = "/mensajes" }: { backHref?: string }) {
           className="rounded-full md:hidden"
           aria-label="Volver a chats"
           render={<Link to={backHref} />}
+          nativeButton={false}
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
         </Button>

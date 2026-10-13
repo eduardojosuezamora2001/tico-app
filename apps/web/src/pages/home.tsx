@@ -274,7 +274,11 @@ export function HomePage() {
               El cliente ve tu catálogo, arma el pedido y te lo envía por el chat. El resto se coordina por WhatsApp.
             </p>
           </div>
-          <Button className="mt-5 rounded-full bg-background text-foreground hover:bg-background/90 md:mt-0" render={<Link to="/registro" />}>
+          <Button
+            className="mt-5 rounded-full bg-background text-foreground hover:bg-background/90 md:mt-0"
+            render={<Link to="/registro" />}
+            nativeButton={false}
+          >
             Registrar mi negocio
           </Button>
         </section>

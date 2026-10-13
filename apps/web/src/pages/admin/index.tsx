@@ -63,15 +63,15 @@ export function AdminResumenPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" render={<Link to="/admin/comercios" />}>
+          <Button size="sm" render={<Link to="/admin/comercios" />} nativeButton={false}>
             <HugeiconsIcon icon={Building03Icon} strokeWidth={2} data-icon="inline-start" />
             Gestión de comercios
           </Button>
-          <Button size="sm" variant="outline" render={<Link to="/admin/catalogo" />}>
+          <Button size="sm" variant="outline" render={<Link to="/admin/catalogo" />} nativeButton={false}>
             <HugeiconsIcon icon={FolderTreeIcon} strokeWidth={2} data-icon="inline-start" />
             Catálogo global
           </Button>
-          <Button size="sm" variant="outline" render={<Link to="/admin/usuarios" />}>
+          <Button size="sm" variant="outline" render={<Link to="/admin/usuarios" />} nativeButton={false}>
             <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} data-icon="inline-start" />
             Usuarios & dueños
           </Button>
